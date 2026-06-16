@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: spring-guardian-server
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+server:
+  port: 8080
+
+spring-guardian:
+  api-prefix: "/api/v1"
+  max-controller-lines: 35
+  max-controller-branches: 8

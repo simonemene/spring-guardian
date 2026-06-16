@@ -1,0 +1,3 @@
+com\example\guardian\core\ProjectScanServiceTest.class
+com\example\guardian\core\rules\PermitAllTooBroadRuleTest.class
+com\example\guardian\core\rules\UnsafeDdlAutoRuleTest.class

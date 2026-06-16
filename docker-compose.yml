@@ -1,0 +1,15 @@
+services:
+  spring-guardian-server:
+    build:
+      context: .
+      dockerfile: guardian-server/Dockerfile
+    container_name: spring-guardian-server
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_GUARDIAN_API_PREFIX: /api/v1
+      SPRING_GUARDIAN_MAX_CONTROLLER_LINES: 35
+      SPRING_GUARDIAN_MAX_CONTROLLER_BRANCHES: 8
+    volumes:
+      # Optional: mount local projects read-only and scan them through /api/v1/scans/local
+      - ./sample-projects:/scan:ro
