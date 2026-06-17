@@ -2,6 +2,7 @@ package com.example.guardian.server.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -24,6 +25,23 @@ public class ApiExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
         detail.setTitle("Richiesta non valida");
         detail.setDetail(ex.getMessage());
+        return detail;
+    }
+
+    /**
+     * Converts validation errors to HTTP 400 responses.
+     *
+     * @param ex validation exception
+     * @return problem response
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
+        ProblemDetail detail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        detail.setTitle("Richiesta non valida");
+        detail.setDetail(ex.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .orElse("La richiesta non è valida."));
         return detail;
     }
 

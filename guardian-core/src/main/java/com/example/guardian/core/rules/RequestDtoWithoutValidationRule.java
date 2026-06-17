@@ -7,6 +7,11 @@ import com.github.javaparser.ast.body.RecordDeclaration;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for RequestDtoWithoutValidationRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class RequestDtoWithoutValidationRule implements SpringRule {
 
     @Override

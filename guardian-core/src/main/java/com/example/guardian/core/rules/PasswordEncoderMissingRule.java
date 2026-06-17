@@ -4,6 +4,11 @@ import com.example.guardian.core.model.*;
 
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for PasswordEncoderMissingRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class PasswordEncoderMissingRule implements SpringRule {
 
     @Override

@@ -15,6 +15,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Deterministic Spring Guardian rule implementation for RepositoryCallInLoopRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class RepositoryCallInLoopRule implements SpringRule {
 
     @Override

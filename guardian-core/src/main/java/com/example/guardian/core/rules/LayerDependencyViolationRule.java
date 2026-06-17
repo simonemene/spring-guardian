@@ -6,6 +6,11 @@ import com.github.javaparser.ast.ImportDeclaration;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for LayerDependencyViolationRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class LayerDependencyViolationRule implements SpringRule {
 
     @Override

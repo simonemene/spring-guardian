@@ -7,6 +7,11 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for GodClassRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class GodClassRule implements SpringRule {
 
     private final GuardianSettings settings;

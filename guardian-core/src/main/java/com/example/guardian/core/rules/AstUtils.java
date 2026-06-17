@@ -2,10 +2,17 @@ package com.example.guardian.core.rules;
 
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.CallableDeclaration;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.nodeTypes.NodeWithAnnotations;
 
 import java.util.Optional;
 
+/**
+ * Internal utility methods for JavaParser-based rule evaluation.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 final class AstUtils {
 
     private AstUtils() {
@@ -50,4 +57,25 @@ final class AstUtils {
                 || path.startsWith("src/test/")
                 || path.contains("/test/");
     }
+
+    static boolean hasRequestMapping(MethodDeclaration method) {
+        return hasAnyAnnotation(method,
+                "RequestMapping",
+                "GetMapping",
+                "PostMapping",
+                "PutMapping",
+                "PatchMapping",
+                "DeleteMapping");
+    }
+
+    static boolean isSpringComponent(ClassOrInterfaceDeclaration clazz) {
+        return hasAnyAnnotation(clazz,
+                "Component",
+                "Service",
+                "Repository",
+                "Controller",
+                "RestController",
+                "Configuration");
+    }
+
 }

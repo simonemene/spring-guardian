@@ -8,6 +8,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
+/**
+ * Deterministic Spring Guardian rule implementation for DuplicatedMavenDependencyRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class DuplicatedMavenDependencyRule implements SpringRule {
 
     @Override

@@ -11,6 +11,11 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for JpaEagerFetchingRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class JpaEagerFetchingRule implements SpringRule {
 
     private static final String[] RELATION_ANNOTATIONS = {

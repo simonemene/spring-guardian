@@ -8,6 +8,11 @@ import com.github.javaparser.ast.body.ConstructorDeclaration;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for TooManyDependenciesRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class TooManyDependenciesRule implements SpringRule {
 
     private final GuardianSettings settings;

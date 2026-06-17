@@ -7,6 +7,11 @@ import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for ManualConnectionManagementRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class ManualConnectionManagementRule implements SpringRule {
 
     @Override

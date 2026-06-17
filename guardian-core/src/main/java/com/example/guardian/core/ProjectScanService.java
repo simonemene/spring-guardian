@@ -2,12 +2,18 @@ package com.example.guardian.core;
 
 import com.example.guardian.core.config.GuardianSettings;
 import com.example.guardian.core.model.AffectedComponent;
+import com.example.guardian.core.model.ArchitectureAreaReport;
 import com.example.guardian.core.model.ArchitectureReviewReport;
 import com.example.guardian.core.model.CategorySummary;
 import com.example.guardian.core.model.Finding;
 import com.example.guardian.core.model.FindingGroup;
+import com.example.guardian.core.model.ProjectCapabilities;
+import com.example.guardian.core.model.ProjectProfile;
 import com.example.guardian.core.model.ProjectScanContext;
+import com.example.guardian.core.model.QualityGate;
 import com.example.guardian.core.model.RecommendedAction;
+import com.example.guardian.core.model.ReleaseReadiness;
+import com.example.guardian.core.model.ReleaseTarget;
 import com.example.guardian.core.model.ReportExplanation;
 import com.example.guardian.core.model.ReportLanguage;
 import com.example.guardian.core.model.ReportSummary;
@@ -28,7 +34,7 @@ import java.util.stream.Collectors;
 /**
  * Executes deterministic Spring architecture rules and builds the final review report.
  *
- * @author Simone Meneghetti
+ * @author p15518 - Simone Meneghetti
  */
 public class ProjectScanService {
 
@@ -52,7 +58,7 @@ public class ProjectScanService {
      * @return architecture review report
      */
     public ArchitectureReviewReport scan(Path root) {
-        return scan(root, ReportLanguage.ITALIAN);
+        return scan(root, ReportLanguage.ITALIAN, ProjectProfile.defaults());
     }
 
     /**
@@ -63,8 +69,21 @@ public class ProjectScanService {
      * @return architecture review report
      */
     public ArchitectureReviewReport scan(Path root, ReportLanguage language) {
-        ProjectScanContext context = scanner.scan(root);
+        return scan(root, language, ProjectProfile.defaults());
+    }
+
+    /**
+     * Scans a project with the selected language and stateless profile.
+     *
+     * @param root project root
+     * @param language report language
+     * @param profile stateless scan profile
+     * @return architecture review report
+     */
+    public ArchitectureReviewReport scan(Path root, ReportLanguage language, ProjectProfile profile) {
         ReportLanguage resolvedLanguage = language == null ? ReportLanguage.ITALIAN : language;
+        ProjectProfile resolvedProfile = profile == null ? ProjectProfile.defaults() : profile;
+        ProjectScanContext context = scanner.scan(root, resolvedProfile);
 
         List<Finding> findings = rules.stream()
                 .flatMap(rule -> rule.evaluate(context).stream())
@@ -82,14 +101,20 @@ public class ProjectScanService {
             bySeverity.putIfAbsent(severity, 0L);
         }
 
-        int score = calculateScore(findings);
+        int score = calculateScore(findings, resolvedProfile);
         String riskLevel = calculateRiskLevel(score, bySeverity);
         List<FindingGroup> groupedFindings = buildFindingGroups(findings, resolvedLanguage);
+        List<ArchitectureAreaReport> architectureAreas = buildArchitectureAreas(findings, resolvedLanguage);
+        List<QualityGate> qualityGates = buildQualityGates(findings, architectureAreas, context, resolvedLanguage);
+        ReleaseReadiness releaseReadiness = buildReleaseReadiness(qualityGates, findings, resolvedProfile, resolvedLanguage);
 
         return new ArchitectureReviewReport(
                 root.getFileName() == null ? root.toString() : root.getFileName().toString(),
                 Instant.now(),
-                buildSummary(findings, bySeverity, riskLevel, resolvedLanguage),
+                resolvedProfile,
+                context.capabilities(),
+                buildSummary(findings, bySeverity, riskLevel, releaseReadiness.status(), resolvedLanguage),
+                releaseReadiness,
                 score,
                 riskLevel,
                 context.javaFiles().size(),
@@ -97,21 +122,27 @@ public class ProjectScanService {
                 rules.size(),
                 bySeverity,
                 buildCategorySummaries(findings, resolvedLanguage),
+                architectureAreas,
+                qualityGates,
                 buildRecommendedActions(groupedFindings, resolvedLanguage),
                 buildExplanation(resolvedLanguage),
                 groupedFindings
         );
     }
 
-    private int calculateScore(List<Finding> findings) {
+    private int calculateScore(List<Finding> findings, ProjectProfile profile) {
         int penalty = 0;
         for (Finding finding : findings) {
-            penalty += switch (finding.severity()) {
+            int weight = switch (finding.severity()) {
                 case CRITICAL -> 12;
                 case MAJOR -> 6;
                 case MINOR -> 2;
                 case INFO -> 1;
             };
+            if (profile.knownIssuesAccepted() && finding.severity() == Severity.MAJOR && !securityRule(finding.ruleId())) {
+                weight = Math.max(2, weight / 2);
+            }
+            penalty += weight;
         }
         return Math.max(0, 100 - penalty);
     }
@@ -129,25 +160,27 @@ public class ProjectScanService {
         return "HEALTHY";
     }
 
-    private ReportSummary buildSummary(List<Finding> findings, Map<Severity, Long> bySeverity, String riskLevel, ReportLanguage language) {
+    private ReportSummary buildSummary(List<Finding> findings, Map<Severity, Long> bySeverity, String riskLevel, String readinessStatus, ReportLanguage language) {
         long critical = bySeverity.getOrDefault(Severity.CRITICAL, 0L);
         long major = bySeverity.getOrDefault(Severity.MAJOR, 0L);
         long minor = bySeverity.getOrDefault(Severity.MINOR, 0L);
         long info = bySeverity.getOrDefault(Severity.INFO, 0L);
-
-        String status = critical > 0 ? "ACTION_REQUIRED"
-                : major > 0 ? "IMPROVEMENT_REQUIRED"
-                : findings.isEmpty() ? "NO_FINDINGS"
-                : "REVIEW_RECOMMENDED";
-
-        String summary = language == ReportLanguage.ENGLISH
-                ? englishSummaryFor(riskLevel)
-                : italianSummaryFor(riskLevel);
-
+        String status = switch (readinessStatus) {
+            case "READY" -> "NO_FINDINGS";
+            case "READY_WITH_WARNINGS" -> "REVIEW_RECOMMENDED";
+            default -> critical > 0 ? "ACTION_REQUIRED" : major > 0 ? "IMPROVEMENT_REQUIRED" : findings.isEmpty() ? "NO_FINDINGS" : "REVIEW_RECOMMENDED";
+        };
+        String summary = language == ReportLanguage.ENGLISH ? englishSummaryFor(riskLevel, readinessStatus) : italianSummaryFor(riskLevel, readinessStatus);
         return new ReportSummary(findings.size(), critical, major, minor, info, riskLevel, status, summary);
     }
 
-    private String italianSummaryFor(String riskLevel) {
+    private String italianSummaryFor(String riskLevel, String readinessStatus) {
+        if ("NOT_READY".equals(readinessStatus)) {
+            return "Il progetto non è ancora pronto per il rilascio secondo il profilo selezionato: correggi prima i blocchi critici e le aree ad alto impatto.";
+        }
+        if ("READY_WITH_WARNINGS".equals(readinessStatus)) {
+            return "Il progetto può procedere solo con consapevolezza tecnica: non ci sono blocchi critici, ma restano miglioramenti da pianificare.";
+        }
         return switch (riskLevel) {
             case "HIGH" -> "Il progetto contiene problemi architetturali, di sicurezza o correttezza da gestire prima di considerarlo pronto per produzione o pipeline CI.";
             case "MEDIUM" -> "Il progetto è utilizzabile, ma ci sono diversi interventi di manutenzione, qualità Spring o hardening da pianificare.";
@@ -156,7 +189,13 @@ public class ProjectScanService {
         };
     }
 
-    private String englishSummaryFor(String riskLevel) {
+    private String englishSummaryFor(String riskLevel, String readinessStatus) {
+        if ("NOT_READY".equals(readinessStatus)) {
+            return "The project is not release-ready for the selected profile yet: fix critical blockers and high-impact areas first.";
+        }
+        if ("READY_WITH_WARNINGS".equals(readinessStatus)) {
+            return "The project can move forward only with technical awareness: no critical blockers remain, but improvements should be planned.";
+        }
         return switch (riskLevel) {
             case "HIGH" -> "The project contains architecture, security or correctness issues that should be handled before considering it production-ready or CI-ready.";
             case "MEDIUM" -> "The project is usable, but several maintenance, Spring quality or hardening actions should be planned.";
@@ -308,7 +347,7 @@ public class ProjectScanService {
     private List<RecommendedAction> buildRecommendedActions(List<FindingGroup> groupedFindings, ReportLanguage language) {
         List<FindingGroup> prioritized = groupedFindings.stream()
                 .filter(group -> group.severity() == Severity.CRITICAL || group.severity() == Severity.MAJOR)
-                .limit(10)
+                .limit(12)
                 .toList();
 
         List<RecommendedAction> actions = new ArrayList<>();
@@ -349,54 +388,262 @@ public class ProjectScanService {
     private ReportExplanation buildExplanation(ReportLanguage language) {
         if (language == ReportLanguage.ENGLISH) {
             return new ReportExplanation(
-                    "The score starts from 100 and applies weighted penalties based on severity. Critical findings have the strongest impact.",
+                    "The score starts from 100 and applies weighted penalties based on severity. Critical findings have the strongest impact. Legacy baseline mode reduces the weight of non-security high findings but does not hide them.",
                     "Critical means a potential production, security or architecture blocker. High means a concrete maintenance or correctness risk. Medium means a recommended improvement. Info is low-impact guidance.",
-                    "Start from recommended actions, fix critical findings first and then high-severity findings by technical area. Findings are grouped by rule to keep the report readable on large projects.",
+                    "Start from release readiness, then quality gates, then recommended actions. Findings are grouped by deterministic rule to keep the report readable on large projects.",
                     List.of(
                             "Fix every critical finding before considering the CI scan green.",
-                            "Plan high-severity findings during refactoring, hardening or technical improvement sprints.",
-                            "Use the category summary to understand whether the project is weaker in security, APIs, persistence, tests or maintainability.",
-                            "Keep deterministic rules as the source of truth; any AI explanation should remain an optional layer."
+                            "Use the project profile only to calibrate the current stateless scan; Spring Guardian does not persist baselines.",
+                            "Review findings by area: dependency injection, web layer, security, JPA, architecture, tests, build and Spring Alternative Advisor.",
+                            "Keep deterministic rules as the source of truth. No AI calls, database calls or hidden state are required."
                     )
             );
         }
 
         return new ReportExplanation(
-                "Il punteggio parte da 100 e applica penalità pesate in base alla severità. I problemi critici hanno il peso maggiore.",
+                "Il punteggio parte da 100 e applica penalità pesate in base alla severità. I problemi critici hanno il peso maggiore. La modalità baseline legacy riduce il peso dei problemi alti non di sicurezza, ma non li nasconde.",
                 "Critico indica un possibile blocco per produzione, sicurezza o architettura. Alto indica un rischio concreto di manutenzione o correttezza. Medio indica un miglioramento consigliato. Info è un suggerimento a basso impatto.",
-                "Parti dalle azioni consigliate, correggi prima i problemi critici e poi quelli alti raggruppandoli per area tecnica. I problemi sono raggruppati per regola per mantenere leggibile il report anche su progetti grandi.",
+                "Parti dalla prontezza al rilascio, poi dai quality gate e infine dalle azioni consigliate. I problemi sono raggruppati per regola deterministica per mantenere leggibile il report anche su progetti grandi.",
                 List.of(
                         "Correggi tutti i problemi critici prima di considerare verde la scansione in CI.",
-                        "Pianifica i problemi alti durante refactor, hardening o sprint tecnici.",
-                        "Usa il riepilogo per categoria per capire se il progetto è più debole su sicurezza, API, persistenza, test o manutenibilità.",
-                        "Mantieni le regole deterministiche come fonte di verità; eventuali spiegazioni AI devono restare uno strato opzionale."
+                        "Usa il profilo progetto solo per calibrare la scansione corrente stateless: Spring Guardian non salva baseline.",
+                        "Rivedi i problemi per area: dependency injection, web layer, sicurezza, JPA, architettura, test, build e Spring Alternative Advisor.",
+                        "Mantieni le regole deterministiche come fonte di verità. Non servono chiamate AI, database o stato nascosto."
                 )
+        );
+    }
+
+    private List<ArchitectureAreaReport> buildArchitectureAreas(List<Finding> findings, ReportLanguage language) {
+        List<AreaDefinition> definitions = areaDefinitions(language);
+        List<ArchitectureAreaReport> reports = new ArrayList<>();
+        for (AreaDefinition definition : definitions) {
+            List<Finding> areaFindings = findings.stream().filter(finding -> definition.matches(finding.ruleId())).toList();
+            long critical = countSeverity(areaFindings, Severity.CRITICAL);
+            long major = countSeverity(areaFindings, Severity.MAJOR);
+            String status = critical > 0 ? "BLOCKED" : major > 0 ? "ATTENTION" : areaFindings.isEmpty() ? "OK" : "REVIEW";
+            reports.add(new ArchitectureAreaReport(
+                    definition.code(),
+                    definition.name(),
+                    definition.description(),
+                    areaFindings.size(),
+                    critical,
+                    major,
+                    status
+            ));
+        }
+        return reports;
+    }
+
+    private List<QualityGate> buildQualityGates(List<Finding> findings, List<ArchitectureAreaReport> areas, ProjectScanContext context, ReportLanguage language) {
+        List<QualityGate> gates = new ArrayList<>();
+        gates.add(gate("GATE_SECURITY", language, area(areas, "SECURITY"), true));
+        gates.add(gate("GATE_WEB_LAYER", language, area(areas, "WEB_LAYER"), context.capabilities().usesSpringWeb()));
+        gates.add(gate("GATE_JPA", language, area(areas, "JPA_PERSISTENCE"), context.capabilities().usesJpa()));
+        gates.add(gate("GATE_DEPENDENCY_INJECTION", language, area(areas, "DEPENDENCY_INJECTION"), true));
+        gates.add(gate("GATE_ARCHITECTURE_BOUNDARIES", language, area(areas, "ARCHITECTURE_BOUNDARIES"), true));
+        gates.add(gate("GATE_TESTS", language, area(areas, "TESTS"), true));
+        gates.add(gate("GATE_BUILD_CONFIG", language, area(areas, "BUILD_CONFIG"), true));
+        gates.add(gate("GATE_SPRING_ALTERNATIVE_ADVISOR", language, area(areas, "SPRING_ALTERNATIVE_ADVISOR"), false));
+        gates.add(new QualityGate(
+                "GATE_PROFILE_ALIGNMENT",
+                gateName("GATE_PROFILE_ALIGNMENT", language),
+                profileAlignmentStatus(context),
+                profileAlignmentExplanation(context, language),
+                true,
+                profileAlignmentStatus(context).equals("FAIL") ? 1 : 0
+        ));
+        return gates;
+    }
+
+    private QualityGate gate(String code, ReportLanguage language, ArchitectureAreaReport area, boolean required) {
+        long failing = area == null ? 0 : area.criticalFindings() + area.majorFindings();
+        String status = area == null || failing == 0 ? "PASS" : area.criticalFindings() > 0 ? "FAIL" : "WARNING";
+        return new QualityGate(code, gateName(code, language), status, gateExplanation(code, area, language), required, failing);
+    }
+
+    private ArchitectureAreaReport area(List<ArchitectureAreaReport> areas, String code) {
+        return areas.stream().filter(area -> area.code().equals(code)).findFirst().orElse(null);
+    }
+
+    private ReleaseReadiness buildReleaseReadiness(List<QualityGate> gates, List<Finding> findings, ProjectProfile profile, ReportLanguage language) {
+        List<QualityGate> blockingGates = gates.stream()
+                .filter(QualityGate::required)
+                .filter(gate -> gate.status().equals("FAIL") || strictMajorBlocks(gate, profile))
+                .toList();
+
+        List<String> blockers = blockingGates.stream()
+                .map(gate -> gate.name() + ": " + gate.explanation())
+                .toList();
+
+        List<String> warnings = gates.stream()
+                .filter(gate -> gate.status().equals("WARNING") && !strictMajorBlocks(gate, profile))
+                .map(gate -> gate.name() + ": " + gate.explanation())
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        if (profile.knownIssuesAccepted() || profile.releaseTarget() == ReleaseTarget.LEGACY_BASELINE) {
+            warnings.add(language == ReportLanguage.ENGLISH
+                    ? "Legacy baseline calibration is active: non-security high findings are prioritized but do not automatically block this stateless scan."
+                    : "Calibrazione baseline legacy attiva: i problemi alti non di sicurezza sono prioritari, ma non bloccano automaticamente questa scansione stateless.");
+        }
+
+        String status = !blockers.isEmpty() ? "NOT_READY" : warnings.isEmpty() && findings.isEmpty() ? "READY" : "READY_WITH_WARNINGS";
+        String label = releaseLabel(status, language);
+        String explanation = releaseExplanation(status, profile, language);
+        return new ReleaseReadiness(status, label, explanation, blockers.isEmpty(), blockers, warnings);
+    }
+
+    private boolean strictMajorBlocks(QualityGate gate, ProjectProfile profile) {
+        if (!gate.status().equals("WARNING")) {
+            return false;
+        }
+        if (profile.releaseTarget() == ReleaseTarget.INTERNAL || profile.releaseTarget() == ReleaseTarget.LEGACY_BASELINE || profile.knownIssuesAccepted()) {
+            return gate.code().equals("GATE_SECURITY");
+        }
+        return true;
+    }
+
+    private String profileAlignmentStatus(ProjectScanContext context) {
+        boolean expectsDdd = context.profile().architectureStyle().name().equals("DOMAIN_DRIVEN_DESIGN") || context.profile().architectureStyle().name().equals("HEXAGONAL");
+        if (expectsDdd && (!context.capabilities().hasDomainLayer() || !context.capabilities().hasApplicationLayer())) {
+            return "FAIL";
+        }
+        return "PASS";
+    }
+
+    private String profileAlignmentExplanation(ProjectScanContext context, ReportLanguage language) {
+        boolean expectsDdd = context.profile().architectureStyle().name().equals("DOMAIN_DRIVEN_DESIGN") || context.profile().architectureStyle().name().equals("HEXAGONAL");
+        if (expectsDdd && (!context.capabilities().hasDomainLayer() || !context.capabilities().hasApplicationLayer())) {
+            return language == ReportLanguage.ENGLISH
+                    ? "The selected DDD or hexagonal profile expects clear domain and application layers, but they were not both detected."
+                    : "Il profilo DDD o esagonale selezionato richiede layer domain e application chiari, ma non sono stati rilevati entrambi.";
+        }
+        return language == ReportLanguage.ENGLISH
+                ? "The selected project profile is consistent with the detected structure for this stateless scan."
+                : "Il profilo progetto selezionato è coerente con la struttura rilevata in questa scansione stateless.";
+    }
+
+    private String releaseLabel(String status, ReportLanguage language) {
+        if (language == ReportLanguage.ENGLISH) {
+            return switch (status) {
+                case "READY" -> "Ready for release";
+                case "READY_WITH_WARNINGS" -> "Releasable with warnings";
+                default -> "Not ready for release";
+            };
+        }
+        return switch (status) {
+            case "READY" -> "Pronto al rilascio";
+            case "READY_WITH_WARNINGS" -> "Rilasciabile con avvertenze";
+            default -> "Non pronto al rilascio";
+        };
+    }
+
+    private String releaseExplanation(String status, ProjectProfile profile, ReportLanguage language) {
+        if (language == ReportLanguage.ENGLISH) {
+            return switch (status) {
+                case "READY" -> "No blocking findings were detected by the deterministic gates for the selected profile.";
+                case "READY_WITH_WARNINGS" -> "The scan has no blocking failures for the selected profile, but the remaining warnings should be planned before scaling the project.";
+                default -> "The selected profile blocks release until the listed gates are fixed.";
+            };
+        }
+        return switch (status) {
+            case "READY" -> "I gate deterministici non hanno rilevato blocchi per il profilo selezionato.";
+            case "READY_WITH_WARNINGS" -> "La scansione non ha blocchi per il profilo selezionato, ma le avvertenze restanti vanno pianificate prima di far scalare il progetto.";
+            default -> "Il profilo selezionato blocca il rilascio finché i gate indicati non vengono corretti.";
+        };
+    }
+
+    private String gateName(String code, ReportLanguage language) {
+        if (language == ReportLanguage.ENGLISH) {
+            return switch (code) {
+                case "GATE_SECURITY" -> "Security";
+                case "GATE_WEB_LAYER" -> "Web layer and API contracts";
+                case "GATE_JPA" -> "JPA and persistence";
+                case "GATE_DEPENDENCY_INJECTION" -> "Dependency injection";
+                case "GATE_ARCHITECTURE_BOUNDARIES" -> "Architecture boundaries";
+                case "GATE_TESTS" -> "Tests";
+                case "GATE_BUILD_CONFIG" -> "Build and configuration";
+                case "GATE_SPRING_ALTERNATIVE_ADVISOR" -> "Spring Alternative Advisor";
+                case "GATE_PROFILE_ALIGNMENT" -> "Profile alignment";
+                default -> code;
+            };
+        }
+        return switch (code) {
+            case "GATE_SECURITY" -> "Sicurezza";
+            case "GATE_WEB_LAYER" -> "Layer web e contratti API";
+            case "GATE_JPA" -> "JPA e persistenza";
+            case "GATE_DEPENDENCY_INJECTION" -> "Dependency injection";
+            case "GATE_ARCHITECTURE_BOUNDARIES" -> "Confini architetturali";
+            case "GATE_TESTS" -> "Test";
+            case "GATE_BUILD_CONFIG" -> "Build e configurazione";
+            case "GATE_SPRING_ALTERNATIVE_ADVISOR" -> "Spring Alternative Advisor";
+            case "GATE_PROFILE_ALIGNMENT" -> "Coerenza profilo";
+            default -> code;
+        };
+    }
+
+    private String gateExplanation(String code, ArchitectureAreaReport area, ReportLanguage language) {
+        long findings = area == null ? 0 : area.findings();
+        if (language == ReportLanguage.ENGLISH) {
+            return findings == 0 ? "No blocking findings detected in this area." : findings + " findings require review in this area.";
+        }
+        return findings == 0 ? "Nessun problema bloccante rilevato in quest'area." : findings + " problemi richiedono revisione in quest'area.";
+    }
+
+    private List<AreaDefinition> areaDefinitions(ReportLanguage language) {
+        if (language == ReportLanguage.ENGLISH) {
+            return List.of(
+                    new AreaDefinition("DEPENDENCY_INJECTION", "Dependency injection", "Constructor injection, field injection, immutable dependencies and Spring component wiring.", List.of("SPR002", "SPR029", "SPR061", "SPR062")),
+                    new AreaDefinition("WEB_LAYER", "Web layer and API contracts", "Controller boundaries, DTOs, validation, versioning, HTTP semantics and OpenAPI documentation.", List.of("SPR003", "SPR004", "SPR006", "SPR010", "SPR013", "SPR014", "SPR019", "SPR023", "SPR024", "SPR050", "SPR051", "SPR056", "SPR060", "SPR063")),
+                    new AreaDefinition("SECURITY", "Spring Security", "Spring Security, secrets, actuator exposure, CSRF, CORS and password handling.", List.of("SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059")),
+                    new AreaDefinition("JPA_PERSISTENCE", "JPA and persistence", "Entity mapping, transactions, repository calls, fetch plans, schema safety and persistence boundaries.", List.of("SPR009", "SPR017", "SPR038", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057")),
+                    new AreaDefinition("ARCHITECTURE_BOUNDARIES", "Architecture and boundaries", "Layer direction, DDD or hexagonal boundaries, package structure and class responsibilities.", List.of("SPR005", "SPR007", "SPR008", "SPR018", "SPR027", "SPR028", "SPR030", "SPR031", "SPR055")),
+                    new AreaDefinition("RUNTIME_CORRECTNESS", "Runtime correctness", "Exception handling, null-safety, optional handling, hidden proxy effects and unsafe state changes.", List.of("SPR011", "SPR020", "SPR025", "SPR047")),
+                    new AreaDefinition("TESTS", "Tests", "Test presence, assertions, test slicing, heavy context usage and time-based flakiness.", List.of("SPR012", "SPR043", "SPR044", "SPR045", "SPR052")),
+                    new AreaDefinition("BUILD_CONFIG", "Build and configuration", "Maven quality, Spring BOM alignment, profiles, hardcoded values, logging and maintainability.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036")),
+                    new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Spring Alternative Advisor", "Manual Java objects, low-level APIs and modern Spring alternatives worth evaluating.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075"))
+            );
+        }
+        return List.of(
+                new AreaDefinition("DEPENDENCY_INJECTION", "Dependency injection", "Constructor injection, field injection, dipendenze immutabili e cablaggio dei componenti Spring.", List.of("SPR002", "SPR029", "SPR061", "SPR062")),
+                new AreaDefinition("WEB_LAYER", "Layer web e contratti API", "Confini dei controller, DTO, validazione, versionamento, semantica HTTP e documentazione OpenAPI.", List.of("SPR003", "SPR004", "SPR006", "SPR010", "SPR013", "SPR014", "SPR019", "SPR023", "SPR024", "SPR050", "SPR051", "SPR056", "SPR060", "SPR063")),
+                new AreaDefinition("SECURITY", "Spring Security", "Spring Security, segreti, esposizione actuator, CSRF, CORS e gestione password.", List.of("SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059")),
+                new AreaDefinition("JPA_PERSISTENCE", "JPA e persistenza", "Mapping entity, transazioni, chiamate repository, fetch plan, sicurezza schema e confini di persistenza.", List.of("SPR009", "SPR017", "SPR038", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057")),
+                new AreaDefinition("ARCHITECTURE_BOUNDARIES", "Architettura e confini", "Direzione dei layer, confini DDD o esagonali, struttura package e responsabilità delle classi.", List.of("SPR005", "SPR007", "SPR008", "SPR018", "SPR027", "SPR028", "SPR030", "SPR031", "SPR055")),
+                new AreaDefinition("RUNTIME_CORRECTNESS", "Correttezza runtime", "Gestione eccezioni, null-safety, Optional, effetti nascosti dei proxy e modifiche stato non sicure.", List.of("SPR011", "SPR020", "SPR025", "SPR047")),
+                new AreaDefinition("TESTS", "Test", "Presenza test, assert, slice test, uso del contesto Spring e fragilità temporale.", List.of("SPR012", "SPR043", "SPR044", "SPR045", "SPR052")),
+                new AreaDefinition("BUILD_CONFIG", "Build e configurazione", "Qualità Maven, allineamento BOM Spring, profili, valori hardcoded, logging e manutenibilità.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036")),
+                new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Spring Alternative Advisor", "Oggetti Java manuali, API di basso livello e alternative Spring moderne da valutare.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075"))
         );
     }
 
     private String categoryFor(Finding finding, ReportLanguage language) {
         String ruleId = finding.ruleId();
-
-        if (matches(ruleId, "SPR038", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046")) {
-            return language == ReportLanguage.ENGLISH ? "Security" : "Sicurezza";
+        if (matches(ruleId, "SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059")) {
+            return language == ReportLanguage.ENGLISH ? "Spring Security" : "Spring Security";
         }
-        if (matches(ruleId, "SPR006", "SPR010", "SPR013", "SPR014", "SPR023", "SPR024", "SPR050", "SPR051")) {
-            return language == ReportLanguage.ENGLISH ? "REST API and contracts" : "API e contratti REST";
+        if (matches(ruleId, "SPR006", "SPR010", "SPR013", "SPR014", "SPR023", "SPR024", "SPR050", "SPR051", "SPR056", "SPR060", "SPR063")) {
+            return language == ReportLanguage.ENGLISH ? "Web layer and REST contracts" : "Layer web e contratti REST";
         }
         if (matches(ruleId, "SPR008", "SPR011", "SPR017", "SPR018", "SPR020", "SPR025", "SPR047")) {
             return language == ReportLanguage.ENGLISH ? "Runtime correctness" : "Correttezza runtime";
         }
-        if (matches(ruleId, "SPR009", "SPR026", "SPR048", "SPR049")) {
-            return language == ReportLanguage.ENGLISH ? "Persistence and integrations" : "Persistenza e integrazioni";
+        if (matches(ruleId, "SPR009", "SPR026", "SPR038", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057")) {
+            return language == ReportLanguage.ENGLISH ? "JPA, persistence and integrations" : "JPA, persistenza e integrazioni";
         }
-        if (matches(ruleId, "SPR002", "SPR003", "SPR004", "SPR005", "SPR007", "SPR019", "SPR027", "SPR028", "SPR029", "SPR030", "SPR031")) {
-            return language == ReportLanguage.ENGLISH ? "Architecture" : "Architettura";
+        if (matches(ruleId, "SPR002", "SPR029", "SPR061", "SPR062")) {
+            return language == ReportLanguage.ENGLISH ? "Dependency injection" : "Dependency injection";
+        }
+        if (matches(ruleId, "SPR003", "SPR004", "SPR005", "SPR007", "SPR019", "SPR027", "SPR028", "SPR030", "SPR031", "SPR055")) {
+            return language == ReportLanguage.ENGLISH ? "Architecture and boundaries" : "Architettura e confini";
         }
         if (matches(ruleId, "SPR012", "SPR043", "SPR044", "SPR045", "SPR052")) {
             return language == ReportLanguage.ENGLISH ? "Tests" : "Test";
         }
-        if (matches(ruleId, "SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036", "SPR037")) {
+        if (matches(ruleId, "SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036")) {
             return language == ReportLanguage.ENGLISH ? "Configuration and maintainability" : "Configurazione e manutenibilità";
+        }
+        if (matches(ruleId, "SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075")) {
+            return "Spring Alternative Advisor";
         }
         return language == ReportLanguage.ENGLISH ? "General" : "Generale";
     }
@@ -410,29 +657,43 @@ public class ProjectScanService {
         return false;
     }
 
+    private boolean securityRule(String ruleId) {
+        return matches(ruleId, "SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059");
+    }
+
     private String categoryExplanation(String category, ReportLanguage language) {
         if (language == ReportLanguage.ENGLISH) {
             return switch (category) {
-                case "Security" -> "Checks on Spring Security, sensitive configuration, actuator endpoints, CSRF, CORS and password handling.";
-                case "REST API and contracts" -> "Quality of the REST boundary: DTOs, validation, versioning, HTTP semantics and stable response contracts.";
+                case "Spring Security" -> "Checks on Spring Security, sensitive configuration, actuator endpoints, CSRF, CORS and password handling.";
+                case "Web layer and REST contracts" -> "Quality of the REST boundary: DTOs, validation, versioning, HTTP semantics, OpenAPI and stable response contracts.";
                 case "Runtime correctness" -> "Patterns that may generate wrong behavior, hidden errors or ineffective Spring proxies.";
-                case "Persistence and integrations" -> "Risks on databases and external integrations: manual resources, eager fetching, repeated calls and manually created clients.";
-                case "Architecture" -> "Layering, dependency direction, class size, fat controllers and boundaries between Spring components.";
+                case "JPA, persistence and integrations" -> "Risks on databases and external integrations: transactions, entity design, fetch plans, repeated calls and manually created clients.";
+                case "Dependency injection" -> "Constructor injection, field injection, immutable dependencies and Spring component wiring.";
+                case "Architecture and boundaries" -> "Layering, dependency direction, DDD or hexagonal boundaries, class size and package structure.";
                 case "Tests" -> "Test presence, assertion quality, excessive usage of heavy Spring tests and time-based fragility.";
                 case "Configuration and maintainability" -> "Build, logging, naming, hardcoded values and general maintainability hygiene.";
+                case "Spring Alternative Advisor" -> "Manual Java objects, low-level APIs and modern Spring alternatives worth evaluating.";
                 default -> "General deterministic findings detected by Spring Guardian.";
             };
         }
 
         return switch (category) {
-            case "Sicurezza" -> "Controlli su Spring Security, configurazioni sensibili, endpoint actuator, CSRF, CORS e gestione password.";
-            case "API e contratti REST" -> "Qualità del bordo REST: DTO, validazione, versionamento, semantica HTTP e contratti di risposta stabili.";
+            case "Spring Security" -> "Controlli su Spring Security, configurazioni sensibili, endpoint actuator, CSRF, CORS e gestione password.";
+            case "Layer web e contratti REST" -> "Qualità del bordo REST: DTO, validazione, versionamento, semantica HTTP, OpenAPI e contratti di risposta stabili.";
             case "Correttezza runtime" -> "Pattern che possono generare comportamenti errati, errori nascosti o proxy Spring inefficaci.";
-            case "Persistenza e integrazioni" -> "Rischi su database e integrazioni esterne: risorse manuali, fetch eager, chiamate ripetute e client creati a mano.";
-            case "Architettura" -> "Layering, direzione delle dipendenze, dimensione delle classi, controller troppo ricchi e confini tra componenti Spring.";
+            case "JPA, persistenza e integrazioni" -> "Rischi su database e integrazioni esterne: transazioni, entity design, fetch plan, chiamate ripetute e client creati a mano.";
+            case "Dependency injection" -> "Constructor injection, field injection, dipendenze immutabili e cablaggio dei componenti Spring.";
+            case "Architettura e confini" -> "Layering, direzione delle dipendenze, confini DDD o esagonali, dimensione classi e struttura package.";
             case "Test" -> "Presenza dei test, qualità degli assert, uso eccessivo di test Spring pesanti e fragilità temporale.";
             case "Configurazione e manutenibilità" -> "Build, logging, naming, valori hardcoded e igiene generale di manutenzione.";
+            case "Spring Alternative Advisor" -> "Oggetti Java manuali, API di basso livello e alternative Spring moderne da valutare.";
             default -> "Problemi deterministici generali rilevati da Spring Guardian.";
         };
+    }
+
+    private record AreaDefinition(String code, String name, String description, List<String> prefixes) {
+        boolean matches(String ruleId) {
+            return prefixes.stream().anyMatch(ruleId::startsWith);
+        }
     }
 }

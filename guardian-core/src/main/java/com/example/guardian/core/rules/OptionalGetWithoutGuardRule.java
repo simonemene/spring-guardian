@@ -6,6 +6,11 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for OptionalGetWithoutGuardRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class OptionalGetWithoutGuardRule implements SpringRule {
 
     @Override

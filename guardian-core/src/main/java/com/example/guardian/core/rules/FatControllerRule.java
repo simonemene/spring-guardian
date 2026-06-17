@@ -9,6 +9,11 @@ import com.github.javaparser.ast.stmt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for FatControllerRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class FatControllerRule implements SpringRule {
 
     private final GuardianSettings settings;

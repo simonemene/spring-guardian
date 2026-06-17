@@ -7,6 +7,11 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for ActuatorExposeAllRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class ActuatorExposeAllRule implements SpringRule {
 
     @Override

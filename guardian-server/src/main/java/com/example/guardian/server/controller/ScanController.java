@@ -2,6 +2,7 @@ package com.example.guardian.server.controller;
 
 import com.example.guardian.core.ProjectScanService;
 import com.example.guardian.core.model.ArchitectureReviewReport;
+import com.example.guardian.core.model.ProjectProfile;
 import com.example.guardian.core.model.ReportLanguage;
 import com.example.guardian.server.dto.LocalScanRequest;
 import com.example.guardian.server.service.ZipWorkspaceService;
@@ -12,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -54,6 +56,10 @@ public class ScanController {
      *
      * @param file ZIP archive containing the project
      * @param language report language
+     * @param projectType project type used by this scan
+     * @param architectureStyle architecture style used by this scan
+     * @param releaseTarget release target used by quality gates
+     * @param knownIssuesAccepted true when known issues should calibrate this scan
      * @return architecture review report
      */
     @Operation(summary = "Scan an uploaded ZIP project", description = "Extracts a ZIP archive into a temporary workspace and scans it with Spring Guardian rules.")
@@ -67,9 +73,17 @@ public class ScanController {
             @Parameter(description = "ZIP archive containing the project to scan.", required = true)
             @RequestPart("file") MultipartFile file,
             @Parameter(description = "Report language. Accepted values: it, en.", example = "it")
-            @RequestParam(defaultValue = "it") String language) {
+            @RequestParam(defaultValue = "it") String language,
+            @Parameter(description = "Project type. Accepted values: WEB_API, BATCH, LIBRARY.", example = "WEB_API")
+            @RequestParam(defaultValue = "WEB_API") String projectType,
+            @Parameter(description = "Architecture style. Accepted values: AUTO_DETECTED, LAYERED, DOMAIN_DRIVEN_DESIGN, HEXAGONAL, LEGACY_LAYERED.", example = "AUTO_DETECTED")
+            @RequestParam(defaultValue = "AUTO_DETECTED") String architectureStyle,
+            @Parameter(description = "Release target. Accepted values: PRODUCTION, INTERNAL, LEGACY_BASELINE.", example = "PRODUCTION")
+            @RequestParam(defaultValue = "PRODUCTION") String releaseTarget,
+            @Parameter(description = "Use true for a legacy baseline scan with known issues.", example = "false")
+            @RequestParam(defaultValue = "false") boolean knownIssuesAccepted) {
         Path workspace = zipWorkspaceService.extractZip(file);
-        return projectScanService.scan(workspace, ReportLanguage.from(language));
+        return projectScanService.scan(workspace, ReportLanguage.from(language), profile(projectType, architectureStyle, releaseTarget, knownIssuesAccepted));
     }
 
     /**
@@ -77,6 +91,10 @@ public class ScanController {
      *
      * @param files files selected from the project root folder
      * @param language report language
+     * @param projectType project type used by this scan
+     * @param architectureStyle architecture style used by this scan
+     * @param releaseTarget release target used by quality gates
+     * @param knownIssuesAccepted true when known issues should calibrate this scan
      * @return architecture review report
      */
     @Operation(summary = "Scan an uploaded browser folder", description = "Copies all files selected from a browser folder upload and scans the resulting workspace.")
@@ -90,9 +108,17 @@ public class ScanController {
             @Parameter(description = "Files selected from the project root folder.", required = true)
             @RequestPart("files") List<MultipartFile> files,
             @Parameter(description = "Report language. Accepted values: it, en.", example = "it")
-            @RequestParam(defaultValue = "it") String language) {
+            @RequestParam(defaultValue = "it") String language,
+            @Parameter(description = "Project type. Accepted values: WEB_API, BATCH, LIBRARY.", example = "WEB_API")
+            @RequestParam(defaultValue = "WEB_API") String projectType,
+            @Parameter(description = "Architecture style. Accepted values: AUTO_DETECTED, LAYERED, DOMAIN_DRIVEN_DESIGN, HEXAGONAL, LEGACY_LAYERED.", example = "AUTO_DETECTED")
+            @RequestParam(defaultValue = "AUTO_DETECTED") String architectureStyle,
+            @Parameter(description = "Release target. Accepted values: PRODUCTION, INTERNAL, LEGACY_BASELINE.", example = "PRODUCTION")
+            @RequestParam(defaultValue = "PRODUCTION") String releaseTarget,
+            @Parameter(description = "Use true for a legacy baseline scan with known issues.", example = "false")
+            @RequestParam(defaultValue = "false") boolean knownIssuesAccepted) {
         Path workspace = zipWorkspaceService.copyUploadedFolder(files);
-        return projectScanService.scan(workspace, ReportLanguage.from(language));
+        return projectScanService.scan(workspace, ReportLanguage.from(language), profile(projectType, architectureStyle, releaseTarget, knownIssuesAccepted));
     }
 
     /**
@@ -110,7 +136,7 @@ public class ScanController {
     })
     @PostMapping("/local")
     public ArchitectureReviewReport scanLocalPath(
-            @RequestBody LocalScanRequest request,
+            @Valid @RequestBody LocalScanRequest request,
             @Parameter(description = "Report language. Accepted values: it, en.", example = "it")
             @RequestParam(defaultValue = "it") String language) {
         String path = request == null ? null : request.path();
@@ -126,6 +152,19 @@ public class ScanController {
             throw new IllegalArgumentException("Il path indicato non è una cartella: " + root);
         }
 
-        return projectScanService.scan(root, ReportLanguage.from(language));
+        return projectScanService.scan(root, ReportLanguage.from(language), profile(request));
+    }
+
+    private ProjectProfile profile(LocalScanRequest request) {
+        return ProjectProfile.from(
+                request.projectType(),
+                request.architectureStyle(),
+                request.releaseTarget(),
+                Boolean.TRUE.equals(request.knownIssuesAccepted())
+        );
+    }
+
+    private ProjectProfile profile(String projectType, String architectureStyle, String releaseTarget, boolean knownIssuesAccepted) {
+        return ProjectProfile.from(projectType, architectureStyle, releaseTarget, knownIssuesAccepted);
     }
 }

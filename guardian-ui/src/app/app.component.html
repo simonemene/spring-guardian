@@ -36,8 +36,39 @@
 
       <div *ngIf="uploadMode() === 'local'" class="field">
         <label for="localPath">{{ t('backendFolderPath') }}</label>
-        <input id="localPath" type="text" [(ngModel)]="localPath" placeholder="C:\\progetti\\mio-progetto oppure /scan/mio-progetto">
+        <input id="localPath" type="text" [(ngModel)]="localPath" placeholder="C:\progetti\mio-progetto oppure /scan/mio-progetto">
         <small>{{ t('backendPathHelp') }}</small>
+      </div>
+
+      <div class="profile-box">
+        <h2>{{ t('scanSettings') }}</h2>
+        <div class="profile-grid compact-profile">
+          <div class="field">
+            <label>{{ t('projectType') }}</label>
+            <div class="radio-group">
+              <label class="radio-card" *ngFor="let type of projectTypes">
+                <input type="radio" name="projectType" [value]="type" [(ngModel)]="projectType">
+                <span>{{ projectTypeLabel(type) }}</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>{{ t('releaseTarget') }}</label>
+            <div class="radio-group">
+              <label class="radio-card" *ngFor="let target of releaseTargets">
+                <input type="radio" name="releaseTarget" [value]="target" [(ngModel)]="releaseTarget">
+                <span>{{ releaseTargetLabel(target) }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <label class="check-row">
+          <input type="checkbox" [(ngModel)]="knownIssuesAccepted">
+          <span>{{ t('knownIssues') }}</span>
+        </label>
+        <small>{{ t('profileHelp') }}</small>
       </div>
 
       <button class="primary" type="button" (click)="scan()" [disabled]="loading()">
@@ -53,7 +84,7 @@
       <article class="score-card main-score">
         <span>{{ t('architectureScore') }}</span>
         <strong [class]="scoreClass(current.architectureScore)">{{ current.architectureScore }}</strong>
-        <p>{{ riskLabel(current.riskLevel) }} · {{ statusLabel(current.summary.status) }}</p>
+        <p>{{ riskLabel(current.riskLevel) }} · {{ current.releaseReadiness.label }}</p>
       </article>
 
       <article class="score-card" *ngFor="let severity of severityOrder">
@@ -71,32 +102,53 @@
 
     <nav class="tabs" aria-label="Report sections">
       <button type="button" [class.active]="activeTab() === 'overview'" (click)="selectTab('overview')">{{ t('overview') }}</button>
+      <button type="button" [class.active]="activeTab() === 'gates'" (click)="selectTab('gates')">{{ t('gates') }}</button>
       <button type="button" [class.active]="activeTab() === 'findings'" (click)="selectTab('findings')">{{ t('problems') }}</button>
       <button type="button" [class.active]="activeTab() === 'actions'" (click)="selectTab('actions')">{{ t('actions') }}</button>
       <button type="button" [class.active]="activeTab() === 'json'" (click)="selectTab('json')">{{ t('technicalJson') }}</button>
     </nav>
 
     <section *ngIf="activeTab() === 'overview'" class="panel-grid">
+      <article class="panel wide readiness" [attr.data-status]="current.releaseReadiness.status">
+        <div class="panel-title">
+          <h2>{{ t('releaseReadiness') }}</h2>
+          <span>{{ current.releaseReadiness.label }}</span>
+        </div>
+        <p>{{ current.releaseReadiness.explanation }}</p>
+        <div class="release-grid">
+          <div>
+            <h3>{{ t('blockers') }}</h3>
+            <p *ngIf="current.releaseReadiness.blockers.length === 0">{{ t('noBlockers') }}</p>
+            <ul>
+              <li *ngFor="let blocker of current.releaseReadiness.blockers">{{ blocker }}</li>
+            </ul>
+          </div>
+          <div>
+            <h3>{{ t('warnings') }}</h3>
+            <p *ngIf="current.releaseReadiness.warnings.length === 0">{{ t('noWarnings') }}</p>
+            <ul>
+              <li *ngFor="let warning of current.releaseReadiness.warnings">{{ warning }}</li>
+            </ul>
+          </div>
+        </div>
+      </article>
+
       <article class="panel wide">
         <h2>{{ t('executiveSummary') }}</h2>
         <p>{{ current.summary.executiveSummary }}</p>
         <div class="meta-row">
           <span>{{ t('project') }}: <strong>{{ current.projectName }}</strong></span>
           <span>{{ t('scan') }}: <strong>{{ current.scannedAt | date:'medium' }}</strong></span>
+          <span>{{ t('selectedProfile') }}: <strong>{{ projectTypeLabel(current.profile.projectType) }} · {{ architectureStyleLabel(current.profile.architectureStyle) }} · {{ releaseTargetLabel(current.profile.releaseTarget) }}</strong></span>
         </div>
       </article>
 
       <article class="panel">
-        <h2>{{ t('impactedAreas') }}</h2>
-        <div class="category-list">
-          <div *ngFor="let category of current.findingsByCategory">
-            <div class="category-head">
-              <strong>{{ category.category }}</strong>
-              <span>{{ category.findings }}</span>
-            </div>
-            <p>{{ category.explanation }}</p>
-          </div>
+        <h2>{{ t('detectedStack') }}</h2>
+        <div class="chip-list">
+          <span *ngFor="let item of capabilityItems(current)">{{ item }}</span>
         </div>
+        <p>{{ t('detectedStyles') }}: <strong>{{ current.capabilities.detectedArchitecturalStyles.join(', ') }}</strong></p>
       </article>
 
       <article class="panel">
@@ -106,6 +158,43 @@
         <ul>
           <li *ngFor="let step of current.explanation.nextSteps">{{ step }}</li>
         </ul>
+      </article>
+    </section>
+
+    <section *ngIf="activeTab() === 'gates'" class="panel-grid">
+      <article class="panel wide">
+        <div class="panel-title">
+          <h2>{{ t('gateStatus') }}</h2>
+          <span>{{ current.qualityGates.length }} {{ t('gates').toLowerCase() }}</span>
+        </div>
+        <div class="gate-grid">
+          <article class="gate-card" *ngFor="let gate of current.qualityGates" [attr.data-status]="gate.status">
+            <div class="category-head">
+              <strong>{{ gate.name }}</strong>
+              <span>{{ gateStatusLabel(gate.status) }}</span>
+            </div>
+            <p>{{ gate.explanation }}</p>
+            <small>{{ gate.failingFindings }} {{ t('failingFindings') }}</small>
+          </article>
+        </div>
+      </article>
+
+      <article class="panel wide">
+        <h2>{{ t('impactedAreas') }}</h2>
+        <div class="area-grid">
+          <article class="area-card" *ngFor="let area of current.architectureAreas" [attr.data-status]="area.readinessStatus">
+            <div class="category-head">
+              <strong>{{ area.name }}</strong>
+              <span>{{ gateStatusLabel(area.readinessStatus) }}</span>
+            </div>
+            <p>{{ area.description }}</p>
+            <div class="area-metrics">
+              <span>{{ area.findings }} {{ t('findings') }}</span>
+              <span>{{ area.criticalFindings }} {{ t('critical').toLowerCase() }}</span>
+              <span>{{ area.majorFindings }} {{ t('major').toLowerCase() }}</span>
+            </div>
+          </article>
+        </div>
       </article>
     </section>
 

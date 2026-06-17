@@ -1,10 +1,23 @@
 export type Severity = 'CRITICAL' | 'MAJOR' | 'MINOR' | 'INFO';
 export type ReportLanguage = 'it' | 'en';
+export type ProjectType = 'WEB_API' | 'BATCH' | 'LIBRARY' | 'UNKNOWN';
+export type ArchitectureStyle = 'AUTO_DETECTED' | 'LAYERED' | 'DOMAIN_DRIVEN_DESIGN' | 'HEXAGONAL' | 'LEGACY_LAYERED';
+export type ReleaseTarget = 'PRODUCTION' | 'INTERNAL' | 'LEGACY_BASELINE';
+
+export interface ScanProfile {
+  projectType: ProjectType;
+  architectureStyle: ArchitectureStyle;
+  releaseTarget: ReleaseTarget;
+  knownIssuesAccepted: boolean;
+}
 
 export interface ArchitectureReviewReport {
   projectName: string;
   scannedAt: string;
+  profile: ScanProfile;
+  capabilities: ProjectCapabilities;
   summary: ReportSummary;
+  releaseReadiness: ReleaseReadiness;
   architectureScore: number;
   riskLevel: string;
   scannedJavaFiles: number;
@@ -12,9 +25,57 @@ export interface ArchitectureReviewReport {
   rulesExecuted: number;
   findingsBySeverity: Partial<Record<Severity, number>>;
   findingsByCategory: CategorySummary[];
+  architectureAreas: ArchitectureAreaReport[];
+  qualityGates: QualityGate[];
   recommendedActions: RecommendedAction[];
   explanation: ReportExplanation;
   findings: FindingGroup[];
+}
+
+export interface ProjectCapabilities {
+  usesSpringWeb: boolean;
+  usesSpringSecurity: boolean;
+  usesJpa: boolean;
+  usesActuator: boolean;
+  usesValidation: boolean;
+  usesOpenApi: boolean;
+  usesLombok: boolean;
+  usesSpringBatch: boolean;
+  hasControllerLayer: boolean;
+  hasServiceLayer: boolean;
+  hasRepositoryLayer: boolean;
+  hasDomainLayer: boolean;
+  hasApplicationLayer: boolean;
+  hasInfrastructureLayer: boolean;
+  detectedArchitecturalStyles: string[];
+}
+
+export interface ReleaseReadiness {
+  status: string;
+  label: string;
+  explanation: string;
+  releasable: boolean;
+  blockers: string[];
+  warnings: string[];
+}
+
+export interface QualityGate {
+  code: string;
+  name: string;
+  status: string;
+  explanation: string;
+  required: boolean;
+  failingFindings: number;
+}
+
+export interface ArchitectureAreaReport {
+  code: string;
+  name: string;
+  description: string;
+  findings: number;
+  criticalFindings: number;
+  majorFindings: number;
+  readinessStatus: string;
 }
 
 export interface ReportSummary {

@@ -11,6 +11,11 @@ import picocli.CommandLine.Command;
                 ScanCommand.class
         }
 )
+/**
+ * Spring Guardian component for GuardianCommand.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class GuardianCommand implements Runnable {
 
     @Override

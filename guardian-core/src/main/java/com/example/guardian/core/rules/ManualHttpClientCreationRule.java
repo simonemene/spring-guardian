@@ -6,6 +6,11 @@ import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for ManualHttpClientCreationRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class ManualHttpClientCreationRule implements SpringRule {
 
     @Override

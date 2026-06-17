@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ArchitectureReviewReport, ReportLanguage } from './spring-guardian.model';
+import { ArchitectureReviewReport, ReportLanguage, ScanProfile } from './spring-guardian.model';
 
 @Injectable({ providedIn: 'root' })
 export class SpringGuardianApiService {
@@ -9,29 +9,37 @@ export class SpringGuardianApiService {
 
   constructor(private readonly http: HttpClient) {}
 
-  scanZip(file: File, language: ReportLanguage): Observable<ArchitectureReviewReport> {
+  scanZip(file: File, language: ReportLanguage, profile: ScanProfile): Observable<ArchitectureReviewReport> {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post<ArchitectureReviewReport>(`${this.baseUrl}/upload`, formData, {
-      params: this.languageParams(language)
+      params: this.scanParams(language, profile)
     });
   }
 
-  scanFolder(files: File[], language: ReportLanguage): Observable<ArchitectureReviewReport> {
+  scanFolder(files: File[], language: ReportLanguage, profile: ScanProfile): Observable<ArchitectureReviewReport> {
     const formData = new FormData();
     for (const file of files) {
       const relativePath = this.relativePathOf(file);
       formData.append('files', file, relativePath);
     }
     return this.http.post<ArchitectureReviewReport>(`${this.baseUrl}/upload-folder`, formData, {
+      params: this.scanParams(language, profile)
+    });
+  }
+
+  scanLocalPath(path: string, language: ReportLanguage, profile: ScanProfile): Observable<ArchitectureReviewReport> {
+    return this.http.post<ArchitectureReviewReport>(`${this.baseUrl}/local`, { path, ...profile }, {
       params: this.languageParams(language)
     });
   }
 
-  scanLocalPath(path: string, language: ReportLanguage): Observable<ArchitectureReviewReport> {
-    return this.http.post<ArchitectureReviewReport>(`${this.baseUrl}/local`, { path }, {
-      params: this.languageParams(language)
-    });
+  private scanParams(language: ReportLanguage, profile: ScanProfile): HttpParams {
+    return this.languageParams(language)
+      .set('projectType', profile.projectType)
+      .set('architectureStyle', profile.architectureStyle)
+      .set('releaseTarget', profile.releaseTarget)
+      .set('knownIssuesAccepted', String(profile.knownIssuesAccepted));
   }
 
   private languageParams(language: ReportLanguage): HttpParams {

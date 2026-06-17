@@ -7,6 +7,11 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 
 import java.util.*;
 
+/**
+ * Deterministic Spring Guardian rule implementation for SelfInvocationProxyRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class SelfInvocationProxyRule implements SpringRule {
 
     private static final String[] PROXY_ANNOTATIONS = {

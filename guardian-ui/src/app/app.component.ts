@@ -4,9 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { SpringGuardianApiService } from './spring-guardian-api.service';
-import { ArchitectureReviewReport, AffectedComponent, FindingGroup, ReportLanguage, Severity } from './spring-guardian.model';
+import { ArchitectureReviewReport, AffectedComponent, ArchitectureStyle, FindingGroup, ProjectType, ReleaseTarget, ReportLanguage, ScanProfile, Severity } from './spring-guardian.model';
 
-type Tab = 'overview' | 'findings' | 'actions' | 'json';
+type Tab = 'overview' | 'gates' | 'findings' | 'actions' | 'json';
 type UploadMode = 'zip' | 'folder' | 'local';
 type TranslationKey = keyof typeof TRANSLATIONS.it;
 
@@ -28,6 +28,18 @@ const TRANSLATIONS = {
     folderHelp: 'Seleziona la cartella principale del progetto, ad esempio quella che contiene il pom.xml.',
     backendFolderPath: 'Percorso cartella sul backend',
     backendPathHelp: 'Serve quando backend e progetto sono sulla stessa macchina o quando Docker monta una cartella sotto /scan.',
+    scanSettings: 'Profilo scansione',
+    projectType: 'Tipo progetto',
+    releaseTarget: 'Obiettivo rilascio',
+    knownIssues: 'È un progetto legacy con problemi noti',
+    profileHelp: 'Il profilo calibra solo questa scansione. L’architettura viene rilevata automaticamente. Non viene salvato nulla e non vengono fatte chiamate a database o AI.',
+    webApi: 'API Web / REST',
+    batch: 'Batch',
+    library: 'Libreria / starter',
+    autoDetected: 'Rilevata automaticamente',
+    production: 'Produzione',
+    internal: 'Test / QA',
+    legacyBaseline: 'Baseline legacy',
     scanRunning: 'Scansione in corso...',
     startScan: 'Avvia scansione',
     selectZipError: 'Seleziona un file ZIP da analizzare.',
@@ -40,14 +52,25 @@ const TRANSLATIONS = {
     javaFiles: 'file Java',
     pomFiles: 'POM',
     overview: 'Riepilogo',
+    gates: 'Quality gate',
     problems: 'Problemi',
     actions: 'Azioni',
     technicalJson: 'JSON tecnico',
     executiveSummary: 'Riepilogo esecutivo',
+    releaseReadiness: 'Prontezza rilascio',
+    blockers: 'Blocchi',
+    warnings: 'Avvertenze',
+    noBlockers: 'Nessun blocco rilevato per il profilo selezionato.',
+    noWarnings: 'Nessuna avvertenza rilevata.',
     project: 'Progetto',
     scan: 'Scansione',
-    impactedAreas: 'Aree più impattate',
+    detectedStack: 'Stack rilevato',
+    detectedStyles: 'Stile rilevato',
+    selectedProfile: 'Profilo selezionato',
+    impactedAreas: 'Aree architetturali',
     howToRead: 'Come leggere il report',
+    gateStatus: 'Stato gate',
+    failingFindings: 'problemi bloccanti o rilevanti',
     searchPlaceholder: 'Cerca per codice, classe, file o testo...',
     allSeverities: 'Tutte le severità',
     allAreas: 'Tutte le aree',
@@ -60,7 +83,7 @@ const TRANSLATIONS = {
     recommendedActions: 'Azioni consigliate',
     priorities: 'priorità',
     exportJson: 'Esporta JSON',
-    jsonNote: 'Questa sezione serve a sviluppatori e pipeline CI. La lettura funzionale è nelle sezioni Riepilogo, Problemi e Azioni.',
+    jsonNote: 'Questa sezione serve a sviluppatori e pipeline CI. La lettura funzionale è nelle sezioni Riepilogo, Quality gate, Problemi e Azioni.',
     emptyTitle: 'Nessuna scansione eseguita',
     emptyText: 'Carica uno ZIP, seleziona la cartella root del progetto oppure indica un percorso leggibile dal backend.',
     critical: 'Critico',
@@ -83,7 +106,16 @@ const TRANSLATIONS = {
     file: 'File',
     occurrence: 'occorrenza',
     occurrences: 'occorrenze',
-    selectedFolderFallback: 'cartella selezionata'
+    selectedFolderFallback: 'cartella selezionata',
+    yes: 'Sì',
+    no: 'No',
+    pass: 'Ok',
+    fail: 'Fallito',
+    warning: 'Attenzione',
+    ok: 'Ok',
+    review: 'Revisione',
+    blocked: 'Bloccato',
+    attention: 'Attenzione'
   },
   en: {
     eyebrow: 'Spring architecture scanner',
@@ -99,9 +131,21 @@ const TRANSLATIONS = {
     selectedFemale: 'Selected',
     zipHelp: 'Use this mode when you want to upload a compressed project.',
     projectRootFolder: 'Project root folder',
-    folderHelp: 'Select the main project folder, for example the one containing the pom.xml file.',
+    folderHelp: 'Select the project root folder, for example the one containing pom.xml.',
     backendFolderPath: 'Backend folder path',
     backendPathHelp: 'Use this when the backend and the project are on the same machine or when Docker mounts a folder under /scan.',
+    scanSettings: 'Scan profile',
+    projectType: 'Project type',
+    releaseTarget: 'Release target',
+    knownIssues: 'This is a legacy project with known issues',
+    profileHelp: 'The profile calibrates only this scan. Architecture is detected automatically. Nothing is persisted and no database or AI calls are made.',
+    webApi: 'Web / REST API',
+    batch: 'Batch',
+    library: 'Library / starter',
+    autoDetected: 'Automatically detected',
+    production: 'Production',
+    internal: 'Test / QA',
+    legacyBaseline: 'Legacy baseline',
     scanRunning: 'Scan running...',
     startScan: 'Start scan',
     selectZipError: 'Select a ZIP file to analyze.',
@@ -114,14 +158,25 @@ const TRANSLATIONS = {
     javaFiles: 'Java files',
     pomFiles: 'POM files',
     overview: 'Overview',
+    gates: 'Quality gates',
     problems: 'Findings',
     actions: 'Actions',
     technicalJson: 'Technical JSON',
     executiveSummary: 'Executive summary',
+    releaseReadiness: 'Release readiness',
+    blockers: 'Blockers',
+    warnings: 'Warnings',
+    noBlockers: 'No blocker detected for the selected profile.',
+    noWarnings: 'No warning detected.',
     project: 'Project',
     scan: 'Scan',
-    impactedAreas: 'Most impacted areas',
+    detectedStack: 'Detected stack',
+    detectedStyles: 'Detected style',
+    selectedProfile: 'Selected profile',
+    impactedAreas: 'Architecture areas',
     howToRead: 'How to read the report',
+    gateStatus: 'Gate status',
+    failingFindings: 'blocking or relevant findings',
     searchPlaceholder: 'Search by code, class, file or text...',
     allSeverities: 'All severities',
     allAreas: 'All areas',
@@ -134,7 +189,7 @@ const TRANSLATIONS = {
     recommendedActions: 'Recommended actions',
     priorities: 'priorities',
     exportJson: 'Export JSON',
-    jsonNote: 'This section is meant for developers and CI pipelines. Functional reading is available in Overview, Findings and Actions.',
+    jsonNote: 'This section is meant for developers and CI pipelines. Functional reading is available in Overview, Quality gates, Findings and Actions.',
     emptyTitle: 'No scan executed',
     emptyText: 'Upload a ZIP, select the project root folder or enter a backend-readable path.',
     critical: 'Critical',
@@ -157,7 +212,16 @@ const TRANSLATIONS = {
     file: 'File',
     occurrence: 'occurrence',
     occurrences: 'occurrences',
-    selectedFolderFallback: 'selected folder'
+    selectedFolderFallback: 'selected folder',
+    yes: 'Yes',
+    no: 'No',
+    pass: 'Pass',
+    fail: 'Fail',
+    warning: 'Warning',
+    ok: 'Ok',
+    review: 'Review',
+    blocked: 'Blocked',
+    attention: 'Attention'
   }
 } as const;
 
@@ -170,6 +234,8 @@ const TRANSLATIONS = {
 })
 export class AppComponent {
   readonly severityOrder: Severity[] = ['CRITICAL', 'MAJOR', 'MINOR', 'INFO'];
+  readonly projectTypes: ProjectType[] = ['WEB_API', 'BATCH', 'LIBRARY'];
+  readonly releaseTargets: ReleaseTarget[] = ['PRODUCTION', 'INTERNAL'];
 
   readonly report = signal<ArchitectureReviewReport | null>(null);
   readonly loading = signal(false);
@@ -185,6 +251,9 @@ export class AppComponent {
   search = '';
   severityFilter: Severity | 'ALL' = 'ALL';
   categoryFilter = 'ALL';
+  projectType: ProjectType = 'WEB_API';
+  releaseTarget: ReleaseTarget = 'PRODUCTION';
+  knownIssuesAccepted = false;
 
   readonly categories = computed(() => {
     const current = this.report();
@@ -264,6 +333,7 @@ export class AppComponent {
   scan(): void {
     this.error.set(null);
     const language = this.selectedLanguage();
+    const profile = this.currentProfile();
 
     if (this.uploadMode() === 'zip') {
       const file = this.selectedFile();
@@ -271,7 +341,7 @@ export class AppComponent {
         this.error.set(this.t('selectZipError'));
         return;
       }
-      this.executeScan(this.api.scanZip(file, language));
+      this.executeScan(this.api.scanZip(file, language, profile));
       return;
     }
 
@@ -281,7 +351,7 @@ export class AppComponent {
         this.error.set(this.t('selectFolderError'));
         return;
       }
-      this.executeScan(this.api.scanFolder(files, language));
+      this.executeScan(this.api.scanFolder(files, language, profile));
       return;
     }
 
@@ -289,7 +359,7 @@ export class AppComponent {
       this.error.set(this.t('selectPathError'));
       return;
     }
-    this.executeScan(this.api.scanLocalPath(this.localPath.trim(), language));
+    this.executeScan(this.api.scanLocalPath(this.localPath.trim(), language, profile));
   }
 
   resetFilters(): void {
@@ -369,6 +439,40 @@ export class AppComponent {
     } as Record<string, string>)[type] ?? this.humanize(type);
   }
 
+  gateStatusLabel(status: string): string {
+    return ({
+      PASS: this.t('pass'),
+      FAIL: this.t('fail'),
+      WARNING: this.t('warning'),
+      OK: this.t('ok'),
+      REVIEW: this.t('review'),
+      BLOCKED: this.t('blocked'),
+      ATTENTION: this.t('attention')
+    } as Record<string, string>)[status] ?? this.humanize(status);
+  }
+
+  projectTypeLabel(value: ProjectType | string): string {
+    return ({
+      WEB_API: this.t('webApi'),
+      BATCH: this.t('batch'),
+      LIBRARY: this.t('library')
+    } as Record<string, string>)[value] ?? this.humanize(value);
+  }
+
+  architectureStyleLabel(value: ArchitectureStyle | string): string {
+    return ({
+      AUTO_DETECTED: this.t('autoDetected')
+    } as Record<string, string>)[value] ?? this.humanize(value);
+  }
+
+  releaseTargetLabel(value: ReleaseTarget | string): string {
+    return ({
+      PRODUCTION: this.t('production'),
+      INTERNAL: this.t('internal'),
+      LEGACY_BASELINE: this.t('legacyBaseline')
+    } as Record<string, string>)[value] ?? this.humanize(value);
+  }
+
   ruleCode(ruleId: string): string {
     return ruleId.match(/^SPR\d+/)?.[0] ?? ruleId;
   }
@@ -389,6 +493,30 @@ export class AppComponent {
 
   componentTitle(component: AffectedComponent): string {
     return component.name || component.filePath || this.componentTypeLabel(component.type);
+  }
+
+  capabilityItems(current: ArchitectureReviewReport): string[] {
+    const capabilities = current.capabilities;
+    const values = [
+      capabilities.usesSpringWeb ? 'Spring Web' : '',
+      capabilities.usesSpringSecurity ? 'Spring Security' : '',
+      capabilities.usesJpa ? 'JPA' : '',
+      capabilities.usesActuator ? 'Actuator' : '',
+      capabilities.usesValidation ? 'Bean Validation' : '',
+      capabilities.usesOpenApi ? 'OpenAPI' : '',
+      capabilities.usesLombok ? 'Lombok' : '',
+      capabilities.usesSpringBatch ? 'Spring Batch' : ''
+    ].filter(Boolean);
+    return values.length > 0 ? values : [this.t('noFindings')];
+  }
+
+  private currentProfile(): ScanProfile {
+    return {
+      projectType: this.projectType,
+      architectureStyle: 'AUTO_DETECTED',
+      releaseTarget: this.releaseTarget,
+      knownIssuesAccepted: this.knownIssuesAccepted
+    };
   }
 
   private executeScan(request$: Observable<ArchitectureReviewReport>): void {

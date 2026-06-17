@@ -12,6 +12,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for PomQualityRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class PomQualityRule implements SpringRule {
 
     @Override

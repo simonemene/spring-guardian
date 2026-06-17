@@ -9,6 +9,11 @@ import com.github.javaparser.ast.stmt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for ComplexServiceMethodRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class ComplexServiceMethodRule implements SpringRule {
 
     private final GuardianSettings settings;

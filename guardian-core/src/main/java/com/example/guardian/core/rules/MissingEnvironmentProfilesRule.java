@@ -6,6 +6,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for MissingEnvironmentProfilesRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class MissingEnvironmentProfilesRule implements SpringRule {
 
     @Override

@@ -9,6 +9,11 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for CorsAllowAllWithCredentialsRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class CorsAllowAllWithCredentialsRule implements SpringRule {
 
     @Override

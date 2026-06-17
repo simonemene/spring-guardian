@@ -2,6 +2,10 @@ package com.example.guardian.server.controller;
 
 import com.example.guardian.core.ProjectScanService;
 import com.example.guardian.core.model.ArchitectureReviewReport;
+import com.example.guardian.core.model.ProjectCapabilities;
+import com.example.guardian.core.model.ProjectProfile;
+import com.example.guardian.core.model.QualityGate;
+import com.example.guardian.core.model.ReleaseReadiness;
 import com.example.guardian.core.model.ReportExplanation;
 import com.example.guardian.core.model.ReportLanguage;
 import com.example.guardian.core.model.ReportSummary;
@@ -48,16 +52,16 @@ class ScanControllerWebMvcTest {
     Path tempDir;
 
     @Test
-    void scanLocalPathPassesSelectedLanguageToCore() throws Exception {
-        when(projectScanService.scan(any(Path.class), eq(ReportLanguage.ENGLISH))).thenReturn(emptyReport());
+    void scanLocalPathPassesSelectedLanguageAndProfileToCore() throws Exception {
+        when(projectScanService.scan(any(Path.class), eq(ReportLanguage.ENGLISH), any(ProjectProfile.class))).thenReturn(emptyReport());
 
         mockMvc.perform(post("/api/v1/scans/local?language=en")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"path\":\"" + tempDir.toString().replace("\\", "\\\\") + "\"}"))
+                        .content("{\"path\":\"" + tempDir.toString().replace("\\", "\\\\") + "\",\"architectureStyle\":\"DOMAIN_DRIVEN_DESIGN\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.projectName").value("demo"));
 
-        verify(projectScanService).scan(any(Path.class), eq(ReportLanguage.ENGLISH));
+        verify(projectScanService).scan(any(Path.class), eq(ReportLanguage.ENGLISH), any(ProjectProfile.class));
     }
 
     @Test
@@ -78,7 +82,10 @@ class ScanControllerWebMvcTest {
         return new ArchitectureReviewReport(
                 "demo",
                 Instant.parse("2026-01-01T00:00:00Z"),
+                ProjectProfile.defaults(),
+                new ProjectCapabilities(false, false, false, false, false, false, false, false, false, false, false, false, false, false, List.of("UNCLASSIFIED")),
                 new ReportSummary(0, 0, 0, 0, 0, "HEALTHY", "NO_FINDINGS", "ok"),
+                new ReleaseReadiness("READY", "Ready", "ok", true, List.of(), List.of()),
                 100,
                 "HEALTHY",
                 0,
@@ -86,6 +93,8 @@ class ScanControllerWebMvcTest {
                 0,
                 severity,
                 List.of(),
+                List.of(),
+                List.of(new QualityGate("GATE_TEST", "Test", "PASS", "ok", true, 0)),
                 List.of(),
                 new ReportExplanation("score", "severity", "usage", List.of()),
                 List.of()

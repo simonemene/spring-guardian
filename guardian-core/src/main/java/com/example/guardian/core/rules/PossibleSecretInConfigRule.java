@@ -8,6 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+/**
+ * Deterministic Spring Guardian rule implementation for PossibleSecretInConfigRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class PossibleSecretInConfigRule implements SpringRule {
 
     private static final Pattern SECRET_LINE = Pattern.compile(

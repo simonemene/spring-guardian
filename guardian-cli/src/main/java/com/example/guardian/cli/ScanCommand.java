@@ -5,6 +5,7 @@ import com.example.guardian.core.config.GuardianSettings;
 import com.example.guardian.core.model.AffectedComponent;
 import com.example.guardian.core.model.ArchitectureReviewReport;
 import com.example.guardian.core.model.FindingGroup;
+import com.example.guardian.core.model.ProjectProfile;
 import com.example.guardian.core.model.ReportLanguage;
 import com.example.guardian.core.model.Severity;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +20,11 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.concurrent.Callable;
 
+/**
+ * Picocli command that scans a Spring project and renders the architecture report.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 @Command(name = "scan", description = "Scan a Spring project")
 public class ScanCommand implements Callable<Integer> {
 
@@ -39,6 +45,18 @@ public class ScanCommand implements Callable<Integer> {
     @Option(names = "--language", description = "Report language: it or en", defaultValue = "it")
     private String language;
 
+    @Option(names = "--project-type", description = "Project type: WEB_API, BATCH, LIBRARY", defaultValue = "WEB_API")
+    private String projectType;
+
+    @Option(names = "--architecture-style", description = "Architecture style: AUTO_DETECTED, LAYERED, DOMAIN_DRIVEN_DESIGN, HEXAGONAL, LEGACY_LAYERED", defaultValue = "AUTO_DETECTED")
+    private String architectureStyle;
+
+    @Option(names = "--release-target", description = "Release target: PRODUCTION, INTERNAL, LEGACY_BASELINE", defaultValue = "PRODUCTION")
+    private String releaseTarget;
+
+    @Option(names = "--known-issues", description = "Calibrate scan as legacy baseline with known issues")
+    private boolean knownIssuesAccepted;
+
     @Option(names = "--api-prefix", description = "Required REST API prefix", defaultValue = "/api/v1")
     private String apiPrefix;
 
@@ -52,7 +70,8 @@ public class ScanCommand implements Callable<Integer> {
     public Integer call() throws Exception {
         GuardianSettings settings = GuardianSettings.of(apiPrefix, maxControllerLines, maxControllerBranches);
         ProjectScanService scanService = new ProjectScanService(settings);
-        ArchitectureReviewReport report = scanService.scan(projectPath, ReportLanguage.from(language));
+        ProjectProfile profile = ProjectProfile.from(projectType, architectureStyle, releaseTarget, knownIssuesAccepted);
+        ArchitectureReviewReport report = scanService.scan(projectPath, ReportLanguage.from(language), profile);
 
         String rendered = switch (format.toLowerCase()) {
             case "json" -> toJson(report);
@@ -91,6 +110,13 @@ public class ScanCommand implements Callable<Integer> {
         builder.append("Score: ").append(report.architectureScore()).append("/100\n");
         builder.append("Risk: ").append(report.riskLevel()).append("\n");
         builder.append("Status: ").append(report.summary().status()).append("\n");
+        builder.append("Release readiness: ").append(report.releaseReadiness().label()).append("\n");
+        builder.append("Release explanation: ").append(report.releaseReadiness().explanation()).append("\n");
+        builder.append("Profile: ").append(report.profile().projectType())
+                .append(" / ").append(report.profile().architectureStyle())
+                .append(" / ").append(report.profile().releaseTarget())
+                .append(report.profile().knownIssuesAccepted() ? " / known issues accepted" : "")
+                .append("\n");
         builder.append("Java files: ").append(report.scannedJavaFiles()).append("\n");
         builder.append("POM files: ").append(report.scannedPomFiles()).append("\n");
         builder.append("Rules executed: ").append(report.rulesExecuted()).append("\n");
@@ -101,6 +127,13 @@ public class ScanCommand implements Callable<Integer> {
         report.findingsBySeverity().entrySet().stream()
                 .sorted(Comparator.comparing(e -> e.getKey().ordinal()))
                 .forEach(e -> builder.append(e.getKey()).append(": ").append(e.getValue()).append(" occurrence(s)\n"));
+
+        builder.append("\nQuality gates\n");
+        builder.append("-------------\n");
+        report.qualityGates().forEach(gate -> builder.append("[")
+                .append(gate.status()).append("] ")
+                .append(gate.name()).append(" - ")
+                .append(gate.explanation()).append("\n"));
 
         builder.append("\nRecommended actions\n");
         builder.append("-------------------\n");

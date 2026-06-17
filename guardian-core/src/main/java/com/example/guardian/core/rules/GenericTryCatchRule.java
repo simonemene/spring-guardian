@@ -6,6 +6,11 @@ import com.github.javaparser.ast.stmt.CatchClause;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for GenericTryCatchRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class GenericTryCatchRule implements SpringRule {
 
     @Override

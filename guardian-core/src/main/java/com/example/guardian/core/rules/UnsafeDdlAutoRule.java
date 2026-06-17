@@ -8,6 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+/**
+ * Deterministic Spring Guardian rule implementation for UnsafeDdlAutoRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class UnsafeDdlAutoRule implements SpringRule {
 
     private static final Pattern DDL_AUTO_UNSAFE = Pattern.compile(

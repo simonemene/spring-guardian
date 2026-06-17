@@ -8,6 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Deterministic Spring Guardian rule implementation for ServiceReturnsEntityRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class ServiceReturnsEntityRule implements SpringRule {
 
     @Override

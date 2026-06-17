@@ -7,6 +7,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.ArrayList;
 
+/**
+ * Deterministic Spring Guardian rule implementation for SpringDependencyVersionOverrideRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class SpringDependencyVersionOverrideRule implements SpringRule {
 
     @Override

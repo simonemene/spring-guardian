@@ -6,6 +6,11 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for InvalidTransactionalUsageRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class InvalidTransactionalUsageRule implements SpringRule {
 
     @Override

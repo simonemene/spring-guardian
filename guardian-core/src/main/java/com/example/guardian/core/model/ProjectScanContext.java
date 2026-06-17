@@ -13,7 +13,9 @@ import java.util.Set;
  * @param entityClassNames detected entity class names
  * @param hasTests true when test sources are present
  * @param hasRestControllerAdvice true when a REST advice is present
- * @author Simone Meneghetti
+ * @param capabilities detected frameworks and architecture signals
+ * @param profile stateless scan profile selected for this analysis
+ * @author p15518 - Simone Meneghetti
  */
 public record ProjectScanContext(
         Path root,
@@ -21,6 +23,8 @@ public record ProjectScanContext(
         List<Path> pomFiles,
         Set<String> entityClassNames,
         boolean hasTests,
-        boolean hasRestControllerAdvice
+        boolean hasRestControllerAdvice,
+        ProjectCapabilities capabilities,
+        ProjectProfile profile
 ) {
 }

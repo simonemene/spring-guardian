@@ -41,17 +41,10 @@ scripts\run-backend.cmd
 Comandi manuali equivalenti dalla root del progetto:
 
 ```bash
-mvn -pl guardian-server -am package -DskipTests
-mvn -pl guardian-server spring-boot:run
-```
-
-Non usare questo comando:
-
-```bash
 mvn -pl guardian-server -am spring-boot:run
 ```
 
-Con i multi-modulo Maven quel comando può provare ad avviare anche il parent `spring-guardian`, che è un POM aggregator e non ha una main class Spring Boot.
+Il parent Maven configura `spring-boot-maven-plugin` con `skip=true`, mentre `guardian-server` lo riabilita con `skip=false` e main class esplicita. In questo modo il comando include `guardian-core` nel reactor runtime senza provare ad avviare il POM aggregator.
 
 Endpoint di test:
 
@@ -154,6 +147,147 @@ spring-guardian-ui    -> porta 3000
 
 Con Docker puoi montare progetti sotto `./sample-projects` e leggerli nel container da `/scan`.
 
+
+## Profilo di scansione stateless
+
+Ogni scansione può essere calibrata senza salvare nulla e senza usare AI, database o stato applicativo. Il profilo serve solo per la richiesta corrente.
+
+Parametri supportati:
+
+```text
+projectType: WEB_API | BATCH | LIBRARY
+architectureStyle: AUTO_DETECTED | LAYERED | DOMAIN_DRIVEN_DESIGN | HEXAGONAL | LEGACY_LAYERED
+releaseTarget: PRODUCTION | INTERNAL | LEGACY_BASELINE
+knownIssuesAccepted: true | false
+```
+
+La UI mantiene il profilo semplice e mostra solo:
+
+- tipo applicazione;
+- obiettivo scansione, produzione oppure test/QA;
+- flag legacy con problemi noti.
+
+Lo stile architetturale viene rilevato automaticamente dal backend tramite package, annotazioni, dipendenze e capability Spring. L'API mantiene `architectureStyle` per uso CLI o pipeline CI, ma il frontend invia `AUTO_DETECTED`.
+
+Questa calibrazione non nasconde i problemi: cambia solo la severità decisionale dei quality gate. I problemi di sicurezza restano bloccanti anche quando è attiva la baseline legacy.
+
+## Prontezza al rilascio e quality gate
+
+Il report ora contiene una decisione esplicita:
+
+```text
+READY
+READY_WITH_WARNINGS
+NOT_READY
+```
+
+La decisione è costruita con gate deterministici:
+
+```text
+GATE_SECURITY
+GATE_WEB_LAYER
+GATE_JPA
+GATE_DEPENDENCY_INJECTION
+GATE_ARCHITECTURE_BOUNDARIES
+GATE_TESTS
+GATE_BUILD_CONFIG
+GATE_SPRING_ALTERNATIVE_ADVISOR
+GATE_PROFILE_ALIGNMENT
+```
+
+In italiano la UI mostra sezioni parlanti come:
+
+- Spring Security;
+- layer web e contratti API;
+- JPA e persistenza;
+- dependency injection;
+- confini architetturali;
+- test;
+- build e configurazione;
+- Spring Alternative Advisor.
+
+In inglese le stesse sezioni sono restituite come:
+
+- Spring Security;
+- Web layer and API contracts;
+- JPA and persistence;
+- Dependency injection;
+- Architecture boundaries;
+- Tests;
+- Build and configuration;
+- Spring Alternative Advisor.
+
+## Rilevamento stack e pattern architetturali
+
+Spring Guardian rileva il contesto tecnico del progetto analizzando sorgenti Java e POM Maven. Non esegue il progetto e non apre connessioni esterne.
+
+Esempi di capability rilevate:
+
+```text
+Spring Web
+Spring Security
+JPA / Spring Data JPA
+Actuator
+Bean Validation
+OpenAPI / Swagger
+Lombok
+Spring Batch
+Controller layer
+Service layer
+Repository layer
+Domain layer
+Application layer
+Infrastructure layer
+DDD / Hexagonal / Layered
+```
+
+Queste capability alimentano le sezioni UI, i quality gate e le regole condizionali. Ad esempio, le regole JPA vengono valutate quando il progetto usa JPA, mentre le regole DDD diventano più severe quando selezioni Domain Driven Design o architettura esagonale.
+
+## Nuovi controlli architetturali
+
+La scansione include nuovi controlli mirati per rendere il report più vicino a una review architetturale reale:
+
+```text
+SPR053 - Entity JPA senza costruttore no-args pubblico o protected
+SPR054 - Relazione JPA ToOne senza fetch LAZY esplicito
+SPR055 - Domain layer che dipende da Spring in profilo DDD/esagonale
+SPR056 - Service layer che dipende dal web layer
+SPR057 - Repository layer che dipende da layer superiori
+SPR058 - Spring Security rilevato ma SecurityFilterChain mancante
+SPR059 - CSRF disabilitato senza session management stateless
+SPR060 - Endpoint REST senza @Operation OpenAPI
+SPR061 - @AllArgsConstructor su componente Spring
+SPR062 - Dipendenza assegnata da costruttore ma campo non final
+SPR063 - @RestController senza base @RequestMapping
+```
+
+Le descrizioni e i fix di queste regole sono bilingue e vengono localizzati dal backend.
+
+## Spring Alternative Advisor
+
+Spring Guardian include una sezione dedicata alle alternative Spring o Spring Boot quando il codice usa API Java manuali o pattern che funzionano, ma non sfruttano bene il framework.
+
+Esempi di controlli:
+
+```text
+SPR064 - ObjectMapper creato manualmente invece di usare quello gestito da Spring Boot
+SPR065 - Thread creato manualmente invece di TaskExecutor, @Async o TaskScheduler
+SPR066 - ExecutorService creato manualmente invece di ThreadPoolTaskExecutor
+SPR067 - Timer o TimerTask invece di @Scheduled o TaskScheduler
+SPR068 - JdbcTemplate creato manualmente invece di bean auto-configurato
+SPR069 - PasswordEncoder creato manualmente invece di bean centralizzato
+SPR070 - System.getenv o System.getProperty invece di @ConfigurationProperties o Environment
+SPR071 - FileInputStream/FileReader diretti invece di Resource o ResourceLoader
+SPR072 - Service, repository, client o adapter creati con new dentro componenti Spring
+SPR073 - @MockBean/@SpyBean da modernizzare verso @MockitoBean/@MockitoSpyBean
+SPR074 - Structured logging Spring Boot da valutare sui progetti moderni
+SPR075 - MockMvcTester da valutare nei nuovi test MVC su Spring Boot recenti
+```
+
+Questa sezione non chiama servizi esterni e non scarica informazioni online durante la scansione. È un catalogo deterministico locale di alternative note e consigli architetturali.
+
+In inglese la stessa area viene esposta come **Spring Alternative Advisor** e mantiene titoli, spiegazioni e fix localizzati dal backend.
+
 ## API principali
 
 ### Health
@@ -165,7 +299,7 @@ GET /api/v1/health
 ### Scan ZIP
 
 ```http
-POST /api/v1/scans/upload?language=it
+POST /api/v1/scans/upload?language=it&projectType=WEB_API&architectureStyle=AUTO_DETECTED&releaseTarget=PRODUCTION&knownIssuesAccepted=false
 Content-Type: multipart/form-data
 field: file
 ```
@@ -173,7 +307,7 @@ field: file
 ### Scan cartella caricata dal browser
 
 ```http
-POST /api/v1/scans/upload-folder?language=it
+POST /api/v1/scans/upload-folder?language=it&projectType=WEB_API&architectureStyle=AUTO_DETECTED&releaseTarget=PRODUCTION&knownIssuesAccepted=false
 Content-Type: multipart/form-data
 field: files
 ```
@@ -187,7 +321,11 @@ POST /api/v1/scans/local?language=it
 Content-Type: application/json
 
 {
-  "path": "/scan/my-project"
+  "path": "/scan/my-project",
+  "projectType": "WEB_API",
+  "architectureStyle": "AUTO_DETECTED",
+  "releaseTarget": "PRODUCTION",
+  "knownIssuesAccepted": false
 }
 ```
 
@@ -200,35 +338,70 @@ Esempio semplificato:
 ```json
 {
   "projectName": "my-project",
+  "profile": {
+    "projectType": "WEB_API",
+    "architectureStyle": "AUTO_DETECTED",
+    "releaseTarget": "PRODUCTION",
+    "knownIssuesAccepted": false
+  },
+  "capabilities": {
+    "usesSpringWeb": true,
+    "usesSpringSecurity": true,
+    "usesJpa": true,
+    "hasControllerLayer": true,
+    "hasServiceLayer": true,
+    "hasRepositoryLayer": true,
+    "detectedArchitecturalStyles": ["LAYERED"]
+  },
+  "releaseReadiness": {
+    "status": "NOT_READY",
+    "label": "Non pronto al rilascio",
+    "releasable": false,
+    "blockers": [
+      "Spring Security: 2 problemi richiedono revisione in quest'area."
+    ],
+    "warnings": []
+  },
   "architectureScore": 72,
   "riskLevel": "HIGH",
-  "summary": {
-    "status": "ACTION_REQUIRED",
-    "executiveSummary": "Il progetto contiene problemi architetturali, di sicurezza o correttezza da gestire prima di considerarlo pronto per produzione o pipeline CI."
-  },
-  "findingsByCategory": [
+  "qualityGates": [
     {
-      "category": "Architettura",
+      "code": "GATE_SECURITY",
+      "name": "Spring Security",
+      "status": "FAIL",
+      "failingFindings": 2
+    },
+    {
+      "code": "GATE_SPRING_ALTERNATIVE_ADVISOR",
+      "name": "Spring Alternative Advisor",
+      "status": "WARNING",
+      "required": false
+    }
+  ],
+  "architectureAreas": [
+    {
+      "code": "JPA_PERSISTENCE",
+      "name": "JPA e persistenza",
       "findings": 3,
-      "explanation": "Layering, direzione delle dipendenze, dimensione delle classi, controller troppo ricchi e confini tra componenti Spring."
+      "readinessStatus": "ATTENTION"
     }
   ],
   "findings": [
     {
-      "ruleId": "SPR030_GOD_CLASS",
+      "ruleId": "SPR053_JPA_ENTITY_ACCESSIBLE_NO_ARGS_CONSTRUCTOR",
       "severity": "MAJOR",
-      "category": "Architettura",
-      "title": "Classe troppo grande",
-      "occurrences": 3,
-      "whyItMatters": "Classi molto grandi raccolgono responsabilità diverse e diventano difficili da leggere, testare e modificare in sicurezza.",
-      "suggestedFix": "Dividi la classe per responsabilità e sposta operazioni coese in service, componenti o mapper dedicati.",
+      "category": "JPA, persistenza e integrazioni",
+      "title": "Entity JPA senza costruttore no-args accessibile",
+      "occurrences": 1,
+      "whyItMatters": "Le entity JPA devono poter essere istanziate dal provider tramite un costruttore no-args pubblico o protected.",
+      "suggestedFix": "Aggiungi un costruttore no-args protected e mantieni i costruttori di dominio espliciti per l'uso applicativo.",
       "affectedComponents": [
         {
           "type": "JAVA_CLASS",
-          "name": "SchedulerService",
-          "filePath": "src/main/java/.../SchedulerService.java",
-          "line": 20,
-          "evidence": "Class SchedulerService has 480 lines and 32 methods."
+          "name": "Customer",
+          "filePath": "src/main/java/.../Customer.java",
+          "line": 12,
+          "evidence": "Entity Customer defines constructors but no public or protected no-args constructor."
         }
       ]
     }
@@ -242,7 +415,7 @@ Nella UI i codici tecnici come `SPR030_GOD_CLASS` vengono mostrati come codice b
 
 Il backend espone documentazione OpenAPI tramite Springdoc.
 
-Tutti i controller, DTO, configurazioni e servizi backend aggiunti espongono JavaDoc. Le API REST principali sono annotate con `@Operation`, `@ApiResponse`, `@Parameter` e `@Schema`.
+Il codice Java principale espone JavaDoc su modelli, regole, controller, DTO, configurazioni, servizi backend e comandi CLI. Le API REST principali sono annotate con `@Operation`, `@ApiResponse`, `@Parameter` e `@Schema`.
 
 ## Test backend
 
@@ -250,6 +423,7 @@ Il backend include una struttura di test divisa per livello:
 
 ```text
 guardian-core/src/test/java/com/example/guardian/core/ProjectScanServiceLanguageTest.java
+guardian-core/src/test/java/com/example/guardian/core/rules/AdvancedArchitectureRulesTest.java
 guardian-server/src/test/java/com/example/guardian/server/service/ZipWorkspaceServiceTest.java
 guardian-server/src/test/java/com/example/guardian/server/controller/ScanControllerWebMvcTest.java
 guardian-server/src/test/java/com/example/guardian/server/ScanControllerIT.java
@@ -307,7 +481,26 @@ Esempi di regole incluse:
 - chiamate repository dentro loop;
 - endpoint GET che mutano stato;
 - response non tipizzate nei controller;
-- `Thread.sleep` nei test.
+- `Thread.sleep` nei test;
+- entity JPA con costruttori non conformi;
+- relazioni JPA ToOne senza `LAZY`;
+- domain layer che dipende da Spring in profili DDD/esagonali;
+- service layer che dipende da `ResponseEntity`, servlet o web layer;
+- repository che dipende da layer superiori;
+- Spring Security senza `SecurityFilterChain`;
+- CSRF disabilitato senza sessioni stateless;
+- endpoint REST senza `@Operation`;
+- `@AllArgsConstructor` su componenti Spring;
+- campi dependency non `final` con constructor injection;
+- controller REST senza base mapping;
+- ObjectMapper creato manualmente;
+- Thread, ExecutorService, Timer e TimerTask creati manualmente;
+- JdbcTemplate e PasswordEncoder creati fuori da bean centralizzati;
+- System.getenv/System.getProperty nel codice applicativo;
+- FileInputStream/FileReader diretti;
+- collaboratori Spring creati con new;
+- @MockBean/@SpyBean da modernizzare;
+- structured logging e MockMvcTester come opportunità Spring Boot moderne.
 
 ## CLI
 
@@ -320,13 +513,13 @@ mvn -pl guardian-cli -am package
 Esecuzione:
 
 ```bash
-java -jar guardian-cli/target/spring-guardian-cli.jar scan /path/to/project --format json --language it
+java -jar guardian-cli/target/spring-guardian-cli.jar scan /path/to/project --format json --language it --project-type WEB_API --architecture-style AUTO_DETECTED --release-target PRODUCTION
 ```
 
 Lingua inglese:
 
 ```bash
-java -jar guardian-cli/target/spring-guardian-cli.jar scan /path/to/project --format json --language en
+java -jar guardian-cli/target/spring-guardian-cli.jar scan /path/to/project --format json --language en --project-type WEB_API --architecture-style AUTO_DETECTED --release-target INTERNAL --known-issues
 ```
 
 ## Git ignore

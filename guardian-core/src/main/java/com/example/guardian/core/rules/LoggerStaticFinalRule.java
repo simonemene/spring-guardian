@@ -7,6 +7,11 @@ import com.github.javaparser.ast.body.VariableDeclarator;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Deterministic Spring Guardian rule implementation for LoggerStaticFinalRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class LoggerStaticFinalRule implements SpringRule {
 
     @Override

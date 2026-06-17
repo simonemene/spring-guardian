@@ -9,6 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+/**
+ * Deterministic Spring Guardian rule implementation for HardcodedConfigRule.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 public class HardcodedConfigRule implements SpringRule {
 
     private static final Pattern SUSPICIOUS_STRING = Pattern.compile(

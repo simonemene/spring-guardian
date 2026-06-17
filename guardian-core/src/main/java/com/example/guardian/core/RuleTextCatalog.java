@@ -284,6 +284,121 @@ final class RuleTextCatalog {
                     "Sleep temporali rendono i test lenti e instabili, soprattutto in CI.",
                     "Usa Awaitility, clock controllabile, latch o sincronizzazione esplicita."
             );
+            case "SPR053_JPA_ENTITY_ACCESSIBLE_NO_ARGS_CONSTRUCTOR" -> new RuleText(
+                    "Costruttore JPA senza argomenti mancante",
+                    "Le entity JPA devono avere un costruttore senza argomenti pubblico o protected per permettere al provider di persistenza di istanziarle correttamente.",
+                    "Aggiungi un costruttore protected senza argomenti e usa costruttori pubblici o factory method per creare entity valide."
+            );
+            case "SPR054_JPA_TO_ONE_RELATIONSHIP_SHOULD_BE_LAZY" -> new RuleText(
+                    "Relazione JPA to-one non dichiarata LAZY",
+                    "ManyToOne e OneToOne sono eager di default e possono caricare grafi non richiesti, peggiorando performance e serializzazione.",
+                    "Imposta fetch = FetchType.LAZY e carica i dati necessari con query esplicite, projection o entity graph."
+            );
+            case "SPR055_DOMAIN_LAYER_DEPENDS_ON_SPRING" -> new RuleText(
+                    "Dominio dipendente da Spring",
+                    "In DDD o architettura esagonale il dominio dovrebbe restare indipendente dal framework per non legare regole di business a dettagli infrastrutturali.",
+                    "Sposta annotazioni Spring, adapter e configurazioni nei layer application/infrastructure e mantieni il dominio pulito."
+            );
+            case "SPR056_SERVICE_DEPENDS_ON_WEB_LAYER" -> new RuleText(
+                    "Service dipendente dal layer web",
+                    "Un service che conosce HTTP, servlet o ResponseEntity mescola caso d'uso applicativo e trasporto web.",
+                    "Lascia HTTP nel controller e passa al service DTO applicativi o comandi di dominio."
+            );
+            case "SPR057_REPOSITORY_DEPENDS_ON_UPPER_LAYER" -> new RuleText(
+                    "Repository dipendente da layer superiori",
+                    "Il repository dovrebbe conoscere solo persistenza e query, non controller, service o concetti HTTP.",
+                    "Sposta orchestrazione e logica applicativa nei service e lascia al repository solo operazioni di accesso dati."
+            );
+            case "SPR058_SECURITY_FILTER_CHAIN_MISSING" -> new RuleText(
+                    "Spring Security senza SecurityFilterChain esplicita",
+                    "Se Spring Security è presente ma manca una SecurityFilterChain, la policy di sicurezza non è leggibile e può dipendere da default non desiderati.",
+                    "Definisci SecurityFilterChain con autorizzazioni endpoint, CSRF, CORS, session policy e meccanismo di autenticazione."
+            );
+            case "SPR059_CSRF_DISABLED_WITHOUT_STATELESS" -> new RuleText(
+                    "CSRF disabilitato senza sessione stateless",
+                    "Disabilitare CSRF è sensato per API realmente stateless, ma rischioso per applicazioni browser-based con cookie o sessione.",
+                    "Dichiara SessionCreationPolicy.STATELESS oppure limita la disabilitazione CSRF agli endpoint dove è motivata."
+            );
+            case "SPR060_ENDPOINT_WITHOUT_OPENAPI_OPERATION" -> new RuleText(
+                    "Endpoint REST senza descrizione OpenAPI",
+                    "Endpoint senza @Operation sono meno leggibili in Swagger e rendono più debole la documentazione del contratto API.",
+                    "Aggiungi @Operation con summary e description e documenta le risposte principali con @ApiResponse."
+            );
+            case "SPR061_ALL_ARGS_CONSTRUCTOR_ON_SPRING_COMPONENT" -> new RuleText(
+                    "@AllArgsConstructor su componente Spring",
+                    "@AllArgsConstructor può iniettare tutti i campi della classe, anche quelli che non rappresentano dipendenze obbligatorie.",
+                    "Preferisci costruttore esplicito oppure @RequiredArgsConstructor con dipendenze final."
+            );
+            case "SPR062_CONSTRUCTOR_DEPENDENCY_FIELD_NOT_FINAL" -> new RuleText(
+                    "Dipendenza da costruttore non final",
+                    "Le dipendenze obbligatorie iniettate da costruttore sono più sicure quando i campi sono immutabili.",
+                    "Rendi final i campi assegnati nel costruttore oppure usa @RequiredArgsConstructor."
+            );
+            case "SPR063_REST_CONTROLLER_WITHOUT_BASE_MAPPING" -> new RuleText(
+                    "Controller REST senza mapping base",
+                    "Senza @RequestMapping a livello classe, struttura endpoint e versionamento API sono meno evidenti.",
+                    "Aggiungi un mapping base come /api/v1/nome-risorsa e lascia ai metodi le singole operazioni."
+            );
+            case "SPR064_MANUAL_OBJECT_MAPPER" -> new RuleText(
+                    "ObjectMapper creato manualmente",
+                    "Creare ObjectMapper a mano può saltare configurazioni globali Spring Boot, moduli JavaTime, serializer, naming strategy e impostazioni comuni.",
+                    "Inietta l'ObjectMapper gestito da Spring Boot oppure centralizza la customizzazione in un bean dedicato."
+            );
+            case "SPR065_MANUAL_THREAD_CREATION" -> new RuleText(
+                    "Thread creato manualmente",
+                    "I thread creati a mano non seguono lifecycle Spring, configurazione centralizzata, osservabilità e shutdown ordinato.",
+                    "Usa TaskExecutor, ThreadPoolTaskExecutor, @Async o TaskScheduler in base al caso d'uso."
+            );
+            case "SPR066_MANUAL_EXECUTOR_CREATION" -> new RuleText(
+                    "Executor creato manualmente",
+                    "ExecutorService creati direttamente possono uscire dal lifecycle Spring e rendere difficile tuning, shutdown e metriche.",
+                    "Esponi un TaskExecutor o ThreadPoolTaskExecutor come bean e iniettalo dove serve lavoro asincrono."
+            );
+            case "SPR067_TIMER_SCHEDULING" -> new RuleText(
+                    "Scheduling con Timer",
+                    "Timer e TimerTask sono API di basso livello e si integrano male con profili, lifecycle e osservabilità Spring.",
+                    "Usa @Scheduled o TaskScheduler con configurazione esplicita e test dedicati."
+            );
+            case "SPR068_MANUAL_JDBC_TEMPLATE" -> new RuleText(
+                    "JdbcTemplate creato manualmente",
+                    "Creare JdbcTemplate direttamente può duplicare configurazione di datasource, transazioni ed exception translation.",
+                    "Inietta il template auto-configurato o definisci un bean centralizzato."
+            );
+            case "SPR069_MANUAL_PASSWORD_ENCODER" -> new RuleText(
+                    "PasswordEncoder creato manualmente",
+                    "L'encoder password deve essere governato centralmente per evitare strategie diverse tra login, test e migrazioni.",
+                    "Definisci un bean PasswordEncoder e iniettalo nei componenti che codificano o verificano password."
+            );
+            case "SPR070_DIRECT_ENVIRONMENT_ACCESS" -> new RuleText(
+                    "Configurazione letta direttamente dall'ambiente",
+                    "System.getenv o System.getProperty nel codice nascondono configurazione, validazione e gestione profili a Spring.",
+                    "Usa @ConfigurationProperties, Environment o classi properties validate."
+            );
+            case "SPR071_MANUAL_FILE_RESOURCE_ACCESS" -> new RuleText(
+                    "Risorsa file aperta manualmente",
+                    "Accesso diretto a file rende più rigido il passaggio tra classpath, filesystem e risorse esterne.",
+                    "Usa Resource, ResourceLoader o proprietà configurabili per rendere l'accesso esplicito e testabile."
+            );
+            case "SPR072_SPRING_BEAN_CREATED_WITH_NEW" -> new RuleText(
+                    "Collaboratore Spring creato con new",
+                    "Creare service, repository, client o adapter con new bypassa dependency injection, proxy, transazioni, validazione e test replacement.",
+                    "Registra il collaboratore come bean e iniettalo via costruttore."
+            );
+            case "SPR073_MOCKBEAN_MODERNIZATION_ADVISOR" -> new RuleText(
+                    "Annotazione Mockito Spring Boot da modernizzare",
+                    "@MockBean e annotazioni correlate sono deprecate nelle versioni Spring Boot recenti in favore del supporto Spring Framework.",
+                    "Valuta @MockitoBean e @MockitoSpyBean per nuovi test o modernizzazioni progressive."
+            );
+            case "SPR074_STRUCTURED_LOGGING_ADVISOR" -> new RuleText(
+                    "Structured logging non configurato",
+                    "I log strutturati aiutano diagnostica, correlazione e aggregazione in ambienti moderni senza codice custom.",
+                    "Valuta logging strutturato Spring Boot con formato ECS, GELF o Logstash nei profili di produzione."
+            );
+            case "SPR075_MOCKMVC_TESTER_ADVISOR" -> new RuleText(
+                    "Opportunità MockMvcTester",
+                    "MockMvcTester offre asserzioni MVC più leggibili e moderne nei progetti Spring Boot recenti.",
+                    "Valuta MockMvcTester sui nuovi slice test dei controller mantenendo stabili i test MockMvc esistenti."
+            );
             default -> null;
         };
     }
@@ -340,6 +455,29 @@ final class RuleTextCatalog {
             case "SPR050_GET_ENDPOINT_MUTATES_STATE" -> new RuleText("GET endpoint changes state", "GET should be safe and idempotent at HTTP level. Using it for changes creates cache, crawler and client issues.", "Use POST, PUT, PATCH or DELETE for operations that change state.");
             case "SPR051_CONTROLLER_RAW_RESPONSE" -> new RuleText("Controller response is not typed", "Raw or Object responses make API contracts less clear and reduce documentation and test quality.", "Use response DTOs or ResponseEntity<T> with a concrete type.");
             case "SPR052_THREAD_SLEEP_IN_TEST" -> new RuleText("Thread.sleep in tests", "Time-based sleeps make tests slow and unstable, especially in CI.", "Use Awaitility, a controllable clock, latches or explicit synchronization.");
+            case "SPR053_JPA_ENTITY_ACCESSIBLE_NO_ARGS_CONSTRUCTOR" -> new RuleText("JPA no-argument constructor is missing", "JPA entities must have a public or protected no-argument constructor so the persistence provider can instantiate them correctly.", "Add a protected no-argument constructor and use public constructors or factory methods for valid entity creation.");
+            case "SPR054_JPA_TO_ONE_RELATIONSHIP_SHOULD_BE_LAZY" -> new RuleText("JPA to-one relationship is not explicitly LAZY", "ManyToOne and OneToOne are eager by default and may load unwanted object graphs, hurting performance and serialization.", "Set fetch = FetchType.LAZY and load required data with explicit queries, projections or entity graphs.");
+            case "SPR055_DOMAIN_LAYER_DEPENDS_ON_SPRING" -> new RuleText("Domain layer depends on Spring", "In DDD or hexagonal architecture the domain should stay independent from the framework so business rules do not depend on infrastructure details.", "Move Spring annotations, adapters and configuration to application or infrastructure layers and keep the domain clean.");
+            case "SPR056_SERVICE_DEPENDS_ON_WEB_LAYER" -> new RuleText("Service depends on the web layer", "A service that knows HTTP, servlet APIs or ResponseEntity mixes application use cases with web transport details.", "Keep HTTP concerns in controllers and pass application DTOs or domain commands to services.");
+            case "SPR057_REPOSITORY_DEPENDS_ON_UPPER_LAYER" -> new RuleText("Repository depends on upper layers", "A repository should know persistence and queries only, not controllers, services or HTTP concepts.", "Move orchestration and application logic to services and keep repositories limited to data access operations.");
+            case "SPR058_SECURITY_FILTER_CHAIN_MISSING" -> new RuleText("Spring Security without explicit SecurityFilterChain", "When Spring Security is present but no SecurityFilterChain is defined, the security policy is hard to review and may rely on unwanted defaults.", "Define a SecurityFilterChain with endpoint authorization, CSRF, CORS, session policy and authentication mechanism.");
+            case "SPR059_CSRF_DISABLED_WITHOUT_STATELESS" -> new RuleText("CSRF disabled without stateless session policy", "Disabling CSRF is reasonable for truly stateless APIs, but risky for browser-based applications using cookies or sessions.", "Declare SessionCreationPolicy.STATELESS or limit CSRF disablement to endpoints where it is justified.");
+            case "SPR060_ENDPOINT_WITHOUT_OPENAPI_OPERATION" -> new RuleText("REST endpoint has no OpenAPI description", "Endpoints without @Operation are less readable in Swagger and weaken API contract documentation.", "Add @Operation with a summary and description, then document main responses with @ApiResponse.");
+            case "SPR061_ALL_ARGS_CONSTRUCTOR_ON_SPRING_COMPONENT" -> new RuleText("@AllArgsConstructor on Spring component", "@AllArgsConstructor may inject every field in the class, including fields that are not mandatory dependencies.", "Prefer an explicit constructor or @RequiredArgsConstructor with final dependencies.");
+            case "SPR062_CONSTRUCTOR_DEPENDENCY_FIELD_NOT_FINAL" -> new RuleText("Constructor dependency field is not final", "Mandatory dependencies injected by constructor are safer when their fields are immutable.", "Make constructor-assigned dependency fields final or use @RequiredArgsConstructor.");
+            case "SPR063_REST_CONTROLLER_WITHOUT_BASE_MAPPING" -> new RuleText("REST controller has no base mapping", "Without class-level @RequestMapping, endpoint structure and API versioning are less visible.", "Add a base mapping such as /api/v1/resource-name and keep method mappings focused on operations.");
+            case "SPR064_MANUAL_OBJECT_MAPPER" -> new RuleText("ObjectMapper created manually", "Manual ObjectMapper instances may bypass Spring Boot global configuration, JavaTime modules, serializers, naming strategy and common settings.", "Inject the Boot-managed ObjectMapper or centralize customization in a dedicated bean.");
+            case "SPR065_MANUAL_THREAD_CREATION" -> new RuleText("Thread created manually", "Manual threads do not follow Spring lifecycle, centralized configuration, observability or graceful shutdown.", "Use TaskExecutor, ThreadPoolTaskExecutor, @Async or TaskScheduler depending on the use case.");
+            case "SPR066_MANUAL_EXECUTOR_CREATION" -> new RuleText("Executor created manually", "Direct ExecutorService creation can escape Spring lifecycle and make tuning, shutdown and metrics harder.", "Expose a TaskExecutor or ThreadPoolTaskExecutor bean and inject it where asynchronous work is required.");
+            case "SPR067_TIMER_SCHEDULING" -> new RuleText("Timer-based scheduling", "Timer and TimerTask are low-level APIs that integrate poorly with Spring profiles, lifecycle and observability.", "Use @Scheduled or TaskScheduler with explicit configuration and dedicated tests.");
+            case "SPR068_MANUAL_JDBC_TEMPLATE" -> new RuleText("JdbcTemplate created manually", "Creating JdbcTemplate directly may duplicate datasource, transaction and exception translation configuration.", "Inject the auto-configured template or define a centralized bean.");
+            case "SPR069_MANUAL_PASSWORD_ENCODER" -> new RuleText("PasswordEncoder created manually", "Password encoding should be centrally governed to avoid different strategies across login, tests and migrations.", "Define one PasswordEncoder bean and inject it where passwords are encoded or verified.");
+            case "SPR070_DIRECT_ENVIRONMENT_ACCESS" -> new RuleText("Environment read directly from code", "System.getenv or System.getProperty hides configuration, validation and profile handling from Spring.", "Use @ConfigurationProperties, Environment or validated properties classes.");
+            case "SPR071_MANUAL_FILE_RESOURCE_ACCESS" -> new RuleText("File resource opened manually", "Direct file access makes it harder to switch between classpath, filesystem and external resources.", "Use Resource, ResourceLoader or configurable properties to make resource access explicit and testable.");
+            case "SPR072_SPRING_BEAN_CREATED_WITH_NEW" -> new RuleText("Spring collaborator created with new", "Creating services, repositories, clients or adapters with new bypasses dependency injection, proxies, transactions, validation and test replacement.", "Register the collaborator as a bean and inject it through constructor injection.");
+            case "SPR073_MOCKBEAN_MODERNIZATION_ADVISOR" -> new RuleText("Spring Boot Mockito annotation should be modernized", "@MockBean and related annotations are deprecated in recent Spring Boot versions in favor of Spring Framework support.", "Evaluate @MockitoBean and @MockitoSpyBean for new tests or progressive modernization.");
+            case "SPR074_STRUCTURED_LOGGING_ADVISOR" -> new RuleText("Structured logging is not configured", "Structured logs improve diagnostics, correlation and aggregation in modern environments without custom logging code.", "Evaluate Spring Boot structured logging with ECS, GELF or Logstash formats for production profiles.");
+            case "SPR075_MOCKMVC_TESTER_ADVISOR" -> new RuleText("MockMvcTester opportunity", "MockMvcTester provides more fluent MVC assertions in recent Spring Boot projects.", "Evaluate MockMvcTester for new controller slice tests while keeping existing MockMvc tests stable.");
             default -> null;
         };
     }

@@ -25,7 +25,7 @@ class ProjectScanServiceLanguageTest {
                 .scan(tempDir, ReportLanguage.ITALIAN);
 
         assertTrue(report.findings().stream().anyMatch(finding -> finding.title().equals("Dipendenza iniettata su campo")));
-        assertTrue(report.findingsByCategory().stream().anyMatch(category -> category.category().equals("Architettura")));
+        assertTrue(report.findingsByCategory().stream().anyMatch(category -> category.category().equals("Dependency injection")));
     }
 
     @Test
@@ -36,7 +36,7 @@ class ProjectScanServiceLanguageTest {
                 .scan(tempDir, ReportLanguage.ENGLISH);
 
         assertTrue(report.findings().stream().anyMatch(finding -> finding.title().equals("Field injection")));
-        assertTrue(report.findingsByCategory().stream().anyMatch(category -> category.category().equals("Architecture")));
+        assertTrue(report.findingsByCategory().stream().anyMatch(category -> category.category().equals("Dependency injection")));
     }
 
     @Test
