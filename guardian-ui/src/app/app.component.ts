@@ -13,7 +13,7 @@ type TranslationKey = keyof typeof TRANSLATIONS.it;
 const TRANSLATIONS = {
   it: {
     eyebrow: 'Scanner architetturale Spring',
-    heroText: 'Analizza progetti Spring Boot, raggruppa i problemi per area tecnica e mostra in modo leggibile cosa correggere, perché conta e quali classi o file sono coinvolti.',
+    heroText: 'Analizza progetti Spring Boot, raggruppa i problemi per area tecnica e mostra in modo leggibile cosa correggere. Conta quali classi o file sono coinvolti.',
     language: 'Lingua report',
     italian: 'Italiano',
     english: 'Inglese',
