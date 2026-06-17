@@ -399,6 +399,102 @@ final class RuleTextCatalog {
                     "MockMvcTester offre asserzioni MVC più leggibili e moderne nei progetti Spring Boot recenti.",
                     "Valuta MockMvcTester sui nuovi slice test dei controller mantenendo stabili i test MockMvc esistenti."
             );
+            case "SPR076_MANUAL_REST_TEMPLATE" -> new RuleText(
+                    "RestTemplate creato manualmente",
+                    "Un RestTemplate creato a mano può saltare timeout, interceptor, error handling e osservabilità condivisa.",
+                    "Inietta un bean RestTemplate configurato oppure valuta RestClient per nuovi client HTTP sincroni."
+            );
+            case "SPR077_WEBCLIENT_BUILDER_CREATED_MANUALLY" -> new RuleText(
+                    "WebClient creato manualmente",
+                    "Creare WebClient direttamente può duplicare codec, base URL, filtri, metriche e configurazione TLS/proxy.",
+                    "Inietta WebClient.Builder o un bean WebClient configurato centralmente."
+            );
+            case "SPR078_RESTCLIENT_BUILDER_CREATED_MANUALLY" -> new RuleText(
+                    "RestClient creato direttamente",
+                    "RestClient è moderno, ma builder locali ripetuti possono duplicare timeout, interceptor e osservabilità.",
+                    "Esponi un RestClient.Builder o un bean RestClient configurato quando il client è usato dai service applicativi."
+            );
+            case "SPR079_LOW_LEVEL_HTTP_CLIENT" -> new RuleText(
+                    "Client HTTP di basso livello",
+                    "Client HTTP di basso livello rendono meno coerenti timeout, retry, proxy, TLS, tracing e test.",
+                    "Preferisci RestClient, WebClient o un client HTTP configurato come bean."
+            );
+            case "SPR080_SIMPLE_DATE_FORMAT" -> new RuleText(
+                    "SimpleDateFormat rilevato",
+                    "SimpleDateFormat è mutabile e fragile, soprattutto se riusato tra thread diversi.",
+                    "Usa java.time DateTimeFormatter e centralizza il formato quando fa parte di un contratto API."
+            );
+            case "SPR081_GSON_CREATED_MANUALLY" -> new RuleText(
+                    "Gson creato manualmente",
+                    "Gson manuale può creare una seconda policy JSON diversa dall'ObjectMapper configurato da Spring Boot.",
+                    "Preferisci l'ObjectMapper gestito da Spring Boot oppure centralizza Gson come bean se è davvero richiesto."
+            );
+            case "SPR082_VALUE_INJECTION_FOR_GROUPED_CONFIG" -> new RuleText(
+                    "@Value usato per configurazione applicativa",
+                    "Molti @Value sparsi rendono più difficile validare, documentare ed evolvere la configurazione.",
+                    "Usa @ConfigurationProperties con validazione per gruppi di proprietà e lascia @Value solo per valori isolati."
+            );
+            case "SPR083_ASYNC_WITHOUT_ENABLE_ASYNC" -> new RuleText(
+                    "@Async senza @EnableAsync",
+                    "I metodi @Async vengono ignorati se l'esecuzione asincrona non è abilitata nel contesto Spring.",
+                    "Aggiungi @EnableAsync in una configuration class e definisci il TaskExecutor usato dal lavoro asincrono."
+            );
+            case "SPR084_SCHEDULED_WITHOUT_ENABLE_SCHEDULING" -> new RuleText(
+                    "@Scheduled senza @EnableScheduling",
+                    "I metodi schedulati vengono ignorati se lo scheduling non è abilitato nel contesto Spring.",
+                    "Aggiungi @EnableScheduling in una configuration class e rendi esplicite le impostazioni dello scheduler."
+            );
+            case "SPR085_DIRECT_LOCAL_DATE_TIME_NOW" -> new RuleText(
+                    "Ora di sistema letta direttamente",
+                    "Leggere direttamente LocalDateTime.now rende più difficili test, simulazioni e riproduzione dei casi temporali.",
+                    "Inietta java.time.Clock e usa LocalDateTime.now(clock) nella logica applicativa."
+            );
+            case "SPR086_APPLICATION_CONTEXT_GET_BEAN" -> new RuleText(
+                    "Bean risolto programmaticamente",
+                    "ApplicationContext.getBean nasconde dipendenze e rende meno leggibile il cablaggio rispetto alla constructor injection.",
+                    "Inietta il collaboratore via costruttore oppure isola la risoluzione dinamica in una factory dedicata."
+            );
+            case "SPR088_THREAD_SLEEP_IN_PRODUCTION_CODE" -> new RuleText(
+                    "Thread.sleep nel codice applicativo",
+                    "Bloccare thread applicativi maschera problemi di coordinamento e spreca risorse server.",
+                    "Usa scheduling, asincronia, retry/backoff o primitive di sincronizzazione esplicite."
+            );
+            case "SPR089_MANUAL_VALIDATOR_FACTORY" -> new RuleText(
+                    "ValidatorFactory creato manualmente",
+                    "ValidatorFactory manuali possono saltare la configurazione Spring della validazione e l'iniezione nei constraint validator.",
+                    "Inietta Validator oppure usa @Valid e @Validated ai confini web/service."
+            );
+            case "SPR090_MANUAL_CACHE_STRUCTURE" -> new RuleText(
+                    "Possibile cache manuale in memoria",
+                    "Map usate come cache dentro componenti Spring restano invisibili a eviction, metriche e controllo operativo.",
+                    "Valuta Spring Cache con un CacheManager configurato quando la mappa rappresenta dati riusabili in cache."
+            );
+
+            case "SPR091_APPLICATION_PROPERTIES_SHOULD_BE_EXTERNALIZED" -> new RuleText(
+                    "Configurazione applicativa da esternalizzare",
+                    "Valori runtime dentro application.properties o application.yml rendono l'artefatto legato a un ambiente e aumentano il rischio di rilasci non ripetibili.",
+                    "Lascia nel repository solo placeholder o default sicuri e passa i valori tramite variabili ambiente, configurazione montata, ConfigMap/Secret, Vault o piattaforma di deploy."
+            );
+            case "SPR092_HARDCODED_ACTIVE_SPRING_PROFILE" -> new RuleText(
+                    "Profilo Spring attivo scritto nel pacchetto",
+                    "spring.profiles.active dentro la configurazione confezionata forza il comportamento dell'applicazione e può ignorare quanto deciso da ambiente o pipeline.",
+                    "Rimuovi spring.profiles.active dai file packaged e imposta il profilo da variabile ambiente, argomento di avvio o piattaforma di deploy."
+            );
+            case "SPR093_MAVEN_DEPENDENCY_VERSION_CONFLICT" -> new RuleText(
+                    "Conflitto di versioni Maven",
+                    "La stessa dipendenza dichiarata con versioni diverse può generare classpath instabili, build non ripetibili e problemi runtime difficili da diagnosticare.",
+                    "Mantieni una sola versione per dipendenza e governala tramite BOM Spring Boot, parent POM o dependencyManagement."
+            );
+            case "SPR094_MAVEN_MIXED_STACK_DEPENDENCIES" -> new RuleText(
+                    "Stack di dipendenze potenzialmente mischiati",
+                    "Combinare stack sovrapposti può essere corretto solo se intenzionale; altrimenti aumenta il rischio di auto-configurazioni duplicate e comportamento ambiguo.",
+                    "Mantieni solo lo stack necessario oppure documenta la scelta e isola la configurazione del caso speciale."
+            );
+            case "SPR095_MAVEN_DEPENDENCY_HYGIENE" -> new RuleText(
+                    "Igiene dipendenze Maven migliorabile",
+                    "Versioni SNAPSHOT, range, RELEASE/LATEST, systemPath o scope mancanti rendono meno governabile il rilascio e più fragile la pipeline.",
+                    "Usa versioni rilasciate e fisse, dependencyManagement, repository Maven governati e scope espliciti per strumenti come Lombok."
+            );
             default -> null;
         };
     }
@@ -478,6 +574,26 @@ final class RuleTextCatalog {
             case "SPR073_MOCKBEAN_MODERNIZATION_ADVISOR" -> new RuleText("Spring Boot Mockito annotation should be modernized", "@MockBean and related annotations are deprecated in recent Spring Boot versions in favor of Spring Framework support.", "Evaluate @MockitoBean and @MockitoSpyBean for new tests or progressive modernization.");
             case "SPR074_STRUCTURED_LOGGING_ADVISOR" -> new RuleText("Structured logging is not configured", "Structured logs improve diagnostics, correlation and aggregation in modern environments without custom logging code.", "Evaluate Spring Boot structured logging with ECS, GELF or Logstash formats for production profiles.");
             case "SPR075_MOCKMVC_TESTER_ADVISOR" -> new RuleText("MockMvcTester opportunity", "MockMvcTester provides more fluent MVC assertions in recent Spring Boot projects.", "Evaluate MockMvcTester for new controller slice tests while keeping existing MockMvc tests stable.");
+            case "SPR076_MANUAL_REST_TEMPLATE" -> new RuleText("RestTemplate created manually", "A manually created RestTemplate can bypass shared timeout, interceptor, error handling and observability configuration.", "Inject a configured RestTemplate bean, or evaluate RestClient for new synchronous HTTP clients.");
+            case "SPR077_WEBCLIENT_BUILDER_CREATED_MANUALLY" -> new RuleText("WebClient created manually", "Direct WebClient creation can duplicate codecs, base URLs, filters, metrics and TLS/proxy configuration.", "Inject WebClient.Builder or a centrally configured WebClient bean.");
+            case "SPR078_RESTCLIENT_BUILDER_CREATED_MANUALLY" -> new RuleText("RestClient created directly", "RestClient is modern, but repeated local builders can duplicate timeouts, interceptors and observability configuration.", "Expose a RestClient.Builder or RestClient bean when the client is used by application services.");
+            case "SPR079_LOW_LEVEL_HTTP_CLIENT" -> new RuleText("Low-level HTTP client", "Low-level HTTP clients make timeout, retry, proxy, TLS, tracing and tests less consistent.", "Prefer RestClient, WebClient or a centrally configured HTTP client bean.");
+            case "SPR080_SIMPLE_DATE_FORMAT" -> new RuleText("SimpleDateFormat detected", "SimpleDateFormat is mutable and fragile, especially when reused across threads.", "Use java.time DateTimeFormatter and centralize formatting when it is part of an API contract.");
+            case "SPR081_GSON_CREATED_MANUALLY" -> new RuleText("Gson created manually", "Manual Gson can create a second JSON policy that differs from Spring Boot configured ObjectMapper.", "Prefer the Boot-managed ObjectMapper or centralize Gson as a bean if Gson is explicitly required.");
+            case "SPR082_VALUE_INJECTION_FOR_GROUPED_CONFIG" -> new RuleText("@Value used for application configuration", "Many scattered @Value properties make configuration harder to validate, document and evolve.", "Use @ConfigurationProperties with validation for grouped settings and keep @Value only for isolated values.");
+            case "SPR083_ASYNC_WITHOUT_ENABLE_ASYNC" -> new RuleText("@Async without @EnableAsync", "@Async methods are ignored if asynchronous execution is not enabled in the Spring context.", "Add @EnableAsync in a configuration class and define the TaskExecutor used by asynchronous work.");
+            case "SPR084_SCHEDULED_WITHOUT_ENABLE_SCHEDULING" -> new RuleText("@Scheduled without @EnableScheduling", "Scheduled methods are ignored if scheduling is not enabled in the Spring context.", "Add @EnableScheduling in a configuration class and make scheduler settings explicit.");
+            case "SPR085_DIRECT_LOCAL_DATE_TIME_NOW" -> new RuleText("System time read directly", "Direct LocalDateTime.now usage makes tests, simulations and temporal case reproduction harder.", "Inject java.time.Clock and use LocalDateTime.now(clock) in application logic.");
+            case "SPR086_APPLICATION_CONTEXT_GET_BEAN" -> new RuleText("Bean resolved programmatically", "ApplicationContext.getBean hides dependencies and makes wiring less readable than constructor injection.", "Inject the collaborator through constructor injection or isolate dynamic resolution behind a dedicated factory.");
+            case "SPR088_THREAD_SLEEP_IN_PRODUCTION_CODE" -> new RuleText("Thread.sleep in application code", "Blocking application threads hides coordination problems and wastes server resources.", "Use scheduling, async orchestration, retry/backoff or explicit synchronization primitives.");
+            case "SPR089_MANUAL_VALIDATOR_FACTORY" -> new RuleText("ValidatorFactory created manually", "Manual ValidatorFactory instances can bypass Spring validation configuration and constraint validator injection.", "Inject Validator or use @Valid and @Validated at web/service boundaries.");
+            case "SPR090_MANUAL_CACHE_STRUCTURE" -> new RuleText("Possible manual in-memory cache", "Maps used as caches inside Spring components are invisible to eviction policy, metrics and operational control.", "Evaluate Spring Cache with a configured CacheManager when the map represents reusable cached data.");
+
+            case "SPR091_APPLICATION_PROPERTIES_SHOULD_BE_EXTERNALIZED" -> new RuleText("Application configuration should be externalized", "Runtime values inside application.properties or application.yml make the artifact environment-specific and increase non-repeatable release risk.", "Keep only safe placeholders or defaults in the repository and pass values through environment variables, mounted config, ConfigMap/Secret, Vault or the deployment platform.");
+            case "SPR092_HARDCODED_ACTIVE_SPRING_PROFILE" -> new RuleText("Active Spring profile is packaged", "spring.profiles.active inside packaged configuration forces application behavior and may override the environment or pipeline decision.", "Remove spring.profiles.active from packaged files and set the profile through environment variables, startup arguments or the deployment platform.");
+            case "SPR093_MAVEN_DEPENDENCY_VERSION_CONFLICT" -> new RuleText("Maven dependency version conflict", "The same dependency declared with different versions can create unstable classpaths, non-repeatable builds and runtime issues that are hard to diagnose.", "Keep one version per dependency and govern it through the Spring Boot BOM, a parent POM or dependencyManagement.");
+            case "SPR094_MAVEN_MIXED_STACK_DEPENDENCIES" -> new RuleText("Potentially mixed dependency stacks", "Combining overlapping stacks can be valid only when intentional; otherwise it increases duplicate auto-configuration and ambiguous behavior risk.", "Keep only the required stack or document the decision and isolate the special-case configuration.");
+            case "SPR095_MAVEN_DEPENDENCY_HYGIENE" -> new RuleText("Maven dependency hygiene can be improved", "SNAPSHOT versions, ranges, RELEASE/LATEST, systemPath or missing scopes make releases less governed and pipelines more fragile.", "Use fixed released versions, dependencyManagement, governed Maven repositories and explicit scopes for tools such as Lombok.");
             default -> null;
         };
     }

@@ -93,6 +93,24 @@
         <p>{{ t('findings') }}</p>
       </article>
 
+      <article class="score-card advisor-score">
+        <span>{{ t('springAdvisor') }}</span>
+        <strong>{{ advisorCount(current) }}</strong>
+        <p>{{ t('advisorOpportunities') }}</p>
+      </article>
+
+      <article class="score-card">
+        <span>{{ t('typeConfiguration') }}</span>
+        <strong>{{ typeOccurrenceCount(current, 'CONFIGURATION') }}</strong>
+        <p>{{ t('findings') }}</p>
+      </article>
+
+      <article class="score-card">
+        <span>{{ t('typeDependencies') }}</span>
+        <strong>{{ typeOccurrenceCount(current, 'DEPENDENCIES') }}</strong>
+        <p>{{ t('findings') }}</p>
+      </article>
+
       <article class="score-card">
         <span>{{ t('rulesExecuted') }}</span>
         <strong>{{ current.rulesExecuted }}</strong>
@@ -104,6 +122,7 @@
       <button type="button" [class.active]="activeTab() === 'overview'" (click)="selectTab('overview')">{{ t('overview') }}</button>
       <button type="button" [class.active]="activeTab() === 'gates'" (click)="selectTab('gates')">{{ t('gates') }}</button>
       <button type="button" [class.active]="activeTab() === 'findings'" (click)="selectTab('findings')">{{ t('problems') }}</button>
+      <button type="button" [class.active]="activeTab() === 'advisor'" (click)="selectTab('advisor')">{{ t('springAdvisor') }}</button>
       <button type="button" [class.active]="activeTab() === 'actions'" (click)="selectTab('actions')">{{ t('actions') }}</button>
       <button type="button" [class.active]="activeTab() === 'json'" (click)="selectTab('json')">{{ t('technicalJson') }}</button>
     </nav>
@@ -140,6 +159,25 @@
           <span>{{ t('project') }}: <strong>{{ current.projectName }}</strong></span>
           <span>{{ t('scan') }}: <strong>{{ current.scannedAt | date:'medium' }}</strong></span>
           <span>{{ t('selectedProfile') }}: <strong>{{ projectTypeLabel(current.profile.projectType) }} · {{ architectureStyleLabel(current.profile.architectureStyle) }} · {{ releaseTargetLabel(current.profile.releaseTarget) }}</strong></span>
+        </div>
+      </article>
+
+
+      <article class="panel wide">
+        <h2>{{ t('findingType') }}</h2>
+        <div class="area-grid">
+          <article class="area-card" *ngFor="let type of current.findingsByType">
+            <div class="category-head">
+              <strong>{{ type.category }}</strong>
+              <span>{{ type.findings }} {{ t('findings') }}</span>
+            </div>
+            <p>{{ type.explanation }}</p>
+            <div class="area-metrics">
+              <span>{{ type.criticalFindings }} {{ t('critical').toLowerCase() }}</span>
+              <span>{{ type.majorFindings }} {{ t('major').toLowerCase() }}</span>
+              <span>{{ type.minorFindings }} {{ t('minor').toLowerCase() }}</span>
+            </div>
+          </article>
         </div>
       </article>
 
@@ -209,6 +247,10 @@
           <option value="ALL">{{ t('allAreas') }}</option>
           <option *ngFor="let category of categories()" [value]="category">{{ category }}</option>
         </select>
+        <select [(ngModel)]="typeFilter" [attr.aria-label]="t('findingType')">
+          <option value="ALL">{{ t('allTypes') }}</option>
+          <option *ngFor="let type of findingTypes()" [value]="type">{{ findingTypeLabel(type) }}</option>
+        </select>
         <button type="button" class="ghost" (click)="resetFilters()">{{ t('clearFilters') }}</button>
       </div>
 
@@ -218,6 +260,7 @@
             <div>
               <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
               <span class="category">{{ finding.category }}</span>
+              <span class="rule-code type-code">{{ findingTypeLabel(findingType(finding)) }}</span>
               <span class="rule-code">{{ t('technicalCode') }} {{ ruleCode(finding.ruleId) }}</span>
             </div>
             <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
@@ -237,6 +280,57 @@
             </div>
           </div>
 
+          <details>
+            <summary>{{ t('involvedComponents') }} ({{ finding.affectedComponents.length }})</summary>
+            <div class="component-list">
+              <div class="component" *ngFor="let component of finding.affectedComponents">
+                <strong>{{ componentTitle(component) }}</strong>
+                <span>{{ componentTypeLabel(component.type) }}</span>
+                <span>{{ component.filePath }}<ng-container *ngIf="component.line">:{{ component.line }}</ng-container></span>
+                <p *ngIf="component.evidence"><b>{{ t('technicalEvidence') }}:</b> {{ component.evidence }}</p>
+              </div>
+            </div>
+          </details>
+        </article>
+      </div>
+    </section>
+
+    <section *ngIf="activeTab() === 'advisor'" class="panel advisor-panel">
+      <div class="panel-title">
+        <div>
+          <h2>{{ t('springAdvisor') }}</h2>
+          <p>{{ t('advisorSubtitle') }}</p>
+        </div>
+        <span>{{ advisorCount(current) }} {{ t('advisorOpportunities') }}</span>
+      </div>
+
+      <div *ngIf="springAdvisorFindings().length === 0" class="empty inline-empty">
+        <h2>{{ t('advisorEmptyTitle') }}</h2>
+        <p>{{ t('advisorEmptyText') }}</p>
+      </div>
+
+      <div class="finding-list advisor-list" *ngIf="springAdvisorFindings().length > 0">
+        <article class="finding advisor-finding" *ngFor="let finding of springAdvisorFindings(); trackBy: trackFinding">
+          <div class="finding-header">
+            <div>
+              <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
+              <span class="category">{{ findingTypeLabel(findingType(finding)) }}</span>
+              <span class="rule-code">{{ t('technicalCode') }} {{ ruleCode(finding.ruleId) }}</span>
+            </div>
+            <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
+          </div>
+          <h3>{{ finding.title }}</h3>
+          <p>{{ finding.explanation }}</p>
+          <div class="explain-grid">
+            <div>
+              <h4>{{ t('whyItMatters') }}</h4>
+              <p>{{ finding.whyItMatters }}</p>
+            </div>
+            <div>
+              <h4>{{ t('recommendedFix') }}</h4>
+              <p>{{ finding.suggestedFix }}</p>
+            </div>
+          </div>
           <details>
             <summary>{{ t('involvedComponents') }} ({{ finding.affectedComponents.length }})</summary>
             <div class="component-list">

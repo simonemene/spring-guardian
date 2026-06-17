@@ -126,6 +126,26 @@ La UI Angular supporta tre modalità:
 
    Questa modalità è utile quando backend e progetto sono sulla stessa macchina oppure quando in Docker monti una cartella sotto `/scan`.
 
+## Esperienza utente e lettura problemi
+
+La UI non mostra solo severità come Critico, Alto, Medio e Info. Ogni problema viene classificato anche per tipo tecnico:
+
+```text
+Codice Java
+POM Maven
+Dipendenze
+Configurazione
+Test
+Sicurezza
+JPA e persistenza
+Layer web/API
+Dependency injection
+Codice runtime
+Spring Alternative Advisor
+```
+
+Questo permette di capire subito se un report è dominato da codice applicativo, POM/dipendenze, configurazione, test o suggerimenti Spring. La sezione **Alternative Spring** è separata per non mischiare suggerimenti di modernizzazione con problemi bloccanti di rilascio.
+
 ## Avvio completo con Docker
 
 ```bash
@@ -265,7 +285,7 @@ Le descrizioni e i fix di queste regole sono bilingue e vengono localizzati dal 
 
 ## Spring Alternative Advisor
 
-Spring Guardian include una sezione dedicata alle alternative Spring o Spring Boot quando il codice usa API Java manuali o pattern che funzionano, ma non sfruttano bene il framework.
+Spring Guardian include una sezione dedicata e visibile in UI alle alternative Spring o Spring Boot quando il codice usa API Java manuali o pattern che funzionano, ma non sfruttano bene il framework. La tab **Alternative Spring** mostra solo questi suggerimenti, mentre la tab **Problemi** permette di filtrare anche per tipo tecnico: codice Java, POM Maven, dipendenze, configurazione, test, sicurezza, JPA, web layer e Spring Alternative Advisor.
 
 Esempi di controlli:
 
@@ -282,6 +302,20 @@ SPR072 - Service, repository, client o adapter creati con new dentro componenti 
 SPR073 - @MockBean/@SpyBean da modernizzare verso @MockitoBean/@MockitoSpyBean
 SPR074 - Structured logging Spring Boot da valutare sui progetti moderni
 SPR075 - MockMvcTester da valutare nei nuovi test MVC su Spring Boot recenti
+SPR076 - RestTemplate creato manualmente da sostituire con bean configurato o RestClient
+SPR077 - WebClient.builder/create usato direttamente invece di builder/bean configurato
+SPR078 - RestClient.builder/create duplicato in classi applicative
+SPR079 - URL/HttpClient/OkHttpClient/HttpURLConnection usati come client HTTP di basso livello
+SPR080 - SimpleDateFormat invece di DateTimeFormatter
+SPR081 - Gson/GsonBuilder manuale accanto alla policy JSON Spring Boot/Jackson
+SPR082 - @Value sparsi dove sarebbe meglio @ConfigurationProperties validato
+SPR083 - @Async senza @EnableAsync
+SPR084 - @Scheduled senza @EnableScheduling
+SPR085 - LocalDateTime.now diretto invece di Clock iniettato nella logica applicativa
+SPR086 - ApplicationContext.getBean invece di constructor injection o factory dedicata
+SPR088 - Thread.sleep nel codice applicativo
+SPR089 - Validation.buildDefaultValidatorFactory invece di Validator gestito da Spring
+SPR090 - ConcurrentHashMap usato come possibile cache manuale invece di Spring Cache
 ```
 
 Questa sezione non chiama servizi esterni e non scarica informazioni online durante la scansione. È un catalogo deterministico locale di alternative note e consigli architetturali.
@@ -378,6 +412,18 @@ Esempio semplificato:
       "required": false
     }
   ],
+  "findingsByType": [
+    {
+      "category": "Spring Alternative Advisor",
+      "findings": 8,
+      "explanation": "API Java manuali e alternative Spring moderne rilevate dallo Spring Alternative Advisor."
+    },
+    {
+      "category": "Dipendenze",
+      "findings": 2,
+      "explanation": "Problemi su dipendenze e versioni Maven che possono influire su build o compatibilità Spring."
+    }
+  ],
   "architectureAreas": [
     {
       "code": "JPA_PERSISTENCE",
@@ -391,6 +437,8 @@ Esempio semplificato:
       "ruleId": "SPR053_JPA_ENTITY_ACCESSIBLE_NO_ARGS_CONSTRUCTOR",
       "severity": "MAJOR",
       "category": "JPA, persistenza e integrazioni",
+      "findingType": "JPA",
+      "findingTypeLabel": "JPA e persistenza",
       "title": "Entity JPA senza costruttore no-args accessibile",
       "occurrences": 1,
       "whyItMatters": "Le entity JPA devono poter essere istanziate dal provider tramite un costruttore no-args pubblico o protected.",
@@ -424,6 +472,7 @@ Il backend include una struttura di test divisa per livello:
 ```text
 guardian-core/src/test/java/com/example/guardian/core/ProjectScanServiceLanguageTest.java
 guardian-core/src/test/java/com/example/guardian/core/rules/AdvancedArchitectureRulesTest.java
+guardian-core/src/test/java/com/example/guardian/core/rules/SpringAlternativeAdvisorRulesTest.java
 guardian-server/src/test/java/com/example/guardian/server/service/ZipWorkspaceServiceTest.java
 guardian-server/src/test/java/com/example/guardian/server/controller/ScanControllerWebMvcTest.java
 guardian-server/src/test/java/com/example/guardian/server/ScanControllerIT.java
@@ -494,11 +543,17 @@ Esempi di regole incluse:
 - campi dependency non `final` con constructor injection;
 - controller REST senza base mapping;
 - ObjectMapper creato manualmente;
-- Thread, ExecutorService, Timer e TimerTask creati manualmente;
+- RestTemplate, WebClient, RestClient e client HTTP di basso livello creati manualmente;
+- Thread, ExecutorService, Timer, TimerTask e Thread.sleep nel codice applicativo;
 - JdbcTemplate e PasswordEncoder creati fuori da bean centralizzati;
 - System.getenv/System.getProperty nel codice applicativo;
 - FileInputStream/FileReader diretti;
+- SimpleDateFormat, Gson, ValidatorFactory e accesso diretto al clock;
 - collaboratori Spring creati con new;
+- @Value sparsi invece di @ConfigurationProperties;
+- @Async/@Scheduled senza relativa abilitazione;
+- ApplicationContext.getBean fuori da factory dedicate;
+- possibili cache manuali con ConcurrentHashMap;
 - @MockBean/@SpyBean da modernizzare;
 - structured logging e MockMvcTester come opportunità Spring Boot moderne.
 
@@ -536,3 +591,70 @@ dist/
 *.jar
 *.war
 ```
+
+## v10 - Configuration and dependency governance
+
+Questa versione rafforza due aree fondamentali per usare Spring Guardian come gate di rilascio aziendale.
+
+### Configurazione esternalizzata
+
+Spring Guardian ora segnala quando `application.properties`, `application.yml` o `application.yaml` contengono valori runtime specifici dell'ambiente dentro `src/main/resources`.
+
+Nuove regole:
+
+```text
+SPR091_APPLICATION_PROPERTIES_SHOULD_BE_EXTERNALIZED
+SPR092_HARDCODED_ACTIVE_SPRING_PROFILE
+```
+
+Esempi rilevati:
+
+```properties
+spring.datasource.url=jdbc:postgresql://server:5432/app
+server.port=8081
+spring.profiles.active=prod
+external.payment.endpoint=https://payments.example.local
+```
+
+Il principio è: l'artefatto deve essere il più possibile neutro rispetto all'ambiente. Nel repository devono restare placeholder, default sicuri o configurazioni realmente comuni; valori di ambiente, segreti, host, porte, endpoint, cron e path operativi devono arrivare da variabili ambiente, configurazione montata, ConfigMap/Secret, Vault, secret manager o piattaforma di deploy.
+
+English: Spring Guardian now detects packaged runtime configuration inside `application.properties` or `application.yml`. The artifact should stay environment-neutral; environment-specific values should be injected by the deployment platform.
+
+### Conflitti e igiene dipendenze Maven
+
+Spring Guardian ora controlla anche conflitti e combinazioni sospette nel POM.
+
+Nuove regole:
+
+```text
+SPR093_MAVEN_DEPENDENCY_VERSION_CONFLICT
+SPR094_MAVEN_MIXED_STACK_DEPENDENCIES
+SPR095_MAVEN_DEPENDENCY_HYGIENE
+```
+
+Esempi rilevati:
+
+```text
+Stessa dipendenza dichiarata con versioni diverse in moduli diversi
+spring-boot-starter-web insieme a spring-boot-starter-webflux
+javax.persistence insieme a jakarta.persistence
+Gson insieme a Jackson senza decisione esplicita
+Log4j insieme allo starter logging di default
+Versioni SNAPSHOT, LATEST, RELEASE o range Maven
+Dipendenze system-scoped
+Lombok senza scope esplicito
+```
+
+English: Maven governance now includes direct version conflict detection, suspicious mixed stacks and release hygiene checks such as SNAPSHOT/ranged versions, system-scoped dependencies and missing Lombok scope.
+
+### UI aggiornata
+
+La dashboard mostra ora card dedicate anche a:
+
+```text
+Configurazione
+Dipendenze
+Spring Alternative Advisor
+```
+
+Questo evita di leggere solo Critico/Alto/Medio e permette di capire subito se il progetto è debole per codice Java, POM, dipendenze, configurazione, test, sicurezza, JPA, layer web/API o alternative Spring.

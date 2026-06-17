@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
 import { SpringGuardianApiService } from './spring-guardian-api.service';
 import { ArchitectureReviewReport, AffectedComponent, ArchitectureStyle, FindingGroup, ProjectType, ReleaseTarget, ReportLanguage, ScanProfile, Severity } from './spring-guardian.model';
 
-type Tab = 'overview' | 'gates' | 'findings' | 'actions' | 'json';
+type Tab = 'overview' | 'gates' | 'findings' | 'advisor' | 'actions' | 'json';
 type UploadMode = 'zip' | 'folder' | 'local';
 type TranslationKey = keyof typeof TRANSLATIONS.it;
 
@@ -54,6 +54,11 @@ const TRANSLATIONS = {
     overview: 'Riepilogo',
     gates: 'Quality gate',
     problems: 'Problemi',
+    springAdvisor: 'Alternative Spring',
+    advisorSubtitle: 'Oggetti Java manuali, API di basso livello e alternative Spring moderne da valutare.',
+    advisorOpportunities: 'suggerimenti',
+    advisorEmptyTitle: 'Nessuna alternativa Spring rilevata',
+    advisorEmptyText: 'In questa scansione non sono stati trovati oggetti Java manuali o API sostituibili con alternative Spring più integrate.',
     actions: 'Azioni',
     technicalJson: 'JSON tecnico',
     executiveSummary: 'Riepilogo esecutivo',
@@ -74,7 +79,20 @@ const TRANSLATIONS = {
     searchPlaceholder: 'Cerca per codice, classe, file o testo...',
     allSeverities: 'Tutte le severità',
     allAreas: 'Tutte le aree',
+    allTypes: 'Tutti i tipi',
     clearFilters: 'Pulisci filtri',
+    findingType: 'Tipo problema',
+    typeCode: 'Codice Java',
+    typePom: 'POM Maven',
+    typeDependencies: 'Dipendenze',
+    typeConfiguration: 'Configurazione',
+    typeTest: 'Test',
+    typeSecurity: 'Sicurezza',
+    typeJpa: 'JPA e persistenza',
+    typeWebLayer: 'Layer web/API',
+    typeDependencyInjection: 'Dependency injection',
+    typeRuntimeCode: 'Codice runtime',
+    typeSpringAlternative: 'Spring Alternative Advisor',
     technicalCode: 'Codice tecnico',
     whyItMatters: 'Perché conta',
     recommendedFix: 'Correzione consigliata',
@@ -160,6 +178,11 @@ const TRANSLATIONS = {
     overview: 'Overview',
     gates: 'Quality gates',
     problems: 'Findings',
+    springAdvisor: 'Spring Alternatives',
+    advisorSubtitle: 'Manual Java objects, low-level APIs and modern Spring alternatives worth evaluating.',
+    advisorOpportunities: 'suggestions',
+    advisorEmptyTitle: 'No Spring alternative detected',
+    advisorEmptyText: 'This scan did not find manual Java objects or APIs that should be replaced by more integrated Spring alternatives.',
     actions: 'Actions',
     technicalJson: 'Technical JSON',
     executiveSummary: 'Executive summary',
@@ -180,7 +203,20 @@ const TRANSLATIONS = {
     searchPlaceholder: 'Search by code, class, file or text...',
     allSeverities: 'All severities',
     allAreas: 'All areas',
+    allTypes: 'All types',
     clearFilters: 'Clear filters',
+    findingType: 'Finding type',
+    typeCode: 'Java code',
+    typePom: 'Maven POM',
+    typeDependencies: 'Dependencies',
+    typeConfiguration: 'Configuration',
+    typeTest: 'Tests',
+    typeSecurity: 'Security',
+    typeJpa: 'JPA and persistence',
+    typeWebLayer: 'Web/API layer',
+    typeDependencyInjection: 'Dependency injection',
+    typeRuntimeCode: 'Runtime code',
+    typeSpringAlternative: 'Spring Alternative Advisor',
     technicalCode: 'Technical code',
     whyItMatters: 'Why it matters',
     recommendedFix: 'Recommended fix',
@@ -251,6 +287,7 @@ export class AppComponent {
   search = '';
   severityFilter: Severity | 'ALL' = 'ALL';
   categoryFilter = 'ALL';
+  typeFilter = 'ALL';
   projectType: ProjectType = 'WEB_API';
   releaseTarget: ReleaseTarget = 'PRODUCTION';
   knownIssuesAccepted = false;
@@ -261,6 +298,22 @@ export class AppComponent {
       return [];
     }
     return [...new Set(current.findings.map((finding) => finding.category))].sort();
+  });
+
+  readonly findingTypes = computed(() => {
+    const current = this.report();
+    if (!current) {
+      return [];
+    }
+    return [...new Set(current.findings.map((finding) => this.findingType(finding)))].sort((left, right) => this.findingTypeLabel(left).localeCompare(this.findingTypeLabel(right)));
+  });
+
+  readonly springAdvisorFindings = computed(() => {
+    const current = this.report();
+    if (!current) {
+      return [];
+    }
+    return current.findings.filter((finding) => this.isSpringAdvisorFinding(finding));
   });
 
   readonly filteredFindings = computed(() => {
@@ -274,6 +327,7 @@ export class AppComponent {
     return current.findings.filter((finding) => {
       const matchesSeverity = this.severityFilter === 'ALL' || finding.severity === this.severityFilter;
       const matchesCategory = this.categoryFilter === 'ALL' || finding.category === this.categoryFilter;
+      const matchesType = this.typeFilter === 'ALL' || this.findingType(finding) === this.typeFilter;
       const searchable = [
         finding.ruleId,
         this.ruleCode(finding.ruleId),
@@ -288,7 +342,7 @@ export class AppComponent {
         ])
       ].join(' ').toLowerCase();
 
-      return matchesSeverity && matchesCategory && (!term || searchable.includes(term));
+      return matchesSeverity && matchesCategory && matchesType && (!term || searchable.includes(term));
     });
   });
 
@@ -366,6 +420,7 @@ export class AppComponent {
     this.search = '';
     this.severityFilter = 'ALL';
     this.categoryFilter = 'ALL';
+    this.typeFilter = 'ALL';
   }
 
   severityCount(severity: Severity): number {
@@ -404,6 +459,55 @@ export class AppComponent {
       MINOR: this.t('minor'),
       INFO: this.t('info')
     } as Record<string, string>)[severity] ?? this.humanize(severity);
+  }
+
+  findingType(finding: FindingGroup): string {
+    if (finding.findingType) {
+      return finding.findingType;
+    }
+    if (this.isSpringAdvisorFinding(finding)) {
+      return 'SPRING_ALTERNATIVE';
+    }
+    if (finding.affectedComponents.some((component) => component.type === 'MAVEN_POM')) {
+      return 'POM';
+    }
+    if (finding.affectedComponents.some((component) => component.type === 'CONFIG_FILE')) {
+      return 'CONFIGURATION';
+    }
+    if (finding.affectedComponents.some((component) => component.type === 'TEST_CLASS')) {
+      return 'TEST';
+    }
+    return 'CODE';
+  }
+
+  findingTypeLabel(type: string): string {
+    return ({
+      CODE: this.t('typeCode'),
+      POM: this.t('typePom'),
+      DEPENDENCIES: this.t('typeDependencies'),
+      CONFIGURATION: this.t('typeConfiguration'),
+      TEST: this.t('typeTest'),
+      SECURITY: this.t('typeSecurity'),
+      JPA: this.t('typeJpa'),
+      WEB_LAYER: this.t('typeWebLayer'),
+      DEPENDENCY_INJECTION: this.t('typeDependencyInjection'),
+      RUNTIME_CODE: this.t('typeRuntimeCode'),
+      SPRING_ALTERNATIVE: this.t('typeSpringAlternative')
+    } as Record<string, string>)[type] ?? this.humanize(type);
+  }
+
+  isSpringAdvisorFinding(finding: FindingGroup): boolean {
+    return finding.findingType === 'SPRING_ALTERNATIVE' || finding.category === 'Spring Alternative Advisor' || /^SPR(06[4-9]|07[0-9]|08[0-9]|090)/.test(finding.ruleId);
+  }
+
+  advisorCount(current: ArchitectureReviewReport): number {
+    return current.findings.filter((finding) => this.isSpringAdvisorFinding(finding)).reduce((total, finding) => total + finding.occurrences, 0);
+  }
+
+  typeOccurrenceCount(current: ArchitectureReviewReport, type: string): number {
+    return current.findings
+      .filter((finding) => this.findingType(finding) === type)
+      .reduce((total, finding) => total + finding.occurrences, 0);
   }
 
   riskLabel(riskLevel: string): string {

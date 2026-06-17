@@ -25,6 +25,7 @@ export interface ArchitectureReviewReport {
   rulesExecuted: number;
   findingsBySeverity: Partial<Record<Severity, number>>;
   findingsByCategory: CategorySummary[];
+  findingsByType: CategorySummary[];
   architectureAreas: ArchitectureAreaReport[];
   qualityGates: QualityGate[];
   recommendedActions: RecommendedAction[];
@@ -120,6 +121,8 @@ export interface FindingGroup {
   ruleId: string;
   severity: Severity;
   category: string;
+  findingType: string;
+  findingTypeLabel: string;
   title: string;
   occurrences: number;
   affectedComponents: AffectedComponent[];

@@ -94,6 +94,7 @@ class ScanControllerWebMvcTest {
                 severity,
                 List.of(),
                 List.of(),
+                List.of(),
                 List.of(new QualityGate("GATE_TEST", "Test", "PASS", "ok", true, 0)),
                 List.of(),
                 new ReportExplanation("score", "severity", "usage", List.of()),

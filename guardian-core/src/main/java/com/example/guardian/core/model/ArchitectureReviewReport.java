@@ -20,6 +20,7 @@ import java.util.Map;
  * @param rulesExecuted number of rules executed
  * @param findingsBySeverity finding count by severity
  * @param findingsByCategory finding count by category
+ * @param findingsByType finding count by deterministic technical type
  * @param architectureAreas findings grouped by Spring architecture area
  * @param qualityGates deterministic quality gates
  * @param recommendedActions prioritized recommended actions
@@ -41,6 +42,7 @@ public record ArchitectureReviewReport(
         int rulesExecuted,
         Map<Severity, Long> findingsBySeverity,
         List<CategorySummary> findingsByCategory,
+        List<CategorySummary> findingsByType,
         List<ArchitectureAreaReport> architectureAreas,
         List<QualityGate> qualityGates,
         List<RecommendedAction> recommendedActions,

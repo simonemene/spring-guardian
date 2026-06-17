@@ -122,6 +122,7 @@ public class ProjectScanService {
                 rules.size(),
                 bySeverity,
                 buildCategorySummaries(findings, resolvedLanguage),
+                buildFindingTypeSummaries(findings, resolvedLanguage),
                 architectureAreas,
                 qualityGates,
                 buildRecommendedActions(groupedFindings, resolvedLanguage),
@@ -230,6 +231,63 @@ public class ProjectScanService {
         return summaries;
     }
 
+    private List<CategorySummary> buildFindingTypeSummaries(List<Finding> findings, ReportLanguage language) {
+        Map<String, List<Finding>> byType = findings.stream()
+                .collect(Collectors.groupingBy(this::findingTypeFor, LinkedHashMap::new, Collectors.toList()));
+
+        List<CategorySummary> summaries = new ArrayList<>();
+        byType.entrySet().stream()
+                .sorted(Comparator.<Map.Entry<String, List<Finding>>>comparingLong(entry -> -countSeverity(entry.getValue(), Severity.CRITICAL))
+                        .thenComparingLong(entry -> -countSeverity(entry.getValue(), Severity.MAJOR))
+                        .thenComparingLong(entry -> -severityWeight(entry.getValue()))
+                        .thenComparing(entry -> findingTypeLabel(entry.getKey(), language)))
+                .forEach(entry -> {
+                    List<Finding> typeFindings = entry.getValue();
+                    summaries.add(new CategorySummary(
+                            findingTypeLabel(entry.getKey(), language),
+                            typeFindings.size(),
+                            countSeverity(typeFindings, Severity.CRITICAL),
+                            countSeverity(typeFindings, Severity.MAJOR),
+                            countSeverity(typeFindings, Severity.MINOR),
+                            countSeverity(typeFindings, Severity.INFO),
+                            findingTypeExplanation(entry.getKey(), language)
+                    ));
+                });
+
+        return summaries;
+    }
+
+    private String findingTypeExplanation(String findingType, ReportLanguage language) {
+        if (language == ReportLanguage.ENGLISH) {
+            return switch (findingType) {
+                case "SPRING_ALTERNATIVE" -> "Manual Java APIs and modern Spring alternatives detected by the Spring Alternative Advisor.";
+                case "DEPENDENCIES" -> "Dependency and Maven version issues that may affect build stability or Spring compatibility.";
+                case "POM" -> "Maven POM structure, plugin and dependency management quality.";
+                case "CONFIGURATION" -> "Configuration files, profiles, secrets and environment-sensitive settings.";
+                case "TEST" -> "Unit, slice, integration and end-to-end testing gaps or weak tests.";
+                case "SECURITY" -> "Authentication, authorization, CSRF, CORS and security bean configuration.";
+                case "JPA" -> "Entity mapping, transaction boundaries, repository calls and persistence behavior.";
+                case "WEB_LAYER" -> "Controller boundaries, validation, DTOs, REST contracts and OpenAPI documentation.";
+                case "DEPENDENCY_INJECTION" -> "Constructor injection, immutable dependencies and collaborator wiring.";
+                case "RUNTIME_CODE" -> "Runtime correctness risks such as exception handling, null handling and unsafe blocking.";
+                default -> "General Java source code structure and maintainability.";
+            };
+        }
+        return switch (findingType) {
+            case "SPRING_ALTERNATIVE" -> "API Java manuali e alternative Spring moderne rilevate dallo Spring Alternative Advisor.";
+            case "DEPENDENCIES" -> "Problemi su dipendenze e versioni Maven che possono influire su build o compatibilità Spring.";
+            case "POM" -> "Qualità di struttura POM Maven, plugin e dependency management.";
+            case "CONFIGURATION" -> "File di configurazione, profili, segreti e impostazioni dipendenti dall'ambiente.";
+            case "TEST" -> "Gap o debolezze su test unitari, slice, integration ed end-to-end.";
+            case "SECURITY" -> "Autenticazione, autorizzazione, CSRF, CORS e configurazione dei bean di sicurezza.";
+            case "JPA" -> "Mapping entity, confini transazionali, chiamate repository e comportamento di persistenza.";
+            case "WEB_LAYER" -> "Confini controller, validazione, DTO, contratti REST e documentazione OpenAPI.";
+            case "DEPENDENCY_INJECTION" -> "Constructor injection, dipendenze immutabili e cablaggio dei collaboratori.";
+            case "RUNTIME_CODE" -> "Rischi di correttezza runtime come eccezioni, null handling e blocchi non sicuri.";
+            default -> "Struttura e manutenibilità generale del codice Java.";
+        };
+    }
+
     private long severityWeight(List<Finding> findings) {
         return findings.stream()
                 .mapToLong(finding -> switch (finding.severity()) {
@@ -260,10 +318,13 @@ public class ProjectScanService {
                                     .thenComparing(finding -> finding.line() == null ? 0 : finding.line()))
                             .toList();
                     Finding first = ruleFindings.get(0);
+                    String findingType = findingTypeFor(first);
                     groups.add(new FindingGroup(
                             first.ruleId(),
                             first.severity(),
                             categoryFor(first, language),
+                            findingType,
+                            findingTypeLabel(findingType, language),
                             RuleTextCatalog.title(first.ruleId(), first.title(), language),
                             ruleFindings.size(),
                             ruleFindings.stream().map(this::affectedComponentOf).toList(),
@@ -293,6 +354,73 @@ public class ProjectScanService {
                 finding.line(),
                 finding.evidence()
         );
+    }
+
+    private String findingTypeFor(Finding finding) {
+        String ruleId = finding.ruleId();
+        String componentType = componentTypeOf(finding);
+        if (springAlternativeAdvisorRule(ruleId)) {
+            return "SPRING_ALTERNATIVE";
+        }
+        if (matches(ruleId, "SPR032", "SPR033", "SPR093", "SPR094", "SPR095") || "MAVEN_POM".equals(componentType)) {
+            return "DEPENDENCIES";
+        }
+        if (matches(ruleId, "SPR015")) {
+            return "POM";
+        }
+        if (matches(ruleId, "SPR001", "SPR036", "SPR037", "SPR038", "SPR039", "SPR091", "SPR092")) {
+            return "CONFIGURATION";
+        }
+        if (matches(ruleId, "SPR012", "SPR043", "SPR044", "SPR045", "SPR052") || "TEST_CLASS".equals(componentType)) {
+            return "TEST";
+        }
+        if (matches(ruleId, "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059")) {
+            return "SECURITY";
+        }
+        if (matches(ruleId, "SPR009", "SPR017", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057")) {
+            return "JPA";
+        }
+        if (matches(ruleId, "SPR003", "SPR004", "SPR006", "SPR010", "SPR013", "SPR014", "SPR019", "SPR023", "SPR024", "SPR050", "SPR051", "SPR056", "SPR060", "SPR063")) {
+            return "WEB_LAYER";
+        }
+        if (matches(ruleId, "SPR002", "SPR029", "SPR061", "SPR062")) {
+            return "DEPENDENCY_INJECTION";
+        }
+        if (matches(ruleId, "SPR008", "SPR011", "SPR020", "SPR025", "SPR047")) {
+            return "RUNTIME_CODE";
+        }
+        return "CODE";
+    }
+
+    private String findingTypeLabel(String findingType, ReportLanguage language) {
+        if (language == ReportLanguage.ENGLISH) {
+            return switch (findingType) {
+                case "SPRING_ALTERNATIVE" -> "Spring Alternative Advisor";
+                case "DEPENDENCIES" -> "Dependencies";
+                case "POM" -> "Maven POM";
+                case "CONFIGURATION" -> "Configuration";
+                case "TEST" -> "Tests";
+                case "SECURITY" -> "Security";
+                case "JPA" -> "JPA and persistence";
+                case "WEB_LAYER" -> "Web/API layer";
+                case "DEPENDENCY_INJECTION" -> "Dependency injection";
+                case "RUNTIME_CODE" -> "Runtime code";
+                default -> "Java code";
+            };
+        }
+        return switch (findingType) {
+            case "SPRING_ALTERNATIVE" -> "Spring Alternative Advisor";
+            case "DEPENDENCIES" -> "Dipendenze";
+            case "POM" -> "POM Maven";
+            case "CONFIGURATION" -> "Configurazione";
+            case "TEST" -> "Test";
+            case "SECURITY" -> "Sicurezza";
+            case "JPA" -> "JPA e persistenza";
+            case "WEB_LAYER" -> "Layer web/API";
+            case "DEPENDENCY_INJECTION" -> "Dependency injection";
+            case "RUNTIME_CODE" -> "Codice runtime";
+            default -> "Codice Java";
+        };
     }
 
     private String componentTypeOf(Finding finding) {
@@ -599,8 +727,8 @@ public class ProjectScanService {
                     new AreaDefinition("ARCHITECTURE_BOUNDARIES", "Architecture and boundaries", "Layer direction, DDD or hexagonal boundaries, package structure and class responsibilities.", List.of("SPR005", "SPR007", "SPR008", "SPR018", "SPR027", "SPR028", "SPR030", "SPR031", "SPR055")),
                     new AreaDefinition("RUNTIME_CORRECTNESS", "Runtime correctness", "Exception handling, null-safety, optional handling, hidden proxy effects and unsafe state changes.", List.of("SPR011", "SPR020", "SPR025", "SPR047")),
                     new AreaDefinition("TESTS", "Tests", "Test presence, assertions, test slicing, heavy context usage and time-based flakiness.", List.of("SPR012", "SPR043", "SPR044", "SPR045", "SPR052")),
-                    new AreaDefinition("BUILD_CONFIG", "Build and configuration", "Maven quality, Spring BOM alignment, profiles, hardcoded values, logging and maintainability.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036")),
-                    new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Spring Alternative Advisor", "Manual Java objects, low-level APIs and modern Spring alternatives worth evaluating.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075"))
+                    new AreaDefinition("BUILD_CONFIG", "Build and configuration", "Maven quality, Spring BOM alignment, profiles, hardcoded values, logging and maintainability.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036", "SPR091", "SPR092", "SPR093", "SPR094", "SPR095")),
+                    new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Spring Alternative Advisor", "Manual Java objects, low-level APIs and modern Spring alternatives worth evaluating.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090"))
             );
         }
         return List.of(
@@ -611,8 +739,8 @@ public class ProjectScanService {
                 new AreaDefinition("ARCHITECTURE_BOUNDARIES", "Architettura e confini", "Direzione dei layer, confini DDD o esagonali, struttura package e responsabilità delle classi.", List.of("SPR005", "SPR007", "SPR008", "SPR018", "SPR027", "SPR028", "SPR030", "SPR031", "SPR055")),
                 new AreaDefinition("RUNTIME_CORRECTNESS", "Correttezza runtime", "Gestione eccezioni, null-safety, Optional, effetti nascosti dei proxy e modifiche stato non sicure.", List.of("SPR011", "SPR020", "SPR025", "SPR047")),
                 new AreaDefinition("TESTS", "Test", "Presenza test, assert, slice test, uso del contesto Spring e fragilità temporale.", List.of("SPR012", "SPR043", "SPR044", "SPR045", "SPR052")),
-                new AreaDefinition("BUILD_CONFIG", "Build e configurazione", "Qualità Maven, allineamento BOM Spring, profili, valori hardcoded, logging e manutenibilità.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036")),
-                new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Spring Alternative Advisor", "Oggetti Java manuali, API di basso livello e alternative Spring moderne da valutare.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075"))
+                new AreaDefinition("BUILD_CONFIG", "Build e configurazione", "Qualità Maven, allineamento BOM Spring, profili, valori hardcoded, logging e manutenibilità.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036", "SPR091", "SPR092", "SPR093", "SPR094", "SPR095")),
+                new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Spring Alternative Advisor", "Oggetti Java manuali, API di basso livello e alternative Spring moderne da valutare.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090"))
         );
     }
 
@@ -639,10 +767,10 @@ public class ProjectScanService {
         if (matches(ruleId, "SPR012", "SPR043", "SPR044", "SPR045", "SPR052")) {
             return language == ReportLanguage.ENGLISH ? "Tests" : "Test";
         }
-        if (matches(ruleId, "SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036")) {
+        if (matches(ruleId, "SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036", "SPR091", "SPR092", "SPR093", "SPR094", "SPR095")) {
             return language == ReportLanguage.ENGLISH ? "Configuration and maintainability" : "Configurazione e manutenibilità";
         }
-        if (matches(ruleId, "SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075")) {
+        if (springAlternativeAdvisorRule(ruleId)) {
             return "Spring Alternative Advisor";
         }
         return language == ReportLanguage.ENGLISH ? "General" : "Generale";
@@ -655,6 +783,10 @@ public class ProjectScanService {
             }
         }
         return false;
+    }
+
+    private boolean springAlternativeAdvisorRule(String ruleId) {
+        return matches(ruleId, "SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090");
     }
 
     private boolean securityRule(String ruleId) {
