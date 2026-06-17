@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * Backend configuration properties used to tune Spring Guardian rule thresholds.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 @ConfigurationProperties(prefix = "spring-guardian")
 public class ServerGuardianProperties {

@@ -14,7 +14,7 @@ import java.util.List;
  * @param whyItMatters localized risk explanation
  * @param suggestedFix localized remediation
  * @param explanation localized group explanation
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record FindingGroup(
         String ruleId,

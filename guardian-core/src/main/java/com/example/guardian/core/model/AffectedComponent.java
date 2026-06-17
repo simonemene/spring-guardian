@@ -8,7 +8,7 @@ package com.example.guardian.core.model;
  * @param filePath relative file path
  * @param line source line when available
  * @param evidence technical evidence collected by the rule
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record AffectedComponent(
         String type,

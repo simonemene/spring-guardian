@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Wires the backend with the Spring Guardian core module.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 @Configuration
 @EnableConfigurationProperties(ServerGuardianProperties.class)

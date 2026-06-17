@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * Spring Boot entry point for the Spring Guardian backend.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 @SpringBootApplication
 public class GuardianServerApplication {

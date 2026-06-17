@@ -11,7 +11,7 @@ package com.example.guardian.core.model;
  * @param evidence technical evidence
  * @param whyItMatters explanation of the risk
  * @param suggestedFix recommended remediation
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record Finding(
         String ruleId,

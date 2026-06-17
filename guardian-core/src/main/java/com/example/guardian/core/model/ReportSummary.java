@@ -11,7 +11,7 @@ package com.example.guardian.core.model;
  * @param riskLevel overall risk level
  * @param status stable status code
  * @param executiveSummary localized summary
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record ReportSummary(
         int totalFindings,

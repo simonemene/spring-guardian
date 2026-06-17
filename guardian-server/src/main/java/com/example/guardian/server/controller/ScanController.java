@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * REST controller that exposes project scan operations.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 @RestController
 @RequestMapping("/api/v1/scans")

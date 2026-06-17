@@ -10,7 +10,7 @@ package com.example.guardian.core.model;
  * @param location first affected location
  * @param reason reason for the action
  * @param action suggested action
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record RecommendedAction(
         int priority,

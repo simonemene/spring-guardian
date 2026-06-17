@@ -10,7 +10,7 @@ package com.example.guardian.core.model;
  * @param minorFindings minor findings
  * @param infoFindings informational findings
  * @param explanation category explanation
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record CategorySummary(
         String category,

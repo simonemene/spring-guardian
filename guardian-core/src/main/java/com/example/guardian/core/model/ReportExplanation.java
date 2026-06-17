@@ -9,7 +9,7 @@ import java.util.List;
  * @param severityMeaning severity explanation
  * @param howToUseThisReport report usage guidance
  * @param nextSteps suggested next steps
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record ReportExplanation(
         String scoreMeaning,

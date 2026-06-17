@@ -11,7 +11,7 @@ import java.nio.file.Path;
  * @param relativePath relative path from project root
  * @param content source content
  * @param compilationUnit parsed JavaParser compilation unit
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record JavaSourceFile(
         Path absolutePath,

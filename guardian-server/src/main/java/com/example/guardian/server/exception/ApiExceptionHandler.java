@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /**
  * Maps backend exceptions to standard REST problem responses.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 @RestControllerAdvice
 public class ApiExceptionHandler {

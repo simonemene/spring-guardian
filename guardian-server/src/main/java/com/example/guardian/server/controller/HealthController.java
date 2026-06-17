@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * REST controller that exposes backend health information.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 @RestController
 @Tag(name = "Health", description = "Backend health endpoint.")

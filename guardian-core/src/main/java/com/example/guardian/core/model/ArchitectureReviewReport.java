@@ -20,7 +20,7 @@ import java.util.Map;
  * @param recommendedActions prioritized recommended actions
  * @param explanation report reading explanation
  * @param findings findings grouped by rule
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record ArchitectureReviewReport(
         String projectName,

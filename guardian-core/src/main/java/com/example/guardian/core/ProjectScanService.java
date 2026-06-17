@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 /**
  * Executes deterministic Spring architecture rules and builds the final review report.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class ProjectScanService {
 

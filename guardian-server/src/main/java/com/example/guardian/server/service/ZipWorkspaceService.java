@@ -15,7 +15,7 @@ import java.util.UUID;
 /**
  * Prepares temporary workspaces from uploaded ZIP archives or browser folder uploads.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 @Service
 public class ZipWorkspaceService {

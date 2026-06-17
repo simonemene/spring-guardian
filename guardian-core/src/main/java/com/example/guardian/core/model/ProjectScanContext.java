@@ -13,7 +13,7 @@ import java.util.Set;
  * @param entityClassNames detected entity class names
  * @param hasTests true when test sources are present
  * @param hasRestControllerAdvice true when a REST advice is present
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record ProjectScanContext(
         Path root,
