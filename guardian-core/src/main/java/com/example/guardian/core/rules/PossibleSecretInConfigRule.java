@@ -58,11 +58,9 @@ public class PossibleSecretInConfigRule implements SpringRule {
                                 }
                             }
                         } catch (Exception ignored) {
-                            // Keep scan resilient.
                         }
                     });
         } catch (Exception ignored) {
-            // Keep scan resilient.
         }
 
         return findings;

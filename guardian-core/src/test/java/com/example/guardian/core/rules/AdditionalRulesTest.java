@@ -2,7 +2,7 @@ package com.example.guardian.core.rules;
 
 import com.example.guardian.core.ProjectScanService;
 import com.example.guardian.core.config.GuardianSettings;
-import com.example.guardian.core.model.Finding;
+import com.example.guardian.core.model.FindingGroup;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -131,7 +131,7 @@ class AdditionalRulesTest {
                 """);
 
         var report = new ProjectScanService(GuardianSettings.defaults()).scan(tempDir);
-        Set<String> ruleIds = report.findings().stream().map(Finding::ruleId).collect(Collectors.toSet());
+        Set<String> ruleIds = report.findings().stream().map(FindingGroup::ruleId).collect(Collectors.toSet());
 
         assertTrue(ruleIds.contains("SPR046_CORS_ALLOW_ALL_WITH_CREDENTIALS"));
         assertTrue(ruleIds.contains("SPR047_EMPTY_CATCH_BLOCK"));
@@ -142,7 +142,7 @@ class AdditionalRulesTest {
         assertTrue(ruleIds.contains("SPR052_THREAD_SLEEP_IN_TEST"));
         assertTrue(report.summary().totalFindings() > 0);
         assertTrue(report.rulesExecuted() >= 50);
-        assertTrue(report.findingsByCategory().stream().anyMatch(category -> category.category().equals("SECURITY")));
+        assertTrue(report.findingsByCategory().stream().anyMatch(category -> category.category().equals("Sicurezza")));
         assertTrue(report.recommendedActions().stream().anyMatch(action -> action.ruleId().equals("SPR046_CORS_ALLOW_ALL_WITH_CREDENTIALS")));
     }
 }

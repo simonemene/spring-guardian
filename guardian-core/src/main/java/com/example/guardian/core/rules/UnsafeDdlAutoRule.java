@@ -50,11 +50,9 @@ public class UnsafeDdlAutoRule implements SpringRule {
                                 }
                             }
                         } catch (Exception ignored) {
-                            // Keep scan resilient.
                         }
                     });
         } catch (Exception ignored) {
-            // Keep scan resilient.
         }
 
         return findings;

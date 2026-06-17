@@ -54,7 +54,14 @@ public final class GuardianRules {
                 new PasswordEncoderMissingRule(),
                 new TestWithoutAssertionsRule(),
                 new SpringBootTestOverusedRule(),
-                new MockitoTestWithoutVerifyOrAssertRule()
+                new MockitoTestWithoutVerifyOrAssertRule(),
+                new CorsAllowAllWithCredentialsRule(),
+                new EmptyCatchBlockRule(),
+                new JpaEagerFetchingRule(),
+                new RepositoryCallInLoopRule(),
+                new GetEndpointMutatesStateRule(),
+                new ControllerRawResponseRule(),
+                new ThreadSleepInTestRule()
         );
     }
 }

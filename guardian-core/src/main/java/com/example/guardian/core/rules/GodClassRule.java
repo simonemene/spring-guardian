@@ -25,6 +25,10 @@ public class GodClassRule implements SpringRule {
         List<Finding> findings = new ArrayList<>();
 
         for (JavaSourceFile file : context.javaFiles()) {
+            if (SourceFilePredicates.isTestSource(file)) {
+                continue;
+            }
+
             for (ClassOrInterfaceDeclaration clazz : file.compilationUnit().findAll(ClassOrInterfaceDeclaration.class)) {
                 int lines = AstUtils.nodeLines(clazz);
                 int methods = clazz.getMethods().size();

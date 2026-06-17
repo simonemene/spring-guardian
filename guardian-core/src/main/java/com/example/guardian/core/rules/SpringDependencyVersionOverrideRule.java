@@ -45,7 +45,6 @@ public class SpringDependencyVersionOverrideRule implements SpringRule {
                     }
                 }
             } catch (Exception ignored) {
-                // keep scan resilient
             }
         }
 

@@ -26,6 +26,12 @@
             <artifactId>commons-compress</artifactId>
             <version>1.26.2</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
+        </dependency>
     
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -40,7 +46,17 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring-boot.version}</version>
+                <configuration>
+                    <skip>false</skip>
+                    <mainClass>com.example.guardian.server.GuardianServerApplication</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>

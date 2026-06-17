@@ -1,7 +1,7 @@
 package com.example.guardian.server;
 
 import com.example.guardian.core.model.ArchitectureReviewReport;
-import com.example.guardian.core.model.Finding;
+import com.example.guardian.core.model.FindingGroup;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,7 +42,7 @@ class ScanControllerIT {
         assertNotNull(response.getBody());
 
         Set<String> ruleIds = response.getBody().findings().stream()
-                .map(Finding::ruleId)
+                .map(FindingGroup::ruleId)
                 .collect(Collectors.toSet());
 
         assertTrue(ruleIds.contains("SPR002_FIELD_INJECTION"));

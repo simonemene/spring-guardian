@@ -1,11 +1,11 @@
-FROM node:22-alpine AS build
+FROM node:20-alpine AS build
 WORKDIR /app
-COPY guardian-ui/package*.json ./
-RUN npm ci
+COPY guardian-ui/package.json ./package.json
+RUN npm install --no-audit --no-fund
 COPY guardian-ui/ ./
 RUN npm run build
 
 FROM nginx:1.27-alpine
 COPY guardian-ui/nginx/default.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /app/dist/guardian-ui /usr/share/nginx/html
 EXPOSE 80

@@ -1,23 +1,30 @@
 {
   "name": "spring-guardian-ui",
-  "private": true,
   "version": "1.0.0",
-  "type": "module",
+  "private": true,
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview --host 0.0.0.0",
-    "lint": "tsc -b --noEmit"
+    "start": "ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json",
+    "dev": "ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development"
   },
   "dependencies": {
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "@angular/animations": "18.2.13",
+    "@angular/common": "18.2.13",
+    "@angular/compiler": "18.2.13",
+    "@angular/core": "18.2.13",
+    "@angular/forms": "18.2.13",
+    "@angular/platform-browser": "18.2.13",
+    "@angular/platform-browser-dynamic": "18.2.13",
+    "@angular/router": "18.2.13",
+    "rxjs": "~7.8.1",
+    "tslib": "^2.6.2",
+    "zone.js": "~0.14.10"
   },
   "devDependencies": {
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.2",
-    "typescript": "^6.0.3",
-    "vite": "^8.0.16"
+    "@angular-devkit/build-angular": "18.2.13",
+    "@angular/cli": "18.2.13",
+    "@angular/compiler-cli": "18.2.13",
+    "typescript": "~5.5.4"
   }
 }

@@ -64,7 +64,6 @@ public class PomQualityRule implements SpringRule {
                     ));
                 }
             } catch (Exception ignored) {
-                // Bad POM parsing should not fail the whole scan in MVP.
             }
         }
 

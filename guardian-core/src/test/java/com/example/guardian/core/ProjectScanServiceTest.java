@@ -2,7 +2,7 @@ package com.example.guardian.core;
 
 import com.example.guardian.core.config.GuardianSettings;
 import com.example.guardian.core.model.ArchitectureReviewReport;
-import com.example.guardian.core.model.Finding;
+import com.example.guardian.core.model.FindingGroup;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -27,7 +27,7 @@ class ProjectScanServiceTest {
         ArchitectureReviewReport report = service.scan(tempDir);
 
         Set<String> ruleIds = report.findings().stream()
-                .map(Finding::ruleId)
+                .map(FindingGroup::ruleId)
                 .collect(Collectors.toSet());
 
         assertTrue(ruleIds.contains("SPR002_FIELD_INJECTION"));
@@ -91,6 +91,43 @@ class ProjectScanServiceTest {
 
         assertTrue(report.findings().stream()
                 .anyMatch(finding -> finding.ruleId().equals("SPR012_MISSING_TESTS")));
+    }
+
+    @Test
+    void godClassRuleIgnoresLargeTestClasses() throws Exception {
+        Files.createDirectories(tempDir.resolve("src/main/java/com/acme/service"));
+        Files.createDirectories(tempDir.resolve("src/test/java/com/acme/service"));
+
+        Files.writeString(tempDir.resolve("src/main/java/com/acme/service/UserService.java"), """
+                package com.acme.service;
+
+                import org.springframework.stereotype.Service;
+
+                @Service
+                public class UserService {
+                    public String ok() {
+                        return "ok";
+                    }
+                }
+                """);
+
+        StringBuilder methods = new StringBuilder();
+        for (int i = 0; i < 25; i++) {
+            methods.append("    void helper").append(i).append("() {}\n");
+        }
+
+        Files.writeString(tempDir.resolve("src/test/java/com/acme/service/BatchDependencyServiceUnitTest.java"), """
+                package com.acme.service;
+
+                class BatchDependencyServiceUnitTest {
+                """ + methods + """
+                }
+                """);
+
+        ArchitectureReviewReport report = new ProjectScanService(GuardianSettings.defaults()).scan(tempDir);
+
+        assertFalse(report.findings().stream()
+                .anyMatch(finding -> finding.ruleId().equals("SPR030_GOD_CLASS")));
     }
 
     private void createSpringProject(Path root) throws Exception {

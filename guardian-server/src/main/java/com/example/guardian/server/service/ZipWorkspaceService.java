@@ -9,33 +9,41 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 
+/**
+ * Prepares temporary workspaces from uploaded ZIP archives or browser folder uploads.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 @Service
 public class ZipWorkspaceService {
 
+    /**
+     * Extracts a ZIP archive into a safe temporary workspace.
+     *
+     * @param file uploaded ZIP file
+     * @return workspace root
+     */
     public Path extractZip(MultipartFile file) {
         if (file.isEmpty()) {
-            throw new IllegalArgumentException("Uploaded file is empty");
+            throw new IllegalArgumentException("Il file ZIP caricato è vuoto.");
         }
 
         String originalName = file.getOriginalFilename();
         if (originalName == null || !originalName.toLowerCase().endsWith(".zip")) {
-            throw new IllegalArgumentException("Only .zip files are supported");
+            throw new IllegalArgumentException("Sono supportati solo file .zip.");
         }
 
-        Path workspace = Path.of(System.getProperty("java.io.tmpdir"), "spring-guardian", UUID.randomUUID().toString());
+        Path workspace = newWorkspace();
 
         try {
             Files.createDirectories(workspace);
             try (ZipArchiveInputStream zip = new ZipArchiveInputStream(new BufferedInputStream(file.getInputStream()))) {
                 ZipArchiveEntry entry;
                 while ((entry = zip.getNextZipEntry()) != null) {
-                    Path target = workspace.resolve(entry.getName()).normalize();
-
-                    if (!target.startsWith(workspace)) {
-                        throw new IllegalArgumentException("Invalid ZIP entry path: " + entry.getName());
-                    }
+                    Path target = safeResolve(workspace, entry.getName());
 
                     if (entry.isDirectory()) {
                         Files.createDirectories(target);
@@ -47,7 +55,59 @@ public class ZipWorkspaceService {
             }
             return workspace;
         } catch (IOException e) {
-            throw new IllegalStateException("Unable to extract ZIP file", e);
+            throw new IllegalStateException("Impossibile estrarre il file ZIP.", e);
         }
+    }
+
+    /**
+     * Copies files selected from a browser folder upload into a safe temporary workspace.
+     *
+     * @param files uploaded project files
+     * @return workspace root
+     */
+    public Path copyUploadedFolder(List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("La cartella caricata non contiene file.");
+        }
+
+        Path workspace = newWorkspace();
+
+        try {
+            Files.createDirectories(workspace);
+            for (MultipartFile file : files) {
+                if (file.isEmpty()) {
+                    continue;
+                }
+
+                String originalName = file.getOriginalFilename();
+                if (originalName == null || originalName.isBlank()) {
+                    continue;
+                }
+
+                Path target = safeResolve(workspace, originalName);
+                Files.createDirectories(target.getParent());
+                file.transferTo(target);
+            }
+            return workspace;
+        } catch (IOException e) {
+            throw new IllegalStateException("Impossibile copiare la cartella caricata.", e);
+        }
+    }
+
+    private Path newWorkspace() {
+        return Path.of(System.getProperty("java.io.tmpdir"), "spring-guardian", UUID.randomUUID().toString());
+    }
+
+    private Path safeResolve(Path workspace, String relativePath) {
+        String cleaned = relativePath.replace('\\', '/');
+        while (cleaned.startsWith("/")) {
+            cleaned = cleaned.substring(1);
+        }
+
+        Path target = workspace.resolve(cleaned).normalize();
+        if (!target.startsWith(workspace)) {
+            throw new IllegalArgumentException("Percorso non valido nel progetto caricato: " + relativePath);
+        }
+        return target;
     }
 }

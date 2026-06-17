@@ -20,7 +20,7 @@ public class ProjectSourceScanner {
 
     public ProjectScanContext scan(Path root) {
         if (!Files.exists(root)) {
-            throw new IllegalArgumentException("Path does not exist: " + root);
+            throw new IllegalArgumentException("Il percorso non esiste: " + root);
         }
 
         try {
@@ -55,7 +55,7 @@ public class ProjectSourceScanner {
 
             return new ProjectScanContext(root, javaFiles, pomFiles, entities, hasTests, hasAdvice);
         } catch (IOException e) {
-            throw new IllegalStateException("Unable to scan project path: " + root, e);
+            throw new IllegalStateException("Impossibile scansionare il percorso del progetto: " + root, e);
         }
     }
 

@@ -20,6 +20,7 @@
         <javaparser.version>3.26.3</javaparser.version>
         <picocli.version>4.7.6</picocli.version>
         <jackson.version>2.17.2</jackson.version>
+        <springdoc.version>2.6.0</springdoc.version>
     </properties>
 
     <dependencyManagement>
@@ -44,6 +45,15 @@
                     <configuration>
                         <release>${java.version}</release>
                         <parameters>true</parameters>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                    <configuration>
+                        <skip>true</skip>
                     </configuration>
                 </plugin>
 

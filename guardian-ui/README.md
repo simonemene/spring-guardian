@@ -1,40 +1,81 @@
 # Spring Guardian UI
 
-Modern dashboard for Spring Guardian reports.
+Frontend Angular standalone per Spring Guardian.
 
-## Run locally
-
-Start the backend on port `8080`, then:
+## Avvio locale
 
 ```bash
+cd guardian-ui
 npm install
-npm run dev
+npm start
 ```
 
-Open:
+L'app parte su:
 
 ```text
-http://localhost:5173
+http://localhost:4200
 ```
 
-Vite proxies `/api` to `http://localhost:8080` during development.
+Il proxy Angular inoltra `/api` a `http://localhost:8080` tramite `proxy.conf.json`.
 
-## Build
+## Lingua
+
+La UI permette di scegliere:
+
+- Italiano;
+- Inglese.
+
+La scelta viene inviata al backend con `language=it` o `language=en`. Il backend restituisce report localizzati in base alla lingua selezionata.
+
+## Modalità disponibili
+
+- **Carica ZIP**: carica un progetto `.zip`.
+- **Carica cartella**: seleziona la cartella root del progetto direttamente dal browser.
+- **Percorso backend**: indica una cartella già visibile dal backend, ad esempio `/scan/mio-progetto` o un path Windows locale quando il backend gira sulla stessa macchina.
+
+## Backend richiesto
+
+Avvia il backend dalla root del progetto:
+
+```powershell
+.\scripts\run-backend.ps1
+```
+
+Oppure manualmente:
 
 ```bash
-npm run build
+mvn -pl guardian-server -am package -DskipTests
+mvn -pl guardian-server spring-boot:run
+```
+
+Swagger backend:
+
+```text
+http://localhost:8080/swagger-ui/index.html
 ```
 
 ## Docker
 
-The root `docker-compose.yml` builds this UI and serves it with Nginx on port `3000`.
+Dalla root:
 
 ```bash
 docker compose up --build
 ```
 
-Open:
+UI:
 
 ```text
 http://localhost:3000
 ```
+
+Backend:
+
+```text
+http://localhost:8080/api/v1/health
+```
+
+## Nota registry npm
+
+Non sono inclusi `.npmrc` o `package-lock.json`: `npm install` userà il registry configurato sulla macchina. Il `package-lock.json` è ignorato dal Git del progetto per evitare di committare lock generati con registry aziendali o locali.
+
+Se sei in azienda puoi usare il registry Nexus aziendale; se sei fuori azienda puoi usare `https://registry.npmjs.org/`.

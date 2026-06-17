@@ -2,10 +2,13 @@ package com.example.guardian.cli;
 
 import com.example.guardian.core.ProjectScanService;
 import com.example.guardian.core.config.GuardianSettings;
+import com.example.guardian.core.model.AffectedComponent;
 import com.example.guardian.core.model.ArchitectureReviewReport;
-import com.example.guardian.core.model.Finding;
+import com.example.guardian.core.model.FindingGroup;
+import com.example.guardian.core.model.ReportLanguage;
 import com.example.guardian.core.model.Severity;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -19,6 +22,8 @@ import java.util.concurrent.Callable;
 @Command(name = "scan", description = "Scan a Spring project")
 public class ScanCommand implements Callable<Integer> {
 
+    private static final int MAX_COMPONENTS_IN_TEXT_REPORT = 20;
+
     @Parameters(index = "0", description = "Project path to scan")
     private Path projectPath;
 
@@ -30,6 +35,9 @@ public class ScanCommand implements Callable<Integer> {
 
     @Option(names = "--fail-on", description = "Fail with exit code 2 on severity: critical, major, minor", defaultValue = "")
     private String failOn;
+
+    @Option(names = "--language", description = "Report language: it or en", defaultValue = "it")
+    private String language;
 
     @Option(names = "--api-prefix", description = "Required REST API prefix", defaultValue = "/api/v1")
     private String apiPrefix;
@@ -44,7 +52,7 @@ public class ScanCommand implements Callable<Integer> {
     public Integer call() throws Exception {
         GuardianSettings settings = GuardianSettings.of(apiPrefix, maxControllerLines, maxControllerBranches);
         ProjectScanService scanService = new ProjectScanService(settings);
-        ArchitectureReviewReport report = scanService.scan(projectPath);
+        ArchitectureReviewReport report = scanService.scan(projectPath, ReportLanguage.from(language));
 
         String rendered = switch (format.toLowerCase()) {
             case "json" -> toJson(report);
@@ -71,6 +79,7 @@ public class ScanCommand implements Callable<Integer> {
     private String toJson(ArchitectureReviewReport report) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(report);
     }
 
@@ -80,32 +89,64 @@ public class ScanCommand implements Callable<Integer> {
         builder.append("======================\n\n");
         builder.append("Project: ").append(report.projectName()).append("\n");
         builder.append("Score: ").append(report.architectureScore()).append("/100\n");
+        builder.append("Risk: ").append(report.riskLevel()).append("\n");
+        builder.append("Status: ").append(report.summary().status()).append("\n");
         builder.append("Java files: ").append(report.scannedJavaFiles()).append("\n");
         builder.append("POM files: ").append(report.scannedPomFiles()).append("\n");
-        builder.append("Findings: ").append(report.findings().size()).append("\n\n");
+        builder.append("Rules executed: ").append(report.rulesExecuted()).append("\n");
+        builder.append("Issue groups: ").append(report.findings().size()).append("\n");
+        builder.append("Occurrences: ").append(report.summary().totalFindings()).append("\n");
+        builder.append("Summary: ").append(report.summary().executiveSummary()).append("\n\n");
 
         report.findingsBySeverity().entrySet().stream()
                 .sorted(Comparator.comparing(e -> e.getKey().ordinal()))
-                .forEach(e -> builder.append(e.getKey()).append(": ").append(e.getValue()).append("\n"));
+                .forEach(e -> builder.append(e.getKey()).append(": ").append(e.getValue()).append(" occurrence(s)\n"));
 
-        builder.append("\n");
+        builder.append("\nRecommended actions\n");
+        builder.append("-------------------\n");
+        report.recommendedActions().forEach(action -> builder.append(action.priority())
+                .append(". [").append(action.severity()).append("] ")
+                .append(action.ruleId()).append(" - ")
+                .append(action.title()).append("\n")
+                .append("   Where: ").append(action.location()).append("\n")
+                .append("   Fix: ").append(action.action()).append("\n"));
 
-        for (Finding finding : report.findings()) {
-            builder.append("[").append(finding.severity()).append("] ")
-                    .append(finding.ruleId()).append(" - ")
-                    .append(finding.title()).append("\n");
+        builder.append("\nGrouped findings\n");
+        builder.append("----------------\n");
 
-            if (finding.filePath() != null) {
-                builder.append("  File: ").append(finding.filePath());
-                if (finding.line() != null) {
-                    builder.append(":").append(finding.line());
+        for (FindingGroup group : report.findings()) {
+            builder.append("[").append(group.severity()).append("] ")
+                    .append(group.ruleId()).append(" - ")
+                    .append(group.title()).append("\n");
+            builder.append("  Category: ").append(group.category()).append("\n");
+            builder.append("  Occurrences: ").append(group.occurrences()).append("\n");
+            builder.append("  Why: ").append(group.whyItMatters()).append("\n");
+            builder.append("  Fix: ").append(group.suggestedFix()).append("\n");
+            builder.append("  Affected components:\n");
+
+            int displayed = 0;
+            for (AffectedComponent component : group.affectedComponents()) {
+                if (displayed >= MAX_COMPONENTS_IN_TEXT_REPORT) {
+                    break;
+                }
+                builder.append("    - ").append(component.type()).append(" ").append(component.name());
+                if (component.filePath() != null && !component.filePath().isBlank()) {
+                    builder.append(" (").append(component.filePath());
+                    if (component.line() != null) {
+                        builder.append(":").append(component.line());
+                    }
+                    builder.append(")");
                 }
                 builder.append("\n");
+                builder.append("      Evidence: ").append(component.evidence()).append("\n");
+                displayed++;
             }
 
-            builder.append("  Evidence: ").append(finding.evidence()).append("\n");
-            builder.append("  Why: ").append(finding.whyItMatters()).append("\n");
-            builder.append("  Fix: ").append(finding.suggestedFix()).append("\n\n");
+            long hidden = group.occurrences() - displayed;
+            if (hidden > 0) {
+                builder.append("    ... and ").append(hidden).append(" more occurrence(s). Use --format json to inspect all affected components.\n");
+            }
+            builder.append("\n");
         }
 
         return builder.toString();

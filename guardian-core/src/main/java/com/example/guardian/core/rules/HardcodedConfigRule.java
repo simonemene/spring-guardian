@@ -65,7 +65,6 @@ public class HardcodedConfigRule implements SpringRule {
                 ));
             }
         } catch (NumberFormatException ignored) {
-            // ignored
         }
     }
 }

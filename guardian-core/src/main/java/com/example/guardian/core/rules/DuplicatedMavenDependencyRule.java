@@ -49,7 +49,6 @@ public class DuplicatedMavenDependencyRule implements SpringRule {
                                 "Keep a single declaration and centralize versions in dependencyManagement/properties where needed."
                         )));
             } catch (Exception ignored) {
-                // keep scan resilient
             }
         }
 

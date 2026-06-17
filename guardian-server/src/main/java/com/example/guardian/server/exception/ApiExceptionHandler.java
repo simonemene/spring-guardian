@@ -5,21 +5,38 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Maps backend exceptions to standard REST problem responses.
+ *
+ * @author p15518 - Simone Meneghetti
+ */
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
+    /**
+     * Converts invalid requests to HTTP 400 responses.
+     *
+     * @param ex invalid request exception
+     * @return problem response
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ProblemDetail handleBadRequest(IllegalArgumentException ex) {
         ProblemDetail detail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-        detail.setTitle("Bad request");
+        detail.setTitle("Richiesta non valida");
         detail.setDetail(ex.getMessage());
         return detail;
     }
 
+    /**
+     * Converts unexpected processing errors to HTTP 500 responses.
+     *
+     * @param ex processing exception
+     * @return problem response
+     */
     @ExceptionHandler(IllegalStateException.class)
     public ProblemDetail handleInternal(IllegalStateException ex) {
         ProblemDetail detail = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
-        detail.setTitle("Internal error");
+        detail.setTitle("Errore interno");
         detail.setDetail(ex.getMessage());
         return detail;
     }
