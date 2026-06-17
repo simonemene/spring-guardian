@@ -1,5 +1,8 @@
 # Spring Guardian
 
+<img width="1666" height="944" alt="ChatGPT Image 17 giu 2026, 12_50_38" src="https://github.com/user-attachments/assets/b355b536-4b9c-4d9e-bda3-38fa36e9aceb" />
+
+
 Spring Guardian è uno scanner architetturale per progetti Spring Boot. Analizza codice Java e POM Maven, individua problemi tipici di manutenzione, sicurezza, layering, testabilità e qualità Spring, e produce un report leggibile raggruppato per regola.
 
 L'obiettivo non è stampare centinaia di righe tecniche incomprensibili, ma rispondere a queste domande:
