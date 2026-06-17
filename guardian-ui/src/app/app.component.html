@@ -1,0 +1,204 @@
+<div class="shell">
+  <header class="hero">
+    <div>
+      <div class="hero-topline">
+        <p class="eyebrow">{{ t('eyebrow') }}</p>
+        <div class="language-switch" role="group" [attr.aria-label]="t('language')">
+          <span>{{ t('language') }}</span>
+          <button [class.active]="selectedLanguage() === 'it'" type="button" (click)="selectLanguage('it')">{{ t('italian') }}</button>
+          <button [class.active]="selectedLanguage() === 'en'" type="button" (click)="selectLanguage('en')">{{ t('english') }}</button>
+        </div>
+      </div>
+      <h1>Spring Guardian</h1>
+      <p class="hero-text">{{ t('heroText') }}</p>
+    </div>
+
+    <section class="scan-card">
+      <div class="mode-switch" role="tablist" [attr.aria-label]="t('startScan')">
+        <button [class.active]="uploadMode() === 'zip'" type="button" (click)="selectMode('zip')">{{ t('uploadZip') }}</button>
+        <button [class.active]="uploadMode() === 'folder'" type="button" (click)="selectMode('folder')">{{ t('uploadFolder') }}</button>
+        <button [class.active]="uploadMode() === 'local'" type="button" (click)="selectMode('local')">{{ t('backendPath') }}</button>
+      </div>
+
+      <div *ngIf="uploadMode() === 'zip'" class="field">
+        <label for="zipFile">{{ t('zipProjectFile') }}</label>
+        <input id="zipFile" type="file" accept=".zip" (change)="onFileSelected($event)">
+        <small *ngIf="selectedFile()">{{ t('selected') }}: {{ selectedFile()?.name }}</small>
+        <small *ngIf="!selectedFile()">{{ t('zipHelp') }}</small>
+      </div>
+
+      <div *ngIf="uploadMode() === 'folder'" class="field">
+        <label for="projectFolder">{{ t('projectRootFolder') }}</label>
+        <input id="projectFolder" type="file" webkitdirectory directory multiple (change)="onFolderSelected($event)">
+        <small *ngIf="selectedFolderFiles().length > 0">{{ t('selectedFemale') }}: {{ folderFilesLabel() }}</small>
+        <small *ngIf="selectedFolderFiles().length === 0">{{ t('folderHelp') }}</small>
+      </div>
+
+      <div *ngIf="uploadMode() === 'local'" class="field">
+        <label for="localPath">{{ t('backendFolderPath') }}</label>
+        <input id="localPath" type="text" [(ngModel)]="localPath" placeholder="C:\\progetti\\mio-progetto oppure /scan/mio-progetto">
+        <small>{{ t('backendPathHelp') }}</small>
+      </div>
+
+      <button class="primary" type="button" (click)="scan()" [disabled]="loading()">
+        {{ loading() ? t('scanRunning') : t('startScan') }}
+      </button>
+
+      <p *ngIf="error()" class="error">{{ error() }}</p>
+    </section>
+  </header>
+
+  <main *ngIf="report() as current; else emptyState">
+    <section class="score-grid">
+      <article class="score-card main-score">
+        <span>{{ t('architectureScore') }}</span>
+        <strong [class]="scoreClass(current.architectureScore)">{{ current.architectureScore }}</strong>
+        <p>{{ riskLabel(current.riskLevel) }} · {{ statusLabel(current.summary.status) }}</p>
+      </article>
+
+      <article class="score-card" *ngFor="let severity of severityOrder">
+        <span>{{ severityLabel(severity) }}</span>
+        <strong>{{ severityCount(severity) }}</strong>
+        <p>{{ t('findings') }}</p>
+      </article>
+
+      <article class="score-card">
+        <span>{{ t('rulesExecuted') }}</span>
+        <strong>{{ current.rulesExecuted }}</strong>
+        <p>{{ current.scannedJavaFiles }} {{ t('javaFiles') }} · {{ current.scannedPomFiles }} {{ t('pomFiles') }}</p>
+      </article>
+    </section>
+
+    <nav class="tabs" aria-label="Report sections">
+      <button type="button" [class.active]="activeTab() === 'overview'" (click)="selectTab('overview')">{{ t('overview') }}</button>
+      <button type="button" [class.active]="activeTab() === 'findings'" (click)="selectTab('findings')">{{ t('problems') }}</button>
+      <button type="button" [class.active]="activeTab() === 'actions'" (click)="selectTab('actions')">{{ t('actions') }}</button>
+      <button type="button" [class.active]="activeTab() === 'json'" (click)="selectTab('json')">{{ t('technicalJson') }}</button>
+    </nav>
+
+    <section *ngIf="activeTab() === 'overview'" class="panel-grid">
+      <article class="panel wide">
+        <h2>{{ t('executiveSummary') }}</h2>
+        <p>{{ current.summary.executiveSummary }}</p>
+        <div class="meta-row">
+          <span>{{ t('project') }}: <strong>{{ current.projectName }}</strong></span>
+          <span>{{ t('scan') }}: <strong>{{ current.scannedAt | date:'medium' }}</strong></span>
+        </div>
+      </article>
+
+      <article class="panel">
+        <h2>{{ t('impactedAreas') }}</h2>
+        <div class="category-list">
+          <div *ngFor="let category of current.findingsByCategory">
+            <div class="category-head">
+              <strong>{{ category.category }}</strong>
+              <span>{{ category.findings }}</span>
+            </div>
+            <p>{{ category.explanation }}</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <h2>{{ t('howToRead') }}</h2>
+        <p>{{ current.explanation.scoreMeaning }}</p>
+        <p>{{ current.explanation.severityMeaning }}</p>
+        <ul>
+          <li *ngFor="let step of current.explanation.nextSteps">{{ step }}</li>
+        </ul>
+      </article>
+    </section>
+
+    <section *ngIf="activeTab() === 'findings'" class="panel">
+      <div class="toolbar">
+        <input type="search" [(ngModel)]="search" [placeholder]="t('searchPlaceholder')">
+        <select [(ngModel)]="severityFilter" aria-label="Severity filter">
+          <option value="ALL">{{ t('allSeverities') }}</option>
+          <option *ngFor="let severity of severityOrder" [value]="severity">{{ severityLabel(severity) }}</option>
+        </select>
+        <select [(ngModel)]="categoryFilter" aria-label="Category filter">
+          <option value="ALL">{{ t('allAreas') }}</option>
+          <option *ngFor="let category of categories()" [value]="category">{{ category }}</option>
+        </select>
+        <button type="button" class="ghost" (click)="resetFilters()">{{ t('clearFilters') }}</button>
+      </div>
+
+      <div class="finding-list">
+        <article class="finding" *ngFor="let finding of filteredFindings(); trackBy: trackFinding">
+          <div class="finding-header">
+            <div>
+              <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
+              <span class="category">{{ finding.category }}</span>
+              <span class="rule-code">{{ t('technicalCode') }} {{ ruleCode(finding.ruleId) }}</span>
+            </div>
+            <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
+          </div>
+
+          <h3>{{ finding.title }}</h3>
+          <p>{{ finding.explanation }}</p>
+
+          <div class="explain-grid">
+            <div>
+              <h4>{{ t('whyItMatters') }}</h4>
+              <p>{{ finding.whyItMatters }}</p>
+            </div>
+            <div>
+              <h4>{{ t('recommendedFix') }}</h4>
+              <p>{{ finding.suggestedFix }}</p>
+            </div>
+          </div>
+
+          <details>
+            <summary>{{ t('involvedComponents') }} ({{ finding.affectedComponents.length }})</summary>
+            <div class="component-list">
+              <div class="component" *ngFor="let component of finding.affectedComponents">
+                <strong>{{ componentTitle(component) }}</strong>
+                <span>{{ componentTypeLabel(component.type) }}</span>
+                <span>{{ component.filePath }}<ng-container *ngIf="component.line">:{{ component.line }}</ng-container></span>
+                <p *ngIf="component.evidence"><b>{{ t('technicalEvidence') }}:</b> {{ component.evidence }}</p>
+              </div>
+            </div>
+          </details>
+        </article>
+      </div>
+    </section>
+
+    <section *ngIf="activeTab() === 'actions'" class="panel">
+      <div class="panel-title">
+        <h2>{{ t('recommendedActions') }}</h2>
+        <span>{{ current.recommendedActions.length }} {{ t('priorities') }}</span>
+      </div>
+      <div class="action-list">
+        <article class="action" *ngFor="let action of current.recommendedActions">
+          <span class="priority">#{{ action.priority }}</span>
+          <div>
+            <div class="finding-header compact">
+              <span class="badge" [attr.data-severity]="action.severity">{{ severityLabel(action.severity) }}</span>
+              <span class="rule-code">{{ ruleCode(action.ruleId) }}</span>
+              <span>{{ action.location }}</span>
+            </div>
+            <h3>{{ action.title }}</h3>
+            <p>{{ action.reason }}</p>
+            <strong>{{ action.action }}</strong>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section *ngIf="activeTab() === 'json'" class="panel">
+      <div class="panel-title">
+        <h2>{{ t('technicalJson') }}</h2>
+        <button type="button" class="ghost" (click)="exportJson()">{{ t('exportJson') }}</button>
+      </div>
+      <p class="json-note">{{ t('jsonNote') }}</p>
+      <pre>{{ rawJson() }}</pre>
+    </section>
+  </main>
+
+  <ng-template #emptyState>
+    <section class="empty">
+      <h2>{{ t('emptyTitle') }}</h2>
+      <p>{{ t('emptyText') }}</p>
+    </section>
+  </ng-template>
+</div>
