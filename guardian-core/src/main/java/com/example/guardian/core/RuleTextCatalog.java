@@ -37,29 +37,29 @@ final class RuleTextCatalog {
     private static RuleText italianTextFor(String ruleId) {
         return switch (ruleId) {
             case "SPR001_HARDCODED_CONFIG" -> new RuleText(
-                    "Configurazione scritta direttamenete nel codice",
-                    "Timeout, durate, URL, soglie e parametri tecnici scritti nel codice rendono difficile cambiare comportamento tra ambienti e aumentano il rischio di modifiche massive e non controllate",
-                    "Sposta il valore in configurazione applicativa e leggilo tramite @ConfigurationProperties(se sono più proprietà di un gruppo altrimenti @Value con singola proprietà), usando tipi espliciti come Duration quando possibile."
+                    "Configurazione scritta direttamente nel codice",
+                    "Valori tecnici come timeout, URL, soglie e parametri applicativi scritti nel codice rendono difficile adattare il comportamento tra ambienti e aumentano il rischio di modifiche estese e non controllate.",
+                    "Sposta il valore nella configurazione applicativa e leggilo tramite @ConfigurationProperties quando appartiene a un gruppo di proprietà; usa @Value solo per valori isolati. Quando possibile, preferisci tipi espliciti come Duration."
             );
             case "SPR002_FIELD_INJECTION" -> new RuleText(
                     "Dipendenza iniettata su campo",
-                    "L'iniezione su campo rende le dipendenze meno visibili, complica i test unitari e permette oggetti in stato parziale [Possibili NullPointerException].",
+                    "L'iniezione su campo rende le dipendenze meno visibili, complica i test unitari e può lasciare oggetti in stato parziale.",
                     "Usa constructor injection con campi final, preferibilmente con un solo costruttore oppure usa Lombok con @RequiredArgsConstructor."
             );
             case "SPR003_CONTROLLER_INJECTS_REPOSITORY" -> new RuleText(
                     "Controller collegato direttamente al repository",
-                    "Il controller dovrebbe orchestrare la richiesta HTTP, non contenere logica. Saltare il service layer aumenta accoppiamento e duplicazione.",
+                    "Il controller dovrebbe gestire il contratto HTTP e delegare i casi d'uso. Saltare il service layer aumenta accoppiamento, duplicazione e difficoltà di test.",
                     "Introduci un service applicativo e sposta le elaborazioni business, transazioni e accesso ai repository."
             );
             case "SPR004_FAT_CONTROLLER" -> new RuleText(
                     "Controller troppo grande",
-                    "Controller grandi tendono a mescolare validazione, mapping, logica applicativa e gestione errori, rendendo fragile l'API.",
-                    "Riduci il controller a endpoint sottili e sposta logica in service, mapper e validator dedicati. Di solito il controller prende la request e restituisce la response, massimo un riga di codice"
+                    "Controller troppo grandi tendono a mescolare validazione, mapping, logica applicativa e gestione degli errori, rendendo l'API fragile e difficile da mantenere.",
+                    "Riduci il controller a endpoint sottili e sposta la logica in service, mapper e validator dedicati. Il controller dovrebbe ricevere la richiesta, delegare il caso d'uso e costruire la risposta."
             );
             case "SPR005_MISSING_SERVICE_LAYER" -> new RuleText(
                     "Service layer mancante o poco evidente",
                     "Senza un livello service chiaro, la logica applicativa finisce spesso in controller, repository o utility non governate.",
-                    "Crea service espliciti per i casi d'uso principali e lascia ai repository solo l'accesso ai dati, implementa il service anche se solo fa da passa carte"
+                    "Crea service espliciti per i casi d'uso principali e lascia ai repository solo l'accesso ai dati. Anche un service inizialmente semplice rende il confine applicativo più chiaro e testabile."
             );
             case "SPR006_ENTITY_EXPOSED_IN_CONTROLLER" -> new RuleText(
                     "Entity JPA esposta dall'API",
@@ -68,13 +68,13 @@ final class RuleTextCatalog {
             );
             case "SPR007_SELF_INVOCATION_PROXY" -> new RuleText(
                     "Chiamata interna che può bypassare il proxy Spring",
-                    "Quando un metodo della stessa classe chiama un metodo annotato con @Transactional, @Async o simili, il proxy Spring non interviene. Leggi questo articolo https://medium.com/me/stats/post/6aa8bfe43239",
-                    "Sposta il metodo proxato in un altro bean oppure riorganizza il caso d'uso per attraversare il proxy Spring. "
+                    "Quando un metodo della stessa classe chiama un altro metodo annotato con @Transactional, @Async o annotazioni simili, la chiamata non attraversa il proxy Spring e il comportamento atteso può non essere applicato.",
+                    "Sposta il metodo che richiede proxy in un altro bean oppure riorganizza il caso d'uso in modo che la chiamata attraversi il proxy Spring."
             );
             case "SPR008_INVALID_TRANSACTIONAL_USAGE" -> new RuleText(
                     "Uso sospetto di @Transactional",
-                    "Transazioni applicate nel punto sbagliato possono non proteggere davvero l'operazione o creare confini transazionali confusi. I repository jpa sono di natura transactional",
-                    "Metti @Transactional sul service che rappresenta il caso d'uso e verifica propagazione, readOnly e gestione eccezioni. "
+                    "Transazioni applicate nel punto sbagliato possono non proteggere davvero l'operazione o creare confini transazionali confusi. I repository JPA sono già transazionali per le operazioni principali.",
+                    "Applica @Transactional sul service che rappresenta il caso d'uso e verifica propagazione, readOnly e gestione delle eccezioni."
             );
             case "SPR009_MANUAL_CONNECTION_MANAGEMENT" -> new RuleText(
                     "Gestione manuale di connessioni JDBC",
@@ -90,7 +90,7 @@ final class RuleTextCatalog {
                     "Catch troppo generico",
                     "Catturare Exception o Throwable nasconde errori diversi sotto lo stesso comportamento e può impedire rollback o gestione corretta. Spring usa quasi sempre unchecked, non controllare mai le eccezioni a meno di voler lanciare eccezioni business specifiche." +
                             "Le RunTimeException non devono essere controllate perchè sono inattese, l'applicativo deve rompersi",
-                    "Cattura eccezioni specifiche, lascia propagare quelle non gestibili e centralizza la mappatura errori con @RestControllerAdvice."
+                    "Cattura eccezioni specifiche, lascia propagare quelle non gestibili e centralizza la mappatura degli errori con @RestControllerAdvice."
             );
             case "SPR012_MISSING_TESTS" -> new RuleText(
                     "Copertura test non rilevata",
@@ -494,7 +494,7 @@ final class RuleTextCatalog {
                     "Mantieni solo lo stack necessario oppure documenta la scelta e isola la configurazione del caso speciale."
             );
             case "SPR095_MAVEN_DEPENDENCY_HYGIENE" -> new RuleText(
-                    "Qualità dipendenze Maven migliorabile",
+                    "Igiene dipendenze Maven migliorabile",
                     "Versioni SNAPSHOT, range, RELEASE/LATEST, systemPath o scope mancanti rendono meno governabile il rilascio e più fragile la pipeline.",
                     "Usa versioni rilasciate e fisse, dependencyManagement, repository Maven governati e scope espliciti per strumenti come Lombok."
             );

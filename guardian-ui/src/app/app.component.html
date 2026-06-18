@@ -118,6 +118,24 @@
       </article>
     </section>
 
+    <section class="decision-board" aria-label="Priorità di intervento">
+      <div class="decision-board-title">
+        <div>
+          <h2>{{ t('decisionBoard') }}</h2>
+          <p>{{ t('decisionBoardText') }}</p>
+        </div>
+      </div>
+      <div class="decision-lanes">
+        <article class="decision-lane" *ngFor="let lane of decisionLanes()" [attr.data-lane]="lane.lane">
+          <span>{{ lane.title }}</span>
+          <strong>{{ lane.count }}</strong>
+          <p>{{ lane.text }}</p>
+          <button type="button" class="ghost" (click)="focusDecisionLane(lane.lane)">{{ t('openLane') }}</button>
+        </article>
+      </div>
+    </section>
+
+
     <nav class="tabs" aria-label="Report sections">
       <button type="button" [class.active]="activeTab() === 'overview'" (click)="selectTab('overview')">{{ t('overview') }}</button>
       <button type="button" [class.active]="activeTab() === 'gates'" (click)="selectTab('gates')">{{ t('gates') }}</button>

@@ -200,14 +200,14 @@ class ExtendedSpringArchitectureRulesTest {
         Set<String> ruleIds = report.findings().stream().map(FindingGroup::ruleId).collect(Collectors.toSet());
         Set<String> types = report.findings().stream().map(FindingGroup::findingType).collect(Collectors.toSet());
 
-        assertTrue(ruleIds.contains("ARCH001_DOMAIN_DEPENDS_ON_WEB_LAYER"));
-        assertTrue(ruleIds.contains("SEC001_ANY_REQUEST_PERMIT_ALL"));
-        assertTrue(ruleIds.contains("WEB005_PAGE_ENTITY_EXPOSED"));
-        assertTrue(ruleIds.contains("BAT005_READER_SELECT_STAR"));
-        assertTrue(ruleIds.contains("CLD003_SECRET_IN_CONFIG"));
-        assertTrue(ruleIds.contains("OBS010_HEALTH_DETAILS_EXPOSED"));
+        assertTrue(ruleIds.contains("ARCH001_DOMAIN_MUST_NOT_DEPEND_ON_WEB_LAYER"));
+        assertTrue(ruleIds.contains("SEC002_ANY_REQUEST_PERMIT_ALL"));
+        assertTrue(ruleIds.contains("WEB036_PAGE_ENTITY_EXPOSED"));
+        assertTrue(ruleIds.contains("BAT028_READER_SELECT_STAR"));
+        assertTrue(ruleIds.contains("CLD003_SECRET_IN_PACKAGED_CONFIG"));
+        assertTrue(ruleIds.contains("OBS025_HEALTH_DETAILS_ALWAYS_EXPOSED"));
         assertTrue(ruleIds.contains("POM002_BOOT_STARTER_VERSION_OVERRIDE"));
-        assertTrue(ruleIds.contains("ADV015_COMPLETABLE_FUTURE_COMMON_POOL"));
+        assertTrue(ruleIds.contains("ADV066_COMPLETABLE_FUTURE_DEFAULT_EXECUTOR"));
 
         assertTrue(types.contains("ARCHITECTURE"));
         assertTrue(types.contains("SECURITY"));
@@ -221,5 +221,9 @@ class ExtendedSpringArchitectureRulesTest {
         assertTrue(report.qualityGates().stream().anyMatch(gate -> gate.code().equals("GATE_DEPENDENCY_GOVERNANCE")));
         assertTrue(report.qualityGates().stream().anyMatch(gate -> gate.code().equals("GATE_CLOUD_READINESS")));
         assertTrue(report.qualityGates().stream().anyMatch(gate -> gate.code().equals("GATE_OBSERVABILITY")));
+        assertTrue(report.rulesExecuted() >= 300);
+        assertTrue(report.findings().stream()
+                .flatMap(group -> group.affectedComponents().stream())
+                .anyMatch(component -> component.codeSnippet() != null && component.codeSnippet().contains("permitAll")));
     }
 }

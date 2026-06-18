@@ -24,7 +24,7 @@ final class SpringAlternativeAdvisorCatalog {
         return List.of(
                 new ObjectCreationAdvisorRule(
                         "SPR064_MANUAL_OBJECT_MAPPER",
-                        Severity.MAJOR,
+                        Severity.INFO,
                         Set.of("ObjectMapper", "XmlMapper"),
                         "ObjectMapper created manually",
                         "Manual ObjectMapper instances can bypass Spring Boot Jackson modules, date handling, naming policies and custom serializers.",
@@ -33,7 +33,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new ObjectCreationAdvisorRule(
                         "SPR065_MANUAL_THREAD_CREATION",
-                        Severity.MAJOR,
+                        Severity.INFO,
                         Set.of("Thread"),
                         "Thread created manually",
                         "Manual threads bypass Spring lifecycle, task execution configuration, observability and graceful shutdown.",
@@ -42,7 +42,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new StaticMethodAdvisorRule(
                         "SPR066_MANUAL_EXECUTOR_CREATION",
-                        Severity.MAJOR,
+                        Severity.INFO,
                         "Executors",
                         Set.of("newFixedThreadPool", "newCachedThreadPool", "newSingleThreadExecutor", "newScheduledThreadPool", "newWorkStealingPool"),
                         "Executor created manually",
@@ -52,7 +52,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new ObjectCreationAdvisorRule(
                         "SPR067_TIMER_SCHEDULING",
-                        Severity.MINOR,
+                        Severity.INFO,
                         Set.of("Timer", "TimerTask"),
                         "Timer-based scheduling detected",
                         "Timer and TimerTask are low-level scheduling APIs and are harder to align with Spring profiles, lifecycle and observability.",
@@ -61,7 +61,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new ObjectCreationAdvisorRule(
                         "SPR068_MANUAL_JDBC_TEMPLATE",
-                        Severity.MINOR,
+                        Severity.INFO,
                         Set.of("JdbcTemplate", "NamedParameterJdbcTemplate"),
                         "JdbcTemplate created manually",
                         "Creating templates manually can duplicate transaction, datasource and exception translation configuration.",
@@ -70,7 +70,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new ObjectCreationAdvisorRule(
                         "SPR069_MANUAL_PASSWORD_ENCODER",
-                        Severity.MAJOR,
+                        Severity.INFO,
                         Set.of("BCryptPasswordEncoder", "Pbkdf2PasswordEncoder", "SCryptPasswordEncoder", "Argon2PasswordEncoder"),
                         "Password encoder created manually",
                         "Password encoders should be centralized so authentication, tests and migration policies use the same hashing strategy.",
@@ -79,7 +79,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new StaticMethodAdvisorRule(
                         "SPR070_DIRECT_ENVIRONMENT_ACCESS",
-                        Severity.MINOR,
+                        Severity.INFO,
                         "System",
                         Set.of("getenv", "getProperty"),
                         "Environment read directly from code",
@@ -89,7 +89,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new ObjectCreationAdvisorRule(
                         "SPR071_MANUAL_FILE_RESOURCE_ACCESS",
-                        Severity.MINOR,
+                        Severity.INFO,
                         Set.of("FileInputStream", "FileOutputStream", "FileReader", "FileWriter"),
                         "File resource opened manually",
                         "Direct file access can hardcode infrastructure assumptions and makes classpath, filesystem and externalized resources harder to swap.",
@@ -102,7 +102,7 @@ final class SpringAlternativeAdvisorCatalog {
                 new MockMvcTesterAdvisorRule(),
                 new ObjectCreationAdvisorRule(
                         "SPR076_MANUAL_REST_TEMPLATE",
-                        Severity.MINOR,
+                        Severity.INFO,
                         Set.of("RestTemplate"),
                         "RestTemplate created manually",
                         "A manually created RestTemplate usually bypasses shared timeout, interceptor, error handling and observability configuration.",
@@ -111,7 +111,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new StaticMethodAdvisorRule(
                         "SPR077_WEBCLIENT_BUILDER_CREATED_MANUALLY",
-                        Severity.MINOR,
+                        Severity.INFO,
                         "WebClient",
                         Set.of("builder", "create"),
                         "WebClient builder created manually",
@@ -131,7 +131,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new ObjectCreationAdvisorRule(
                         "SPR079_LOW_LEVEL_HTTP_CLIENT",
-                        Severity.MINOR,
+                        Severity.INFO,
                         Set.of("URL", "HttpURLConnection", "HttpClient", "CloseableHttpClient", "OkHttpClient"),
                         "Low-level HTTP client detected",
                         "Low-level HTTP clients make timeout, retry, proxy, TLS, tracing and testing less consistent in Spring applications.",
@@ -140,7 +140,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new ObjectCreationAdvisorRule(
                         "SPR080_SIMPLE_DATE_FORMAT",
-                        Severity.MINOR,
+                        Severity.INFO,
                         Set.of("SimpleDateFormat"),
                         "SimpleDateFormat detected",
                         "SimpleDateFormat is mutable and error-prone, especially when reused across threads.",
@@ -158,7 +158,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new AnnotationUsageAdvisorRule(
                         "SPR082_VALUE_INJECTION_FOR_GROUPED_CONFIG",
-                        Severity.MINOR,
+                        Severity.INFO,
                         Set.of("Value"),
                         "@Value configuration detected",
                         "Many scattered @Value properties make configuration harder to validate, document and evolve.",
@@ -167,7 +167,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new MissingEnableAnnotationAdvisorRule(
                         "SPR083_ASYNC_WITHOUT_ENABLE_ASYNC",
-                        Severity.MAJOR,
+                        Severity.INFO,
                         "Async",
                         "EnableAsync",
                         "@Async used without @EnableAsync",
@@ -176,7 +176,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new MissingEnableAnnotationAdvisorRule(
                         "SPR084_SCHEDULED_WITHOUT_ENABLE_SCHEDULING",
-                        Severity.MAJOR,
+                        Severity.INFO,
                         "Scheduled",
                         "EnableScheduling",
                         "@Scheduled used without @EnableScheduling",
@@ -195,7 +195,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new StaticMethodAdvisorRule(
                         "SPR088_THREAD_SLEEP_IN_PRODUCTION_CODE",
-                        Severity.MAJOR,
+                        Severity.INFO,
                         "Thread",
                         Set.of("sleep"),
                         "Thread.sleep in production code",
@@ -205,7 +205,7 @@ final class SpringAlternativeAdvisorCatalog {
                 ),
                 new StaticMethodAdvisorRule(
                         "SPR089_MANUAL_VALIDATOR_FACTORY",
-                        Severity.MINOR,
+                        Severity.INFO,
                         "Validation",
                         Set.of("buildDefaultValidatorFactory"),
                         "ValidatorFactory created manually",

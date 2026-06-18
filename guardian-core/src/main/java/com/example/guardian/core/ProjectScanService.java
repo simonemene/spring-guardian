@@ -561,6 +561,7 @@ public class ProjectScanService {
 
     private List<RecommendedAction> buildRecommendedActions(List<FindingGroup> groupedFindings, ReportLanguage language) {
         List<FindingGroup> prioritized = groupedFindings.stream()
+                .filter(group -> !springAlternativeAdvisorRule(group.ruleId()))
                 .filter(group -> group.severity() == Severity.CRITICAL || group.severity() == Severity.MAJOR)
                 .limit(12)
                 .toList();
@@ -604,7 +605,7 @@ public class ProjectScanService {
         if (language == ReportLanguage.ENGLISH) {
             return new ReportExplanation(
                     "The score starts from 100 and applies weighted penalties based on severity. Critical findings have the strongest impact. Legacy baseline mode reduces the weight of non-security high findings but does not hide them.",
-                    "Critical means a potential production, security or architecture blocker. High means a concrete maintenance or correctness risk. Medium means a recommended improvement. Info is low-impact guidance.",
+                    "Critical means a potential production blocker. High means an issue to fix before release. Medium means relevant technical debt. Info means an advisory, modernization opportunity or low-impact best practice.",
                     "Start from release readiness, then quality gates, then recommended actions. Findings are grouped by deterministic rule to keep the report readable on large projects.",
                     List.of(
                             "Fix every critical finding before considering the CI scan green.",
@@ -617,7 +618,7 @@ public class ProjectScanService {
 
         return new ReportExplanation(
                 "Il punteggio parte da 100 e applica penalità pesate in base alla severità. I problemi critici hanno il peso maggiore. La modalità baseline legacy riduce il peso dei problemi alti non di sicurezza, ma non li nasconde.",
-                "Critico indica un possibile blocco per produzione, sicurezza o architettura. Alto indica un rischio concreto di manutenzione o correttezza. Medio indica un miglioramento consigliato. Info è un suggerimento a basso impatto.",
+                "Critico indica un blocco potenziale per la produzione. Alto indica un problema da risolvere prima del rilascio. Medio indica debito tecnico rilevante. Basso/Info indica un suggerimento, una modernizzazione o una best practice a basso impatto.",
                 "Parti dalla prontezza al rilascio, poi dai controlli qualità e infine dalle azioni consigliate. I problemi sono raggruppati per regola deterministica, così il report resta leggibile anche su progetti di grandi dimensioni.",
                 List.of(
                         "Correggi tutti i problemi critici prima di considerare verde la scansione in CI.",
@@ -956,7 +957,7 @@ public class ProjectScanService {
             case "Dependency injection" -> "Constructor injection, field injection, dipendenze immutabili e cablaggio dei componenti Spring.";
             case "Architettura e confini" -> "Layering, direzione delle dipendenze, confini DDD o esagonali, dimensione classi e struttura package.";
             case "Test" -> "Presenza dei test, qualità degli assert, uso eccessivo di test Spring pesanti e fragilità temporale.";
-            case "Configurazione e manutenibilità" -> "Build, logging, naming, valori hardcoded e qualità generale di manutenzione.";
+            case "Configurazione e manutenibilità" -> "Build, logging, naming, valori hardcoded e pulizia generale del codice e della configurazione.";
             case "Spring Alternative Advisor" -> "Oggetti Java manuali, API di basso livello e alternative Spring moderne da valutare.";
             default -> "Problemi deterministici generali rilevati da Spring Guardian.";
         };

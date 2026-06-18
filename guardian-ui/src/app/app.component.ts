@@ -7,6 +7,7 @@ import { SpringGuardianApiService } from './spring-guardian-api.service';
 import { ArchitectureReviewReport, AffectedComponent, ArchitectureStyle, FindingGroup, ProjectType, ReleaseTarget, ReportLanguage, ScanProfile, Severity } from './spring-guardian.model';
 
 type Tab = 'overview' | 'gates' | 'findings' | 'advisor' | 'actions' | 'json';
+type DecisionLane = 'BLOCKERS' | 'IMPORTANT' | 'IMPROVEMENTS' | 'ADVISOR' | 'INFORMATION';
 type UploadMode = 'zip' | 'folder' | 'local';
 type TranslationKey = keyof typeof TRANSLATIONS.it;
 
@@ -137,7 +138,20 @@ const TRANSLATIONS = {
     ok: 'Ok',
     review: 'Revisione',
     blocked: 'Bloccato',
-    attention: 'Attenzione'
+    attention: 'Attenzione',
+    decisionBoard: 'Priorità di intervento',
+    decisionBoardText: 'Il report è ordinato per decisione: prima i blocchi di rilascio, poi i problemi importanti, il debito tecnico, gli advisor Spring e infine le note informative.',
+    blockersLane: 'Blocchi produzione',
+    blockersLaneText: 'Critici: correggili prima di considerare il rilascio.',
+    importantLane: 'Da correggere prima del rilascio',
+    importantLaneText: 'Alti: rischi concreti per sicurezza, architettura o manutenzione.',
+    improvementsLane: 'Debito tecnico rilevante',
+    improvementsLaneText: 'Medi: miglioramenti da pianificare nel backlog tecnico.',
+    advisorLane: 'Suggerimenti Spring',
+    advisorLaneText: 'Advisor: alternative Spring e modernizzazione, non blocchi immediati.',
+    informationLane: 'Note informative',
+    informationLaneText: 'Info: opportunità e best practice a basso impatto.',
+    openLane: 'Apri'
   },
   en: {
     eyebrow: 'Spring architecture scanner',
@@ -218,12 +232,12 @@ const TRANSLATIONS = {
     typeSecurity: 'Security',
     typeJpa: 'JPA and persistence',
     typeWebLayer: 'Web/API layer',
-    typeDependencyInjection: 'Iniezione delle dipendenze',
+    typeDependencyInjection: 'Dependency injection',
     typeRuntimeCode: 'Runtime code',
     typeSpringAlternative: 'Spring Alternative Advisor',
     typeSpringBatch: 'Spring Batch',
     typeArchitecture: 'Architecture and boundaries',
-    typeCloudReadiness: 'Prontezza cloud',
+    typeCloudReadiness: 'Cloud readiness',
     typeObservability: 'Observability',
     technicalCode: 'Technical code',
     whyItMatters: 'Why it matters',
@@ -265,7 +279,20 @@ const TRANSLATIONS = {
     ok: 'Ok',
     review: 'Review',
     blocked: 'Blocked',
-    attention: 'Attention'
+    attention: 'Attention',
+    decisionBoard: 'Fix priority board',
+    decisionBoardText: 'The report is organized by decision impact: release blockers first, then important issues, technical debt, Spring advisors and informational notes.',
+    blockersLane: 'Production blockers',
+    blockersLaneText: 'Critical findings: fix these before considering the release.',
+    importantLane: 'Fix before release',
+    importantLaneText: 'High findings: concrete security, architecture or maintenance risks.',
+    improvementsLane: 'Relevant technical debt',
+    improvementsLaneText: 'Medium findings: plan these in the technical backlog.',
+    advisorLane: 'Spring suggestions',
+    advisorLaneText: 'Advisor findings: Spring alternatives and modernization, not immediate blockers.',
+    informationLane: 'Informational notes',
+    informationLaneText: 'Info findings: low-impact opportunities and best practices.',
+    openLane: 'Open'
   }
 } as const;
 
@@ -322,6 +349,21 @@ export class AppComponent {
       return [];
     }
     return current.findings.filter((finding) => this.isSpringAdvisorFinding(finding));
+  });
+
+
+  readonly decisionLanes = computed(() => {
+    const current = this.report();
+    if (!current) {
+      return [];
+    }
+    return [
+      { lane: 'BLOCKERS' as DecisionLane, title: this.t('blockersLane'), text: this.t('blockersLaneText'), count: this.decisionCount(current, 'BLOCKERS') },
+      { lane: 'IMPORTANT' as DecisionLane, title: this.t('importantLane'), text: this.t('importantLaneText'), count: this.decisionCount(current, 'IMPORTANT') },
+      { lane: 'IMPROVEMENTS' as DecisionLane, title: this.t('improvementsLane'), text: this.t('improvementsLaneText'), count: this.decisionCount(current, 'IMPROVEMENTS') },
+      { lane: 'ADVISOR' as DecisionLane, title: this.t('advisorLane'), text: this.t('advisorLaneText'), count: this.decisionCount(current, 'ADVISOR') },
+      { lane: 'INFORMATION' as DecisionLane, title: this.t('informationLane'), text: this.t('informationLaneText'), count: this.decisionCount(current, 'INFORMATION') }
+    ];
   });
 
   readonly filteredFindings = computed(() => {
@@ -430,6 +472,54 @@ export class AppComponent {
     this.severityFilter = 'ALL';
     this.categoryFilter = 'ALL';
     this.typeFilter = 'ALL';
+  }
+
+  decisionCount(report: ArchitectureReviewReport, lane: DecisionLane): number {
+    return report.findings
+      .filter((finding) => this.inDecisionLane(finding, lane))
+      .reduce((total, finding) => total + finding.occurrences, 0);
+  }
+
+  focusDecisionLane(lane: DecisionLane): void {
+    this.resetFilters();
+    if (lane === 'ADVISOR') {
+      this.activeTab.set('advisor');
+      return;
+    }
+    this.activeTab.set('findings');
+    if (lane === 'BLOCKERS') {
+      this.severityFilter = 'CRITICAL';
+      return;
+    }
+    if (lane === 'IMPORTANT') {
+      this.severityFilter = 'MAJOR';
+      return;
+    }
+    if (lane === 'IMPROVEMENTS') {
+      this.severityFilter = 'MINOR';
+      return;
+    }
+    this.severityFilter = 'INFO';
+  }
+
+  private inDecisionLane(finding: FindingGroup, lane: DecisionLane): boolean {
+    const advisor = this.isSpringAdvisorFinding(finding);
+    if (lane === 'ADVISOR') {
+      return advisor;
+    }
+    if (advisor) {
+      return false;
+    }
+    if (lane === 'BLOCKERS') {
+      return finding.severity === 'CRITICAL';
+    }
+    if (lane === 'IMPORTANT') {
+      return finding.severity === 'MAJOR';
+    }
+    if (lane === 'IMPROVEMENTS') {
+      return finding.severity === 'MINOR';
+    }
+    return finding.severity === 'INFO';
   }
 
   severityCount(severity: Severity): number {

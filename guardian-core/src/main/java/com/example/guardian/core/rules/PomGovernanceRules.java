@@ -174,6 +174,127 @@ public class PomGovernanceRules implements SpringRule {
                         "Plugin versions and compiler/test settings should be consistent across modules.",
                         "Centralize plugin versions and configuration in pluginManagement.");
             }
+
+            if (text.contains("<exclusions>") && text.contains("*") ) {
+                add(findings, "POM021_BROAD_DEPENDENCY_EXCLUSION", Severity.MINOR, relative,
+                        "A dependency exclusion appears broad or difficult to govern.",
+                        "Broad exclusions can remove transitive libraries required by Spring Boot auto-configuration or security patches.",
+                        "Use narrow exclusions and document why the transitive dependency must be removed.");
+            }
+            if (text.contains("spring-boot-starter-logging") && text.contains("<exclusions>")) {
+                add(findings, "POM022_LOGGING_EXCLUSION_REQUIRES_REPLACEMENT", Severity.MAJOR, relative,
+                        "Spring Boot default logging appears excluded.",
+                        "Excluding the default logging stack without a coherent replacement can break diagnostics.",
+                        "Add an explicit logging replacement strategy and test startup logging.");
+            }
+            if (text.contains("<artifactid>spring-boot-maven-plugin</artifactid>") && text.contains("<packaging>pom</packaging>")) {
+                add(findings, "POM023_BOOT_PLUGIN_IN_AGGREGATOR", Severity.MINOR, relative,
+                        "spring-boot-maven-plugin appears in an aggregator POM.",
+                        "Aggregator or library modules should not normally be repackaged as boot applications.",
+                        "Move executable plugin configuration to application modules or put shared settings in pluginManagement.");
+            }
+            if (text.contains("<packaging>jar</packaging>") && text.contains("<scope>provided</scope>") && text.contains("spring-boot-starter-tomcat")) {
+                add(findings, "POM024_JAR_WITH_PROVIDED_SERVLET_CONTAINER", Severity.MINOR, relative,
+                        "JAR packaging uses provided servlet container scope.",
+                        "Executable JAR applications normally package the embedded servlet container.",
+                        "Use provided scope only for WAR/external-container deployment.");
+            }
+            if (text.contains("junit:junit") && text.contains("org.junit.jupiter")) {
+                add(findings, "POM025_JUNIT4_AND_JUNIT5_MIXED", Severity.MINOR, relative,
+                        "JUnit 4 and JUnit Jupiter appear together.",
+                        "Mixed test engines can be valid, but should be intentional during migration.",
+                        "Use JUnit Jupiter consistently or add Vintage explicitly with a migration plan.");
+            }
+            if (text.contains("mockito-core") && text.contains("spring-boot-starter-test")) {
+                add(findings, "POM026_MOCKITO_DUPLICATED_WITH_STARTER_TEST", Severity.MINOR, relative,
+                        "mockito-core is declared together with spring-boot-starter-test.",
+                        "Spring Boot starter-test already manages Mockito for most test scenarios.",
+                        "Remove duplicate Mockito dependencies unless a specific version override is required and documented.");
+            }
+            if (text.contains("gson") && text.contains("jackson")) {
+                add(findings, "POM027_GSON_AND_JACKSON_MIXED", Severity.MINOR, relative,
+                        "Gson and Jackson appear together.",
+                        "Multiple JSON stacks can produce inconsistent serialization rules.",
+                        "Prefer the Spring Boot managed Jackson stack or document why Gson is required.");
+            }
+            if (text.contains("javax.validation") && text.contains("jakarta.validation")) {
+                add(findings, "POM028_JAVAX_JAKARTA_VALIDATION_MIXED", Severity.MAJOR, relative,
+                        "javax.validation and jakarta.validation appear together.",
+                        "Mixed validation namespaces often indicate an incomplete Boot 2 to Boot 3 migration.",
+                        "Align validation dependencies with the Spring Boot major version.");
+            }
+            if (text.contains("<maven.compiler.source>") && text.contains("<maven.compiler.release>")) {
+                add(findings, "POM029_COMPILER_SOURCE_TARGET_RELEASE_DUPLICATED", Severity.MINOR, relative,
+                        "Compiler source/target/release settings appear duplicated.",
+                        "Duplicated compiler settings can diverge across modules.",
+                        "Use a single maven-compiler-plugin release configuration governed by the parent.");
+            }
+            if (text.contains("<repositories>") && text.contains("snapshot")) {
+                add(findings, "POM030_SNAPSHOT_REPOSITORY_IN_PROJECT", Severity.MINOR, relative,
+                        "A snapshot repository is declared in the project POM.",
+                        "Snapshot repositories reduce release reproducibility when not centrally governed.",
+                        "Move repository policy to Maven settings or a governed corporate parent.");
+            }
+            if (text.contains("maven-surefire-plugin") && !text.contains("maven-failsafe-plugin") && context.profile().releaseTarget() == ReleaseTarget.PRODUCTION) {
+                add(findings, "POM031_FAILSAFE_PLUGIN_MISSING_FOR_IT", Severity.INFO, relative,
+                        "Failsafe plugin is not evident in a production profile scan.",
+                        "Integration tests are easier to separate from unit tests when Failsafe is configured.",
+                        "Evaluate maven-failsafe-plugin for integration and end-to-end test phases.");
+            }
+            if (text.contains("skiptests") || text.contains("maven.test.skip")) {
+                add(findings, "POM032_TESTS_SKIPPED_IN_BUILD_CONFIG", Severity.MAJOR, relative,
+                        "The build configuration can skip tests.",
+                        "Skipping tests in committed build configuration can hide regressions in CI.",
+                        "Avoid committed skip flags and configure CI profiles explicitly.");
+            }
+            if (text.contains("<scope>runtime</scope>") && text.contains("lombok")) {
+                add(findings, "POM033_LOMBOK_RUNTIME_SCOPE", Severity.MINOR, relative,
+                        "Lombok appears with runtime scope.",
+                        "Lombok is an annotation processor and should not be required at runtime.",
+                        "Use provided/optional or annotationProcessor configuration.");
+            }
+            if (text.contains("spring-cloud") && !text.contains("spring-cloud-dependencies")) {
+                add(findings, "POM034_SPRING_CLOUD_WITHOUT_BOM", Severity.MAJOR, relative,
+                        "Spring Cloud dependencies appear without Spring Cloud BOM.",
+                        "Spring Cloud versions must be aligned with the Spring Boot release train.",
+                        "Import spring-cloud-dependencies in dependencyManagement.");
+            }
+            if (text.contains("testcontainers") && !text.contains("<scope>test</scope>")) {
+                add(findings, "POM035_TESTCONTAINERS_WITHOUT_TEST_SCOPE", Severity.MINOR, relative,
+                        "Testcontainers dependency may not be scoped to test.",
+                        "Testcontainers should not leak into production classpath.",
+                        "Declare Testcontainers dependencies with scope test.");
+            }
+            if (text.contains("annotationProcessorPaths") && !text.contains("lombok")) {
+                add(findings, "POM036_ANNOTATION_PROCESSOR_GOVERNANCE_REVIEW", Severity.INFO, relative,
+                        "Annotation processor paths are configured.",
+                        "Annotation processors affect generated code and should be governed consistently.",
+                        "Keep processors centralized in the parent and document MapStruct/Lombok/query processors.");
+            }
+            if (text.contains("maven-enforcer-plugin") == false && context.profile().releaseTarget() == ReleaseTarget.PRODUCTION) {
+                add(findings, "POM037_ENFORCER_PLUGIN_NOT_CONFIGURED", Severity.INFO, relative,
+                        "Maven Enforcer plugin is not configured.",
+                        "Enterprise builds benefit from enforcing Java, Maven and dependency convergence rules.",
+                        "Evaluate maven-enforcer-plugin in the parent POM.");
+            }
+            if (text.contains("dependency-check-maven") == false && context.profile().releaseTarget() == ReleaseTarget.PRODUCTION) {
+                add(findings, "POM038_DEPENDENCY_SECURITY_SCAN_NOT_EVIDENT", Severity.INFO, relative,
+                        "Dependency security scan plugin is not evident.",
+                        "Dependency vulnerability checks complement Spring architecture readiness.",
+                        "Evaluate OWASP Dependency Check, Snyk, GitHub Dependabot or equivalent governance in CI.");
+            }
+            if (text.contains("<relativePath/>") && text.contains("spring-boot-starter-parent")) {
+                add(findings, "POM039_PARENT_RELATIVE_PATH_DISABLED", Severity.INFO, relative,
+                        "Parent relativePath is disabled.",
+                        "This can be intentional, but parent resolution should be reproducible in CI.",
+                        "Ensure the parent is resolvable from governed Maven repositories.");
+            }
+            if (text.contains("<modules>") && !text.contains("guardian") && !text.contains("<dependencyManagement>")) {
+                add(findings, "POM040_MULTI_MODULE_WITHOUT_VERSION_GOVERNANCE", Severity.MAJOR, relative,
+                        "Multi-module project without visible dependency governance.",
+                        "Multi-module projects need centralized dependency and plugin versions to avoid drift.",
+                        "Add dependencyManagement and pluginManagement to the parent POM.");
+            }
         } catch (Exception ignored) {
         }
     }
