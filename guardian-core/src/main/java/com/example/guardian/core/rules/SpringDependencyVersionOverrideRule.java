@@ -10,7 +10,7 @@ import java.util.ArrayList;
 /**
  * Deterministic Spring Guardian rule implementation for SpringDependencyVersionOverrideRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class SpringDependencyVersionOverrideRule implements SpringRule {
 

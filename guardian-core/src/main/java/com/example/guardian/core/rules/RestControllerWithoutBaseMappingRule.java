@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Detects REST controllers without a class-level base mapping.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class RestControllerWithoutBaseMappingRule implements SpringRule {
 

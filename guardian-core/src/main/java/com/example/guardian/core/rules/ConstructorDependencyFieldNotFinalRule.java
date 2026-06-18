@@ -17,7 +17,7 @@ import java.util.Set;
 /**
  * Detects constructor-injected dependency fields that are not final.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class ConstructorDependencyFieldNotFinalRule implements SpringRule {
 

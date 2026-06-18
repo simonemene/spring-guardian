@@ -9,6 +9,7 @@ import java.util.Map;
  *
  * @param projectName analyzed project name
  * @param scannedAt scan timestamp
+ * @param projectRootPath absolute project root path used by the scan
  * @param profile scan profile selected for this analysis
  * @param capabilities detected Spring and architecture capabilities
  * @param summary executive report summary
@@ -26,11 +27,12 @@ import java.util.Map;
  * @param recommendedActions prioritized recommended actions
  * @param explanation report reading explanation
  * @param findings findings grouped by rule
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record ArchitectureReviewReport(
         String projectName,
         Instant scannedAt,
+        String projectRootPath,
         ProjectProfile profile,
         ProjectCapabilities capabilities,
         ReportSummary summary,

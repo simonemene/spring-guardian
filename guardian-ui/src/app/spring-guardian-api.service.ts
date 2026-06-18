@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ArchitectureReviewReport, ReportLanguage, ScanProfile } from './spring-guardian.model';
 
@@ -29,8 +29,10 @@ export class SpringGuardianApiService {
   }
 
   scanLocalPath(path: string, language: ReportLanguage, profile: ScanProfile): Observable<ArchitectureReviewReport> {
-    return this.http.post<ArchitectureReviewReport>(`${this.baseUrl}/local`, { path, ...profile }, {
-      params: this.languageParams(language)
+    const body = { path, ...profile };
+    return this.http.post<ArchitectureReviewReport>(`${this.baseUrl}/local`, body, {
+      params: this.languageParams(language).set('_ts', String(Date.now())),
+      headers: new HttpHeaders({ 'Cache-Control': 'no-cache', Pragma: 'no-cache' })
     });
   }
 

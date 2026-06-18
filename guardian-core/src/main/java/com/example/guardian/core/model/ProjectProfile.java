@@ -7,7 +7,7 @@ package com.example.guardian.core.model;
  * @param architectureStyle expected architecture style
  * @param releaseTarget release target used by quality gates
  * @param knownIssuesAccepted true when the scan is a legacy baseline with known issues
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record ProjectProfile(
         ProjectType projectType,

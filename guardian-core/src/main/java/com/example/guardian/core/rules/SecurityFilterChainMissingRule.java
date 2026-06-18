@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Detects Spring Security usage without an explicit SecurityFilterChain.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class SecurityFilterChainMissingRule implements SpringRule {
 

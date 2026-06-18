@@ -13,7 +13,7 @@ import java.util.Set;
 /**
  * Detects annotation usages that can usually be replaced by stronger Spring patterns.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class AnnotationUsageAdvisorRule implements SpringRule {
 

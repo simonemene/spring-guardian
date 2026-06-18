@@ -9,7 +9,7 @@ package com.example.guardian.core.model;
  * @param explanation localized explanation
  * @param required true when the gate can block release readiness
  * @param failingFindings number of findings that failed the gate
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record QualityGate(
         String code,

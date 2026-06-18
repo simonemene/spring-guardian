@@ -14,7 +14,7 @@ import java.util.ArrayList;
 /**
  * Detects manual object creation that has a safer Spring or platform-managed alternative.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class ObjectCreationAdvisorRule implements SpringRule {
 

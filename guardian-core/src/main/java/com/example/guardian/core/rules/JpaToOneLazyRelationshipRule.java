@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Detects JPA to-one relationships without explicit lazy loading.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class JpaToOneLazyRelationshipRule implements SpringRule {
 

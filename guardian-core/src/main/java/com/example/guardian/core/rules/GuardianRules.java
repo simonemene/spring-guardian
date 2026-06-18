@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Factory for the deterministic Spring Guardian rule set.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public final class GuardianRules {
 

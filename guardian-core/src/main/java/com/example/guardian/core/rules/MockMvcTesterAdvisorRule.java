@@ -15,7 +15,7 @@ import java.util.Locale;
 /**
  * Suggests MockMvcTester when a modern Spring Boot test suite still uses direct MockMvc assertions.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class MockMvcTesterAdvisorRule implements SpringRule {
 

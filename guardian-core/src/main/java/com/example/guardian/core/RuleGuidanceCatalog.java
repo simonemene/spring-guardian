@@ -9,7 +9,7 @@ import com.example.guardian.core.model.RuleGuidance;
  * The UI uses this object to show what was detected, the concrete risk,
  * the expected Spring-oriented solution and, when available, official documentation and examples.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 final class RuleGuidanceCatalog {
 
@@ -29,7 +29,7 @@ final class RuleGuidanceCatalog {
         }
         return switch (code) {
             case "ADV001" -> advisor(language, "new ObjectMapper()", "ObjectMapper gestito da Spring Boot", "https://docs.spring.io/spring-boot/reference/features/json.html", "private final ObjectMapper mapper = new ObjectMapper();", "private final ObjectMapper mapper;\n\npublic MyComponent(ObjectMapper mapper) {\n    this.mapper = mapper;\n}");
-            case "ADV002" -> advisor(language, "Gson/GsonBuilder manuale", "Jackson e la configurazione JSON di Spring Boot", "https://docs.spring.io/spring-boot/reference/features/json.html", "Gson gson = new GsonBuilder().create();", "// Usa DTO e ObjectMapper/Jackson configurato da Spring Boot");
+            case "ADV002" -> advisor(language, "Gson/GsonBuilder manuale", "Jackson e la configurazione JSON di Spring Boot", "https://docs.spring.io/spring-boot/reference/features/json.html", "Gson gson = new GsonBuilder().create();", "ObjectMapper objectMapper gestito da Spring Boot");
             case "ADV003" -> advisor(language, "RestTemplate creato con new", "RestClient o un bean RestTemplate configurato", "https://docs.spring.io/spring-boot/reference/io/rest-client.html", "RestTemplate restTemplate = new RestTemplate();", "@Bean\nRestClient restClient(RestClient.Builder builder) {\n    return builder.baseUrl(baseUrl).build();\n}");
             case "ADV004" -> advisor(language, "WebClient.create() sparso", "WebClient.Builder gestito da Spring", "https://docs.spring.io/spring-boot/reference/io/rest-client.html", "WebClient client = WebClient.create(url);", "@Bean\nWebClient apiClient(WebClient.Builder builder) {\n    return builder.baseUrl(url).build();\n}");
             case "ADV005" -> advisor(language, "RestClient.create()/builder duplicato", "RestClient bean centralizzato", "https://docs.spring.io/spring-boot/reference/io/rest-client.html", "RestClient client = RestClient.create(url);", "@Bean\nRestClient apiClient(RestClient.Builder builder) {\n    return builder.baseUrl(url).build();\n}");
@@ -114,7 +114,7 @@ final class RuleGuidanceCatalog {
             case "ADV084" -> advisor(language, "retry HTTP manuale", "RetryTemplate o Resilience4j", "https://docs.spring.io/spring-retry/docs/current/reference/html/", "for (int attempt=0; attempt<3; attempt++) call();", "@Retryable\npublic Response callRemote() { ... }");
             case "ADV085" -> advisor(language, "timeout gestito con thread", "timeout del client HTTP", "https://docs.spring.io/spring-boot/reference/io/rest-client.html", "future.get(5, TimeUnit.SECONDS);", "Configura connect/read timeout nel RestClient/WebClient builder.");
             case "ADV086" -> advisor(language, "polling scheduler custom", "Spring Batch, Quartz o TaskScheduler", "https://docs.spring.io/spring-framework/reference/integration/scheduling.html", "while (true) { checkTable(); }", "@Scheduled(...) void checkTable() { ... } oppure Job Spring Batch pianificato.");
-            case "ADV087" -> advisor(language, "mappa idempotenza manuale", "repository/cache/idempotency service", "https://docs.spring.io/spring-framework/reference/integration/cache.html", "processedIds.put(id, true);", "@Cacheable oppure tabella idempotency con vincolo unico e service dedicato.");
+            case "ADV087" -> advisor(language, "mappa idempotenza manuale", "servizio di idempotenza persistente o cache gestita", "https://docs.spring.io/spring-framework/reference/integration/cache.html", "processedIds.put(id, true);", "Usa una tabella di idempotenza con vincolo univoco, un repository dedicato o una cache gestita quando il dato è davvero volatile.");
             case "ADV088" -> advisor(language, "contesto request statico", "interceptor/filter controllato", "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-config/interceptors.html", "RequestContext.set(user);", "HandlerInterceptor imposta e pulisce il contesto in afterCompletion.");
             case "ADV089" -> advisor(language, "parsing manuale Authorization header", "Spring Security filter/converter", "https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html", "String token = header.substring(7);", "Configura oauth2ResourceServer().jwt() o un AuthenticationConverter dedicato.");
             case "ADV090" -> advisor(language, "controllo ruoli manuale", "AuthorizationManager o method security", "https://docs.spring.io/spring-security/reference/servlet/authorization/method-security.html", "if (user.getRoles().contains(\"ADMIN\"))", "@PreAuthorize(\"hasRole('ADMIN')\")");
@@ -174,7 +174,7 @@ final class RuleGuidanceCatalog {
     }
 
     private static RuleGuidance specificEnglishGuidance(String code, String title, String evidence) {
-        // English keeps the same concise structure; when no dedicated case exists the area guidance is used.
+        
         return null;
     }
 
@@ -194,13 +194,31 @@ final class RuleGuidanceCatalog {
         if (code.startsWith("POM")) {
             return problemIt("Governance Maven/Spring Boot da rivedere: " + title + evidence, why, fix, "Spring Boot BOM, dependencyManagement, pluginManagement", "https://docs.spring.io/spring-boot/maven-plugin/using.html", "<dependency>...<version>gestita a mano</version></dependency>", "Usa spring-boot-starter-parent o spring-boot-dependencies BOM e centralizza versioni/plugin nel parent.");
         }
+        if (code.equals("CLD003")) {
+            return problemIt("Possibile segreto presente nella configurazione" + evidence, "Password, token o chiavi nel repository possono essere copiati, loggati o riutilizzati; inoltre la rotazione diventa più difficile.", "Rimuovi il valore dal repository, ruotalo se reale e usa variabili ambiente, Vault, secret manager o configurazione montata.", "Configurazione esterna e gestione segreti", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "api.password=mySecret", "api.password=${API_PASSWORD}");
+        }
+        if (code.equals("CLD001") || code.equals("CLD020") || code.equals("CLD028")) {
+            return problemIt("Valore runtime o di ambiente incluso nel pacchetto" + evidence, "URL, host, datasource o valori runtime dentro application.properties/yml legano l'artefatto a un ambiente specifico e rendono meno ripetibile il rilascio.", "Sostituisci il valore con un placeholder e inietta il valore dalla piattaforma di deploy.", "Configurazione esterna 12-factor", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "external.api.url=https://server-prod/api", "external.api.url=${EXTERNAL_API_URL}");
+        }
+        if (code.equals("CLD005")) {
+            return problemIt("Cron operativo incluso nel pacchetto" + evidence, "Una schedulazione operativa committata nel pacchetto rende il comportamento diverso da modificare tra ambienti e può richiedere una nuova build per cambiare finestra di esecuzione.", "Usa una proprietà esterna per la cron expression e valorizzala per ambiente dalla piattaforma di deploy.", "Configurazione esterna della schedulazione", "https://docs.spring.io/spring-framework/reference/integration/scheduling.html", "batch.import.cron=0 0 2 * * *", "batch.import.cron=${BATCH_IMPORT_CRON}");
+        }
+        if (code.equals("CLD015")) {
+            return problemIt("Configurazione health da rivedere" + evidence, "Mostrare sempre i dettagli health può esporre informazioni operative su componenti, dipendenze o errori interni.", "In produzione mostra i dettagli solo agli utenti autorizzati o disabilitali; separa readiness e liveness se usi orchestratori/container.", "Actuator health endpoint", "https://docs.spring.io/spring-boot/reference/actuator/endpoints.html", "management.endpoint.health.show-details=always", "management.endpoint.health.show-details=when-authorized");
+        }
+        if (code.equals("CLD024")) {
+            return problemIt("Endpoint esterno non modellato come proprietà tipizzata" + evidence, "Endpoint esterni sparsi o non tipizzati rendono più difficile validare configurazione, timeout, ambienti e test.", "Raggruppa gli endpoint in @ConfigurationProperties validato e inietta il bean nei client applicativi.", "@ConfigurationProperties", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "@Value(\"${external.api.url}\") String url;", "@ConfigurationProperties(\"external.api\")\npublic record ExternalApiProperties(String url) {}");
+        }
+        if (code.equals("CLD026")) {
+            return problemIt("Impostazioni del connection pool incluse nel pacchetto" + evidence, "Pool troppo piccoli o troppo grandi per un ambiente possono causare saturazione, code o consumo eccessivo di connessioni.", "Mantieni default sicuri e sovrascrivi dimensione pool/timeout per ambiente tramite configurazione esterna.", "Configurazione datasource Spring Boot", "https://docs.spring.io/spring-boot/reference/data/sql.html", "spring.datasource.hikari.maximum-pool-size=30", "spring.datasource.hikari.maximum-pool-size=${DB_POOL_MAX_SIZE:10}");
+        }
         if (code.startsWith("CLD")) {
-            return problemIt("Violazione 12-factor/cloud readiness: " + title + evidence, why, fix, "Externalized Configuration / @ConfigurationProperties / Secret management", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "api.url=https://server-prod/api", "api.url=${API_URL}");
+            return problemIt("Aspetto 12-factor/cloud readiness da rivedere: " + title + evidence, why, fix, "Configurazione esterna, @ConfigurationProperties e gestione segreti", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "api.url=https://server-prod/api", "api.url=${API_URL}");
         }
         if (code.startsWith("OBS")) {
             return problemIt("Osservabilità da migliorare: " + title + evidence, why, fix, "Actuator, Micrometer, HealthIndicator, logging strutturato", "https://docs.spring.io/spring-boot/reference/actuator/observability.html", "System.out.println(value);", "log.info(\"Operazione completata id={}\", id);\nmeterRegistry.counter(\"operation.completed\").increment();");
         }
-        return problemIt("Problema rilevato: " + title + evidence, why, fix, "Pattern Spring coerente con il componente rilevato", "https://docs.spring.io/spring-framework/reference/", "// Vedi codice rilevato nella sezione evidenza", "// Applica la soluzione consigliata mantenendo responsabilità e layer separati");
+        return problemIt("Problema rilevato: " + title + evidence, why, fix, "Pattern Spring coerente con il componente rilevato", "https://docs.spring.io/spring-framework/reference/", "Guarda la sezione evidenza per la riga esatta rilevata", "Applica il pattern consigliato nella classe coinvolta");
     }
 
     private static RuleGuidance englishAreaGuidance(String code, String title, String why, String fix, String evidence) {
@@ -220,20 +238,20 @@ final class RuleGuidanceCatalog {
             return problemEn("Maven/Spring Boot governance issue: " + title + evidence, why, fix, "Spring Boot BOM, dependencyManagement, pluginManagement", "https://docs.spring.io/spring-boot/maven-plugin/using.html", "<dependency>...<version>manual</version></dependency>", "Use spring-boot-starter-parent or spring-boot-dependencies BOM and centralize versions/plugins in the parent.");
         }
         if (code.startsWith("CLD")) {
-            return problemEn("12-factor/cloud readiness issue: " + title + evidence, why, fix, "Externalized Configuration / @ConfigurationProperties / Secret management", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "api.url=https://server-prod/api", "api.url=${API_URL}");
+            return problemEn("12-factor/cloud-readiness issue: " + title + evidence, why, fix, "Externalized configuration, @ConfigurationProperties and secret management", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "api.url=https://server-prod/api", "api.url=${API_URL}");
         }
         if (code.startsWith("OBS")) {
             return problemEn("Observability issue: " + title + evidence, why, fix, "Actuator, Micrometer, HealthIndicator, structured logging", "https://docs.spring.io/spring-boot/reference/actuator/observability.html", "System.out.println(value);", "log.info(\"Operation completed id={}\", id);\nmeterRegistry.counter(\"operation.completed\").increment();");
         }
-        return problemEn("Detected issue: " + title + evidence, why, fix, "Spring pattern matching the detected component", "https://docs.spring.io/spring-framework/reference/", "// See detected code in evidence", "// Apply the recommended fix while keeping responsibilities and layers separated");
+        return problemEn("Detected issue: " + title + evidence, why, fix, "Spring pattern matching the detected component", "https://docs.spring.io/spring-framework/reference/", "See the evidence section for the exact code line", "Apply the recommended pattern using the affected class and responsibility");
     }
 
     private static RuleGuidance problemIt(String detected, String impact, String solution, String alternative, String docs, String before, String after) {
-        return new RuleGuidance(detected, impact, solution, alternative, docs, before, after);
+        return new RuleGuidance(toItalianText(detected), toItalianText(impact), toItalianText(solution), toItalianText(alternative), docs, before, after);
     }
 
     private static RuleGuidance problemEn(String detected, String impact, String solution, String alternative, String docs, String before, String after) {
-        return new RuleGuidance(detected, impact, solution, alternative, docs, before, after);
+        return new RuleGuidance(toEnglishText(detected), toEnglishText(impact), toEnglishText(solution), toEnglishText(alternative), docs, before, after);
     }
 
     private static String compactEvidence(String evidence, ReportLanguage language) {
@@ -249,25 +267,159 @@ final class RuleGuidanceCatalog {
 
     private static RuleGuidance advisor(ReportLanguage language, String detected, String alternative, String documentationUrl, String beforeExample, String afterExample) {
         if (language == ReportLanguage.ENGLISH) {
+            String englishDetected = toEnglishText(detected);
+            String englishAlternative = toEnglishText(alternative);
             return new RuleGuidance(
-                    "Detected: " + detected + ".",
+                    "Detected: " + englishDetected + ".",
                     "The code uses a manual implementation or a low-level API. It may work, but it usually bypasses Spring configuration, lifecycle management, testing support or observability.",
-                    "Use " + alternative + ". Centralize the configuration as a bean or typed configuration object and keep application code focused on business behavior.",
-                    alternative,
+                    "Use " + englishAlternative + ". Centralize the configuration as a bean or typed configuration object and keep application code focused on business behavior.",
+                    englishAlternative,
                     documentationUrl,
                     beforeExample,
                     afterExample
             );
         }
+        String italianDetected = toItalianText(detected);
+        String italianAlternative = toItalianText(alternative);
         return new RuleGuidance(
-                "Ho rilevato: " + detected + ".",
-                "Il codice usa un'implementazione manuale o un'API di basso livello. Può funzionare, ma spesso aggira configurazione, lifecycle, testabilità o osservabilità offerte dall'ecosistema Spring.",
-                "Usa " + alternative + ". Centralizza la configurazione come bean o proprietà tipizzata e lascia al codice applicativo solo la logica di business.",
-                alternative,
+                "Ho rilevato: " + italianDetected + ".",
+                "Il codice usa un'implementazione manuale o un'API di basso livello. Può funzionare, ma spesso aggira configurazione, ciclo di vita, testabilità o osservabilità offerte dall'ecosistema Spring.",
+                "Usa " + italianAlternative + ". Centralizza la configurazione come bean o proprietà tipizzata e lascia al codice applicativo solo la logica di business.",
+                italianAlternative,
                 documentationUrl,
                 beforeExample,
                 afterExample
         );
+    }
+
+    private static String toItalianText(String value) {
+        if (value == null) {
+            return null;
+        }
+        return value
+                .replace("Externalized Configuration", "Configurazione esterna")
+                .replace("Secret management / externalized config", "Gestione dei segreti e configurazione esterna")
+                .replace("SecurityFilterChain + @Order", "SecurityFilterChain con @Order")
+                .replace("Layering esplicito, DDD/Hexagonal boundaries, Spring Modulith verification", "Layer espliciti, confini DDD o esagonali e verifica con Spring Modulith")
+                .replace("Explicit layering, DDD/Hexagonal boundaries, Spring Modulith verification", "Layer espliciti, confini DDD o esagonali e verifica con Spring Modulith")
+                .replace("Spring pattern matching the detected component", "Pattern Spring coerente con il componente rilevato")
+                .replace("externalized config/secret manager", "configurazione esterna o secret manager")
+                .replace("request logging filter manuale", "filtro manuale per il log delle richieste")
+                .replace("reload config custom", "ricaricamento configurazione custom")
+                .replace("parsing file segreti manuale", "lettura manuale di file con segreti")
+                .replace("HTTP retry", "retry HTTP")
+                .replace("manuale", "manuale")
+                .replace("Manuale", "Manuale")
+                .replace("custom", "personalizzato")
+                .replace("Custom", "Personalizzato")
+                .replace("lifecycle", "ciclo di vita")
+                .replace("Lifecycle", "Ciclo di vita")
+                .replace("structured logging", "log strutturato")
+                .replace("Structured logging", "Log strutturato")
+                .replace("Feature flag", "Feature flag")
+                .replace("business", "applicativa")
+                .replace("Business", "Applicativa")
+                .replace("detected issue", "problema rilevato")
+                .replace("Detected issue", "Problema rilevato")
+                .replace("Boot-managed", "gestito da Spring Boot")
+                .replace("managed", "gestito")
+                .replace("Low-level", "Basso livello")
+                .replace("low-level", "basso livello")
+                .replace("HTTP client", "client HTTP")
+                .replace("builder", "builder")
+                .replace("scattered", "sparso")
+                .replace("Scattered", "Sparso")
+                .replace("repeated", "ripetuto")
+                .replace("Repeated", "Ripetuto")
+                .replace("manual ObjectMapper", "ObjectMapper manuale")
+                .replace("Manual ObjectMapper", "ObjectMapper manuale")
+                .replace("mappa idempotenza manuale", "mappa di idempotenza manuale")
+                .replace("repository/cache/idempotency service", "servizio di idempotenza persistente o cache gestita")
+                .replace("service", "servizio")
+                .replace("Service", "Servizio")
+                .replace("cache", "cache")
+                .replace("Cache", "Cache")
+                .replace("idempotency", "idempotenza")
+                .replace("Idempotency", "Idempotenza")
+                .replace("Detected:", "Rilevato:")
+                .replace("Detected", "Rilevato")
+                .replace("Possible impact", "Impatto possibile")
+                .replace("Recommended solution", "Soluzione consigliata")
+                .replace("Technical code", "Codice regola")
+                .replace("should use", "dovrebbe usare")
+                .replace("should evaluate", "dovrebbe valutare")
+                .replace("should be replaced by", "dovrebbe essere sostituito da")
+                .replace("should become", "dovrebbe diventare")
+                .replace("should", "dovrebbe")
+                .replace("Should", "Dovrebbe")
+                .replace("without", "senza")
+                .replace("Without", "Senza")
+                .replace("with", "con")
+                .replace("With", "Con")
+                .replace("requires", "richiede")
+                .replace("Requires", "Richiede")
+                .replace("may", "può")
+                .replace("May", "Può")
+                .replace("Use ", "Usa ");
+    }
+
+    private static String toEnglishText(String value) {
+        if (value == null) {
+            return null;
+        }
+        return value
+                .replace("new ObjectMapper()", "new ObjectMapper()")
+                .replace("Gson/GsonBuilder manuale", "manual Gson/GsonBuilder")
+                .replace("RestTemplate creato con new", "RestTemplate created with new")
+                .replace("WebClient.create() sparso", "scattered WebClient.create()")
+                .replace("RestClient.create()/builder duplicato", "duplicated RestClient.create()/builder")
+                .replace("HttpURLConnection/URL", "HttpURLConnection/URL")
+                .replace("OkHttpClient manuale", "manual OkHttpClient")
+                .replace("Thread creato manualmente", "manually created thread")
+                .replace("ExecutorService manuale", "manual ExecutorService")
+                .replace("Timer/TimerTask", "Timer/TimerTask")
+                .replace("Thread.sleep", "Thread.sleep")
+                .replace("System.getenv/System.getProperty", "System.getenv/System.getProperty")
+                .replace("molti @Value sparsi", "many scattered @Value fields")
+                .replace("FileInputStream/FileReader diretto", "direct FileInputStream/FileReader usage")
+                .replace("ClassPathResource ripetuto", "repeated ClassPathResource usage")
+                .replace("ConcurrentHashMap usata come cache", "ConcurrentHashMap used as a cache")
+                .replace("Map statica come registry", "static Map used as a registry")
+                .replace("ApplicationContext.getBean nel codice business", "ApplicationContext.getBean in business code")
+                .replace("new Service/Repository dentro bean Spring", "new Service/Repository inside a Spring bean")
+                .replace("validazione manuale ripetuta", "repeated manual validation")
+                .replace("transazioni begin/commit manuali", "manual begin/commit transactions")
+                .replace("retry loop manuale", "manual retry loop")
+                .replace("controller custom per health check", "custom health-check controller")
+                .replace("logica applicativa dentro listener/event", "business logic inside listener/event")
+                .replace("factory manuale di oggetti", "manual object factory")
+                .replace("mapping manuale ripetitivo", "repetitive manual mapping")
+                .replace("gestione errori manuale", "manual error handling")
+                .replace("utility statica con dipendenze", "static utility with dependencies")
+                .replace("gestione locale/message manuale", "manual locale/message handling")
+                .replace("serializzazione date locale/manuale", "local/manual date serialization")
+                .replace("request logging filter manuale", "manual request logging filter")
+                .replace("reload config custom", "custom configuration reload")
+                .replace("parsing file segreti manuale", "manual secret-file parsing")
+                .replace("configurazione", "configuration")
+                .replace("proprietà", "properties")
+                .replace("validato", "validated")
+                .replace("Validazione", "Validation")
+                .replace("manuale", "manual")
+                .replace("Manuale", "Manual")
+                .replace("gestito da Spring Boot", "managed by Spring Boot")
+                .replace("gestito da Spring", "managed by Spring")
+                .replace("centralizzato", "centralized")
+                .replace("ciclo di vita", "lifecycle")
+                .replace("osservabilità", "observability")
+                .replace("sicurezza", "security")
+                .replace("filtro", "filter")
+                .replace("filtri", "filters")
+                .replace("lettura", "reading")
+                .replace("segreti", "secrets")
+                .replace("personalizzato", "custom")
+                .replace("applicativa", "business")
+                .replace("Applicativa", "Business");
     }
 
     private static String shortCode(String ruleId) {

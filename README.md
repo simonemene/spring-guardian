@@ -27,7 +27,7 @@ Spring Guardian is complementary to tools such as SonarQube. It focuses on Sprin
 The application now includes a simple Spring Guardian brand system:
 
 ```text
-guardian mascot + shield + deflected legacy code
+minimal shield + code mark
 ```
 
 The official UI assets are stored under:
@@ -38,7 +38,7 @@ guardian-ui/src/assets/spring-guardian-wordmark.svg
 guardian-ui/src/assets/favicon.svg
 ```
 
-The visual direction is intentionally minimal and professional: the shield communicates protection, the mascot makes the tool recognizable, and the small code fragments represent legacy code, anti-patterns and unsafe configuration being blocked. The compact logo is used as favicon and header mark; the wordmark is used as the hero/brand illustration.
+The visual direction is intentionally minimal and professional: the shield communicates protection, the code mark communicates static analysis and modernization, and the compact shape remains readable in the header, favicon and GitHub contexts.
 
 ## What Spring Guardian is not
 
@@ -596,7 +596,7 @@ Spring Guardian non sostituisce strumenti generici come SonarQube. È complement
 L'applicazione include ora un piccolo sistema di brand per Spring Guardian:
 
 ```text
-mascotte guardiana + scudo + codice legacy respinto
+marchio guardiana + scudo + codice legacy respinto
 ```
 
 Gli asset ufficiali della UI sono disponibili in:
@@ -607,7 +607,7 @@ guardian-ui/src/assets/spring-guardian-wordmark.svg
 guardian-ui/src/assets/favicon.svg
 ```
 
-La direzione visiva è volutamente semplice e professionale: lo scudo comunica protezione, la mascotte rende il prodotto riconoscibile e i frammenti di codice rappresentano legacy, anti-pattern e configurazioni rischiose che vengono intercettate. Il logo compatto viene usato come favicon e marchio nell'header; il wordmark viene usato come illustrazione principale.
+La direzione visiva è volutamente semplice e professionale: lo scudo comunica protezione, la marchio rende il prodotto riconoscibile e i frammenti di codice rappresentano legacy, anti-pattern e configurazioni rischiose che vengono intercettate. Il logo compatto viene usato come favicon e marchio nell'header; il wordmark viene usato come illustrazione principale.
 
 ## Cosa non è Spring Guardian
 
@@ -1003,3 +1003,11 @@ Content-Type: application/json
   "knownIssuesAccepted": false
 }
 ```
+
+## Scan source transparency
+
+Every report now exposes the root path actually scanned by the backend. When the backend-path mode is used, the UI clears the previous report before starting a new scan and shows both the requested source and the resolved scanned root. This prevents users from mistaking a previous report for the result of a new scan.
+
+## Trasparenza sulla sorgente analizzata
+
+Ogni report espone il percorso root realmente analizzato dal backend. Quando si usa la modalità percorso backend, l'interfaccia rimuove il report precedente prima di avviare una nuova scansione e mostra sia la sorgente richiesta sia il percorso risolto dal backend. In questo modo è chiaro quale progetto è stato analizzato.

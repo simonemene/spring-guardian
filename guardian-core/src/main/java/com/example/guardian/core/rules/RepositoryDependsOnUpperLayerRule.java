@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Detects repository classes depending on service or web layer details.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class RepositoryDependsOnUpperLayerRule implements SpringRule {
 

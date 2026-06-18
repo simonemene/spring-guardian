@@ -2,7 +2,7 @@
   <header class="hero">
     <div class="hero-copy">
       <div class="brand-lockup" aria-label="Spring Guardian brand">
-        <img class="brand-logo" src="assets/spring-guardian-logo.svg" alt="Spring Guardian logo">
+        <img class="brand-logo" src="assets/spring-guardian-logo.svg" [attr.alt]="t('logoAlt')">
         <div class="brand-text">
           <span class="brand-name">Spring Guardian</span>
           <span class="brand-subtitle">{{ t('brandSubtitle') }}</span>
@@ -183,6 +183,8 @@
         <p>{{ current.summary.executiveSummary }}</p>
         <div class="meta-row">
           <span>{{ t('project') }}: <strong>{{ current.projectName }}</strong></span>
+          <span *ngIf="currentScanSource()">{{ t('requestedSource') }}: <strong>{{ currentScanSource() }}</strong></span>
+          <span *ngIf="current.projectRootPath">{{ t('scannedRootPath') }}: <strong>{{ current.projectRootPath }}</strong></span>
           <span>{{ t('scan') }}: <strong>{{ current.scannedAt | date:'medium' }}</strong></span>
           <span>{{ t('selectedProfile') }}: <strong>{{ projectTypeLabel(current.profile.projectType) }} · {{ architectureStyleLabel(current.profile.architectureStyle) }} · {{ releaseTargetLabel(current.profile.releaseTarget) }}</strong></span>
         </div>
@@ -397,7 +399,7 @@
               </div>
               <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
             </div>
-            <h3>{{ finding.guidance.detectedProblem }}</h3>
+            <h3>{{ finding.title }}</h3>
 
             <div class="advisor-flow">
               <div>
@@ -484,7 +486,7 @@
 
   <ng-template #emptyState>
     <section class="empty">
-      <img class="empty-logo" src="assets/spring-guardian-logo.svg" alt="Spring Guardian logo">
+      <img class="empty-logo" src="assets/spring-guardian-logo.svg" [attr.alt]="t('logoAlt')">
       <h2>{{ t('emptyTitle') }}</h2>
       <p>{{ t('emptyText') }}</p>
     </section>

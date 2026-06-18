@@ -8,7 +8,7 @@ import java.util.Set;
 /**
  * Provides the deterministic Spring Alternative Advisor rule set.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 final class SpringAlternativeAdvisorCatalog {
 

@@ -23,7 +23,7 @@ import java.util.concurrent.Callable;
 /**
  * Picocli command that scans a Spring project and renders the architecture report.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 @Command(name = "scan", description = "Scan a Spring project")
 public class ScanCommand implements Callable<Integer> {

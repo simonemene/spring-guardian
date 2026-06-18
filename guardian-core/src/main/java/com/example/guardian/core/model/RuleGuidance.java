@@ -12,7 +12,7 @@ package com.example.guardian.core.model;
  * @param documentationUrl official documentation URL or empty value when not applicable
  * @param beforeExample minimal example of the problematic style
  * @param afterExample minimal example of the recommended style
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record RuleGuidance(
         String detectedProblem,

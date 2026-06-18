@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Detects feature annotations that require an enabling Spring annotation in the project.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class MissingEnableAnnotationAdvisorRule implements SpringRule {
 

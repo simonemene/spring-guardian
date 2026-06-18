@@ -11,7 +11,7 @@ import java.util.Optional;
 /**
  * Internal utility methods for JavaParser-based rule evaluation.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 final class AstUtils {
 

@@ -10,7 +10,7 @@ import java.util.Locale;
 /**
  * Deterministic Spring Guardian rule implementation for PackageStructureInconsistentRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class PackageStructureInconsistentRule implements SpringRule {
 

@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Detects deprecated Spring Boot Mockito test annotations and suggests Spring Framework replacements.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class MockBeanModernizationAdvisorRule implements SpringRule {
 

@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Deterministic Spring Guardian rule implementation for PasswordEncoderMissingRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class PasswordEncoderMissingRule implements SpringRule {
 

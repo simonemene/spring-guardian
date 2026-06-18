@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Detects Lombok all-arguments constructor usage on Spring components.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class AllArgsConstructorOnSpringComponentRule implements SpringRule {
 

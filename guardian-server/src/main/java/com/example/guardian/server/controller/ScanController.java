@@ -144,7 +144,7 @@ public class ScanController {
             throw new IllegalArgumentException("Campo obbligatorio mancante: path.");
         }
 
-        Path root = Path.of(path).normalize();
+        Path root = Path.of(path).toAbsolutePath().normalize();
         if (!Files.exists(root)) {
             throw new IllegalArgumentException("La cartella indicata non esiste: " + root);
         }

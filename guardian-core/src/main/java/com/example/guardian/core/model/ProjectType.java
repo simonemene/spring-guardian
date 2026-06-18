@@ -5,7 +5,7 @@ import java.util.Locale;
 /**
  * Functional project type used to adjust release readiness and user guidance.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public enum ProjectType {
     WEB_API,

@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 /**
  * Detects runtime configuration values committed inside packaged Spring configuration files.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class ApplicationPropertiesExternalizationRule implements SpringRule {
 

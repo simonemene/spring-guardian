@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotBlank;
  * @param architectureStyle expected architecture style used to calibrate this stateless scan
  * @param releaseTarget release target used by quality gates
  * @param knownIssuesAccepted true when the scan should be calibrated as a legacy baseline with known issues
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 @Schema(description = "Request used to scan a project directory already visible to the backend process.")
 public record LocalScanRequest(

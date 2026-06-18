@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * Deterministic Spring Guardian rule implementation for MissingEnvironmentProfilesRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class MissingEnvironmentProfilesRule implements SpringRule {
 

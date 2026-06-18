@@ -5,7 +5,7 @@ import java.util.Locale;
 /**
  * Release target used by quality gates to decide whether findings block release readiness.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public enum ReleaseTarget {
     PRODUCTION,

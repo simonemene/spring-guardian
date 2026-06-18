@@ -14,7 +14,7 @@ import java.util.Set;
 /**
  * Detects application collaborators that look like Spring beans but are created with new.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class SpringBeanCreatedWithNewRule implements SpringRule {
 

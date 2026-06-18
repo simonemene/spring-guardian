@@ -15,7 +15,7 @@ import java.util.Locale;
 /**
  * Deterministic Spring Guardian rule implementation for GetEndpointMutatesStateRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class GetEndpointMutatesStateRule implements SpringRule {
 

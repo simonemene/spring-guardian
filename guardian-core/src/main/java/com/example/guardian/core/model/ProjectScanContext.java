@@ -15,7 +15,7 @@ import java.util.Set;
  * @param hasRestControllerAdvice true when a REST advice is present
  * @param capabilities detected frameworks and architecture signals
  * @param profile stateless scan profile selected for this analysis
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record ProjectScanContext(
         Path root,

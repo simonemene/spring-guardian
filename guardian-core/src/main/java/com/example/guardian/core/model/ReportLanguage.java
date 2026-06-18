@@ -5,7 +5,7 @@ import java.util.Locale;
 /**
  * Supported report languages for user-facing report texts.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public enum ReportLanguage {
     ITALIAN,

@@ -14,7 +14,7 @@ import picocli.CommandLine.Command;
 /**
  * Spring Guardian component for GuardianCommand.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class GuardianCommand implements Runnable {
 

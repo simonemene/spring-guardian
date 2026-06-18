@@ -13,7 +13,7 @@ import java.util.Set;
 /**
  * Detects static Java API calls that usually bypass Spring configuration or lifecycle management.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class StaticMethodAdvisorRule implements SpringRule {
 
@@ -67,7 +67,8 @@ public class StaticMethodAdvisorRule implements SpringRule {
                 if (call.getScope().isEmpty()) {
                     continue;
                 }
-                if (!scopeName.equals(call.getScope().get().toString()) || !methodNames.contains(call.getNameAsString())) {
+                String scope = call.getScope().get().toString();
+                if (!matchesScope(scope) || !methodNames.contains(call.getNameAsString())) {
                     continue;
                 }
                 findings.add(new Finding(
@@ -84,5 +85,9 @@ public class StaticMethodAdvisorRule implements SpringRule {
         }
 
         return findings;
+    }
+
+    private boolean matchesScope(String scope) {
+        return scopeName.equals(scope) || scope.endsWith("." + scopeName);
     }
 }

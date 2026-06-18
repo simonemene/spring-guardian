@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Detects JPA entities without a spec-compliant no-argument constructor.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class JpaEntityConstructorRule implements SpringRule {
 

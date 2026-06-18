@@ -12,7 +12,7 @@ import java.util.Locale;
 /**
  * Deterministic Spring Guardian rule implementation for ReadOnlyTransactionMissingRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class ReadOnlyTransactionMissingRule implements SpringRule {
 

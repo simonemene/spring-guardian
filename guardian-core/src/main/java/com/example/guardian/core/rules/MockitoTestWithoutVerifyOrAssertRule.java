@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * Deterministic Spring Guardian rule implementation for MockitoTestWithoutVerifyOrAssertRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class MockitoTestWithoutVerifyOrAssertRule implements SpringRule {
 

@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 /**
  * Deterministic Spring Guardian rule implementation for UnsafeDdlAutoRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class UnsafeDdlAutoRule implements SpringRule {
 

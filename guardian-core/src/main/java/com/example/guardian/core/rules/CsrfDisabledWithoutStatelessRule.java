@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Detects CSRF disablement without an explicit stateless session policy.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class CsrfDisabledWithoutStatelessRule implements SpringRule {
 

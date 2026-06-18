@@ -3,7 +3,7 @@ package com.example.guardian.core.config;
 /**
  * Immutable Spring Guardian data model for GuardianSettings.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record GuardianSettings(
         String requiredApiPrefix,

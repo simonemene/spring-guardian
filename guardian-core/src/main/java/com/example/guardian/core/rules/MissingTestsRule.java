@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Deterministic Spring Guardian rule implementation for MissingTestsRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class MissingTestsRule implements SpringRule {
 

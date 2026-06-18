@@ -2,12 +2,19 @@ package com.example.guardian.server;
 
 import com.example.guardian.core.model.ArchitectureReviewReport;
 import com.example.guardian.core.model.FindingGroup;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.*;
+import org.springframework.boot.web.context.WebServerApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,24 +22,41 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ScanControllerIT {
+class ScanControllerIntegrationTest {
 
-    @LocalServerPort
-    int port;
+    private ConfigurableApplicationContext context;
+    private int port;
 
     @TempDir
     Path tempDir;
+
+    @BeforeEach
+    void startApplication() {
+        SpringApplication application = new SpringApplication(GuardianServerApplication.class);
+        application.setDefaultProperties(Map.of(
+                "server.port", "0",
+                "spring.main.banner-mode", "off"
+        ));
+        context = application.run();
+        port = ((WebServerApplicationContext) context).getWebServer().getPort();
+    }
+
+    @AfterEach
+    void stopApplication() {
+        if (context != null) {
+            context.close();
+        }
+    }
 
     @Test
     void scanLocalPathReturnsArchitectureReport() throws Exception {
         createProject(tempDir);
 
-        TestRestTemplate restTemplate = new TestRestTemplate();
-
-        ResponseEntity<ArchitectureReviewReport> response = restTemplate.postForEntity(
+        ResponseEntity<ArchitectureReviewReport> response = new TestRestTemplate().postForEntity(
                 "http://localhost:" + port + "/api/v1/scans/local",
                 new HttpEntity<>(Map.of("path", tempDir.toString()), jsonHeaders()),
                 ArchitectureReviewReport.class
@@ -40,6 +64,7 @@ class ScanControllerIT {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
+        assertEquals(tempDir.toAbsolutePath().normalize().toString(), response.getBody().projectRootPath());
 
         Set<String> ruleIds = response.getBody().findings().stream()
                 .map(FindingGroup::ruleId)

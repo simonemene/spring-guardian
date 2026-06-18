@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * Deterministic Spring Guardian rule implementation for SelfInvocationProxyRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class SelfInvocationProxyRule implements SpringRule {
 

@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 /**
  * Catalog-driven rule used for deterministic source, configuration and POM checks.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class CatalogPatternRule implements SpringRule {
 
@@ -79,8 +79,10 @@ public class CatalogPatternRule implements SpringRule {
 
     private List<Finding> evaluateConfig(ProjectScanContext context) {
         return evaluateFiles(context, path -> {
+            String normalized = path.toString().replace("\\", "/").toLowerCase(Locale.ROOT);
             String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
-            return name.endsWith(".properties") || name.endsWith(".yml") || name.endsWith(".yaml");
+            return !normalized.contains("/src/test/")
+                    && (name.endsWith(".properties") || name.endsWith(".yml") || name.endsWith(".yaml"));
         });
     }
 
@@ -92,7 +94,7 @@ public class CatalogPatternRule implements SpringRule {
         List<Finding> findings = new ArrayList<>();
         try (Stream<Path> stream = Files.walk(context.root())) {
             stream.filter(Files::isRegularFile)
-                    .filter(path -> !ignored(path))
+                    .filter(path -> !ignored(context.root(), path))
                     .filter(filePredicate)
                     .forEach(path -> inspectPath(context, path, findings));
         } catch (IOException ignored) {
@@ -136,6 +138,9 @@ public class CatalogPatternRule implements SpringRule {
             if (!containsAny(lowerLine, definition.anyInLine())) {
                 continue;
             }
+            if (!hasMeaningfulLineMatch(lowerLine)) {
+                continue;
+            }
             findings.add(new Finding(
                     definition.id(),
                     definition.severity(),
@@ -151,6 +156,34 @@ public class CatalogPatternRule implements SpringRule {
                 break;
             }
         }
+    }
+
+
+    private boolean hasMeaningfulLineMatch(String lowerLine) {
+        String id = definition.id() == null ? "" : definition.id();
+        if (id.contains("SECRET") || id.contains("PASSWORD") || id.contains("TOKEN")) {
+            int equalsIndex = lowerLine.indexOf('=');
+            int colonIndex = lowerLine.indexOf(':');
+            int index;
+            if (equalsIndex < 0) {
+                index = colonIndex;
+            } else if (colonIndex < 0) {
+                index = equalsIndex;
+            } else {
+                index = Math.min(equalsIndex, colonIndex);
+            }
+            if (index < 0 || index == lowerLine.length() - 1) {
+                return false;
+            }
+            String value = lowerLine.substring(index + 1).trim();
+            return !value.isBlank()
+                    && !value.startsWith("${")
+                    && !value.equals("******")
+                    && !value.equals("<secret>")
+                    && !value.equals("change-me")
+                    && !value.equals("changeme");
+        }
+        return true;
     }
 
     private boolean matchesPath(String lowerPath) {
@@ -192,14 +225,29 @@ public class CatalogPatternRule implements SpringRule {
         return compact.substring(0, 217) + "...";
     }
 
-    private boolean ignored(Path path) {
-        String normalized = path.toString().replace("\\", "/").toLowerCase(Locale.ROOT);
-        return normalized.contains("/target/")
+    private boolean ignored(Path root, Path path) {
+        String relative = root.relativize(path).toString().replace("\\", "/").toLowerCase(Locale.ROOT);
+        String normalized = "/" + relative;
+        if (normalized.contains("/target/")
                 || normalized.contains("/build/")
                 || normalized.contains("/.git/")
                 || normalized.contains("/.idea/")
+                || normalized.contains("/.gradle/")
                 || normalized.contains("/node_modules/")
-                || normalized.contains("/dist/");
+                || normalized.contains("/dist/")
+                || normalized.contains("/.angular/")
+                || normalized.contains("/coverage/")
+                || normalized.contains("/tmp/")
+                || normalized.contains("/temp/")) {
+            return true;
+        }
+        String fileName = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase(Locale.ROOT);
+        return !(normalized.contains("/src/main/")
+                || normalized.contains("/src/test/")
+                || fileName.equals("pom.xml")
+                || fileName.equals("dockerfile")
+                || fileName.equals("docker-compose.yml")
+                || fileName.equals("docker-compose.yaml"));
     }
 
     private boolean ignoredLine(String normalizedPath, String line) {
@@ -229,7 +277,7 @@ public class CatalogPatternRule implements SpringRule {
     /**
      * Source target inspected by a catalog-driven rule.
      *
-     * @author p15518 - Simone Meneghetti
+     * @author Simone Meneghetti
      */
     public enum SourceTarget {
         JAVA_MAIN,
@@ -256,7 +304,7 @@ public class CatalogPatternRule implements SpringRule {
      * @param whyItMatters risk explanation
      * @param suggestedFix recommended fix
      * @param contextPredicate optional context predicate
-     * @author p15518 - Simone Meneghetti
+     * @author Simone Meneghetti
      */
     public record Definition(
             String id,

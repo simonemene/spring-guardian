@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Deterministic Spring Guardian rule implementation for TransactionalOnControllerRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class TransactionalOnControllerRule implements SpringRule {
 

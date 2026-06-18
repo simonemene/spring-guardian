@@ -11,7 +11,7 @@ import java.util.List;
  * @param releasable true when the project can be considered releasable by the selected profile
  * @param blockers localized blocking reasons
  * @param warnings localized non-blocking warnings
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record ReleaseReadiness(
         String status,

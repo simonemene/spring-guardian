@@ -5,7 +5,7 @@ import com.example.guardian.core.model.JavaSourceFile;
 /**
  * Shared predicates used to classify scanned source files.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public final class SourceFilePredicates {
 

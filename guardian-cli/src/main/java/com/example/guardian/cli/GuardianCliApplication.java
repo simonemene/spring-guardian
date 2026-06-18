@@ -5,7 +5,7 @@ import picocli.CommandLine;
 /**
  * Spring Guardian component for GuardianCliApplication.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class GuardianCliApplication {
 

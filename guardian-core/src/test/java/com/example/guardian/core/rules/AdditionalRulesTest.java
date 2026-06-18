@@ -142,7 +142,7 @@ class AdditionalRulesTest {
         assertTrue(ruleIds.contains("SPR052_THREAD_SLEEP_IN_TEST"));
         assertTrue(report.summary().totalFindings() > 0);
         assertTrue(report.rulesExecuted() >= 50);
-        assertTrue(report.findingsByCategory().stream().anyMatch(category -> category.category().equals("Spring Security")));
+        assertTrue(report.findingsByCategory().stream().anyMatch(category -> category.category().equals("Sicurezza")));
         assertTrue(report.recommendedActions().stream().anyMatch(action -> action.ruleId().equals("SPR046_CORS_ALLOW_ALL_WITH_CREDENTIALS")));
     }
 }

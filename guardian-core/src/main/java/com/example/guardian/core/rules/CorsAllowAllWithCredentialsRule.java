@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Deterministic Spring Guardian rule implementation for CorsAllowAllWithCredentialsRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class CorsAllowAllWithCredentialsRule implements SpringRule {
 

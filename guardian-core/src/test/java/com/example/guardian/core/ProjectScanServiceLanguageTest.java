@@ -25,7 +25,7 @@ class ProjectScanServiceLanguageTest {
                 .scan(tempDir, ReportLanguage.ITALIAN);
 
         assertTrue(report.findings().stream().anyMatch(finding -> finding.title().equals("Dipendenza iniettata su campo")));
-        assertTrue(report.findingsByCategory().stream().anyMatch(category -> category.category().equals("Dependency injection")));
+        assertTrue(report.findingsByCategory().stream().anyMatch(category -> category.category().equals("Iniezione delle dipendenze")));
     }
 
     @Test
@@ -37,6 +37,32 @@ class ProjectScanServiceLanguageTest {
 
         assertTrue(report.findings().stream().anyMatch(finding -> finding.title().equals("Field injection")));
         assertTrue(report.findingsByCategory().stream().anyMatch(category -> category.category().equals("Dependency injection")));
+    }
+
+
+    @Test
+    void scanReturnsItalianCloudReadinessCategory() throws Exception {
+        Files.createDirectories(tempDir.resolve("src/main/resources"));
+        Files.createDirectories(tempDir.resolve("src/test/java/com/acme"));
+        Files.writeString(tempDir.resolve("src/main/resources/application.properties"), "api.password=secret-value\n");
+        Files.writeString(tempDir.resolve("src/test/java/com/acme/ConfigTest.java"), """
+                package com.acme;
+
+                import org.junit.jupiter.api.Test;
+
+                class ConfigTest {
+                    @Test
+                    void ok() {
+                        org.junit.jupiter.api.Assertions.assertTrue(true);
+                    }
+                }
+                """);
+
+        ArchitectureReviewReport report = new ProjectScanService(GuardianSettings.defaults())
+                .scan(tempDir, ReportLanguage.ITALIAN);
+
+        assertTrue(report.findingsByCategory().stream().anyMatch(category -> category.category().equals("Prontezza cloud")));
+        assertTrue(report.findingsByCategory().stream().noneMatch(category -> category.category().equals("Cloud readiness")));
     }
 
     @Test

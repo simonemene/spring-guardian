@@ -30,6 +30,8 @@ import java.util.Map;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentCaptor.forClass;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -61,7 +63,9 @@ class ScanControllerWebMvcTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.projectName").value("demo"));
 
-        verify(projectScanService).scan(any(Path.class), eq(ReportLanguage.ENGLISH), any(ProjectProfile.class));
+        ArgumentCaptor<Path> pathCaptor = forClass(Path.class);
+        verify(projectScanService).scan(pathCaptor.capture(), eq(ReportLanguage.ENGLISH), any(ProjectProfile.class));
+        org.junit.jupiter.api.Assertions.assertEquals(tempDir.toAbsolutePath().normalize(), pathCaptor.getValue());
     }
 
     @Test
@@ -82,6 +86,7 @@ class ScanControllerWebMvcTest {
         return new ArchitectureReviewReport(
                 "demo",
                 Instant.parse("2026-01-01T00:00:00Z"),
+                tempDir.toAbsolutePath().normalize().toString(),
                 ProjectProfile.defaults(),
                 new ProjectCapabilities(false, false, false, false, false, false, false, false, false, false, false, false, false, false, List.of("UNCLASSIFIED")),
                 new ReportSummary(0, 0, 0, 0, 0, "HEALTHY", "NO_FINDINGS", "ok"),

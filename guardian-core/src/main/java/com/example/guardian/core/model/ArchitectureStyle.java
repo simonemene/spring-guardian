@@ -5,7 +5,7 @@ import java.util.Locale;
 /**
  * Architecture style used to calibrate deterministic architecture rules.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public enum ArchitectureStyle {
     AUTO_DETECTED,

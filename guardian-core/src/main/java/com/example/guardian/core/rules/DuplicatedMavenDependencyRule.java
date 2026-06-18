@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Deterministic Spring Guardian rule implementation for DuplicatedMavenDependencyRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class DuplicatedMavenDependencyRule implements SpringRule {
 

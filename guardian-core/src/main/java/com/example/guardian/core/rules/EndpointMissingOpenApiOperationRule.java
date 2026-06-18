@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Detects REST endpoints without OpenAPI operation metadata.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class EndpointMissingOpenApiOperationRule implements SpringRule {
 

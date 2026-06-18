@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Detects Spring framework dependencies inside the domain layer for DDD or hexagonal profiles.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class DddDomainDependsOnSpringRule implements SpringRule {
 

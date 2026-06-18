@@ -14,7 +14,7 @@ import java.util.Locale;
 /**
  * Detects packaged activation of Spring profiles inside application configuration.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class HardcodedActiveSpringProfileRule implements SpringRule {
 

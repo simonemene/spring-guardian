@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Deterministic Spring Guardian rule implementation for ActuatorExposeAllRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class ActuatorExposeAllRule implements SpringRule {
 
@@ -25,6 +25,13 @@ public class ActuatorExposeAllRule implements SpringRule {
 
         try (var stream = Files.walk(context.root())) {
             stream.filter(Files::isRegularFile)
+                    .filter(path -> {
+                        String normalized = path.toString().replace("\\", "/").toLowerCase();
+                        return !normalized.contains("/target/")
+                                && !normalized.contains("/build/")
+                                && !normalized.contains("/.git/")
+                                && normalized.contains("/src/main/resources/");
+                    })
                     .filter(path -> path.getFileName().toString().startsWith("application"))
                     .forEach(path -> {
                         try {
@@ -38,7 +45,7 @@ public class ActuatorExposeAllRule implements SpringRule {
                                             "Actuator exposes all endpoints",
                                             context.root().relativize(path).toString(),
                                             i + 1,
-                                            "Detected: " + lines.get(i).trim(),
+                                            lines.get(i).trim(),
                                             "Exposing every actuator endpoint can leak sensitive operational data or enable risky actions.",
                                             "Expose only required endpoints, protect them with security and avoid '*' outside local development."
                                     ));

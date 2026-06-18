@@ -20,7 +20,7 @@ import java.util.List;
  * @param hasApplicationLayer true when an application package is detected
  * @param hasInfrastructureLayer true when an infrastructure package is detected
  * @param detectedArchitecturalStyles inferred architecture style labels
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record ProjectCapabilities(
         boolean usesSpringWeb,

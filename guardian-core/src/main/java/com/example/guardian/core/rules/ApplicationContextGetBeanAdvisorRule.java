@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Detects direct bean lookup through ApplicationContext or BeanFactory.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class ApplicationContextGetBeanAdvisorRule implements SpringRule {
 

@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 /**
  * Deterministic Spring Guardian rule implementation for PossibleSecretInConfigRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class PossibleSecretInConfigRule implements SpringRule {
 

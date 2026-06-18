@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Deterministic rule evaluated against a scanned Spring project.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public interface SpringRule {
 

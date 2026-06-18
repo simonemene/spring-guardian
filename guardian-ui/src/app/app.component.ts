@@ -15,7 +15,7 @@ const TRANSLATIONS = {
   it: {
     eyebrow: 'Scanner architetturale Spring',
     heroTitle: 'Proteggi la tua architettura Spring',
-    brandSubtitle: 'Architecture · Readiness · Modernization',
+    brandSubtitle: 'Architettura · Prontezza · Modernizzazione',
     heroText: 'Analizza progetti Spring Boot, raggruppa i problemi per area tecnica e mostra in modo chiaro cosa correggere, perché conta e quali classi o file sono coinvolti.',
     language: 'Lingua report',
     italian: 'Italiano',
@@ -72,6 +72,8 @@ const TRANSLATIONS = {
     noWarnings: 'Nessuna avvertenza rilevata.',
     project: 'Progetto',
     scan: 'Scansione',
+    scannedRootPath: 'Percorso analizzato',
+    requestedSource: 'Sorgente richiesta',
     detectedStack: 'Stack rilevato',
     detectedStyles: 'Stile rilevato',
     selectedProfile: 'Profilo della scansione',
@@ -106,15 +108,15 @@ const TRANSLATIONS = {
     typeArchitecture: 'Architettura e confini',
     typeCloudReadiness: 'Prontezza cloud',
     typeObservability: 'Osservabilità',
-    technicalCode: 'Codice tecnico',
+    technicalCode: 'Codice regola',
     whyItMatters: 'Perché conta',
     recommendedFix: 'Soluzione consigliata',
     detectedProblem: 'Cosa ho rilevato',
     riskImpact: 'Cosa può comportare',
     springAlternativeToUse: 'Alternativa Spring da usare',
     officialDocs: 'Documentazione ufficiale',
-    beforeExample: 'Prima',
-    afterExample: 'Dopo',
+    beforeExample: 'Esempio prima',
+    afterExample: 'Esempio dopo',
     currentCode: 'Codice rilevato',
     solutionPattern: 'Come dovrebbe essere fatto',
     advisorArea: 'Area advisor',
@@ -168,7 +170,8 @@ const TRANSLATIONS = {
     advisorLaneText: 'Advisor: alternative Spring e modernizzazione, non blocchi immediati.',
     informationLane: 'Note informative',
     informationLaneText: 'Info: opportunità e best practice a basso impatto.',
-    openLane: 'Apri'
+    openLane: 'Apri',
+    logoAlt: 'Logo Spring Guardian'
   },
   en: {
     eyebrow: 'Spring architecture scanner',
@@ -230,6 +233,8 @@ const TRANSLATIONS = {
     noWarnings: 'No warning detected.',
     project: 'Project',
     scan: 'Scan',
+    scannedRootPath: 'Scanned root path',
+    requestedSource: 'Requested source',
     detectedStack: 'Detected stack',
     detectedStyles: 'Detected style',
     selectedProfile: 'Selected profile',
@@ -326,7 +331,8 @@ const TRANSLATIONS = {
     advisorLaneText: 'Advisor findings: Spring alternatives and modernization, not immediate blockers.',
     informationLane: 'Informational notes',
     informationLaneText: 'Info findings: low-impact opportunities and best practices.',
-    openLane: 'Open'
+    openLane: 'Open',
+    logoAlt: 'Spring Guardian logo'
   }
 } as const;
 
@@ -353,6 +359,7 @@ export class AppComponent {
   readonly activeDecisionLane = signal<DecisionLane | null>(null);
   readonly selectedLanguage = signal<ReportLanguage>('it');
   readonly filterVersion = signal(0);
+  readonly currentScanSource = signal<string | null>(null);
 
   localPath = '';
   search = '';
@@ -540,6 +547,7 @@ export class AppComponent {
         this.error.set(this.t('selectZipError'));
         return;
       }
+      this.currentScanSource.set(file.name);
       this.executeScan(this.api.scanZip(file, language, profile));
       return;
     }
@@ -550,15 +558,18 @@ export class AppComponent {
         this.error.set(this.t('selectFolderError'));
         return;
       }
+      this.currentScanSource.set(this.selectedFolderName() ?? this.t('selectedFolderFallback'));
       this.executeScan(this.api.scanFolder(files, language, profile));
       return;
     }
 
-    if (!this.localPath.trim()) {
+    const path = this.localPath.trim();
+    if (!path) {
       this.error.set(this.t('selectPathError'));
       return;
     }
-    this.executeScan(this.api.scanLocalPath(this.localPath.trim(), language, profile));
+    this.currentScanSource.set(path);
+    this.executeScan(this.api.scanLocalPath(path, language, profile));
   }
 
   resetFilters(): void {
@@ -864,20 +875,21 @@ export class AppComponent {
   advisorArea(finding: FindingGroup): string {
     const code = this.ruleCode(finding.ruleId);
     const numeric = Number(code.replace(/\D/g, ''));
-    if (['ADV003','ADV004','ADV005','ADV006','ADV007','ADV048','ADV084','ADV085','ADV089'].includes(code)) return 'HTTP client e integrazioni';
-    if (['ADV012','ADV013','ADV049','ADV079','ADV080','ADV097','ADV098'].includes(code)) return 'Configurazione e proprietà';
-    if (['ADV008','ADV009','ADV010','ADV011','ADV045','ADV046','ADV057','ADV066','ADV067','ADV086','ADV100'].includes(code)) return 'Threading, async e scheduling';
-    if (['ADV001','ADV002','ADV041','ADV062','ADV063','ADV083'].includes(code) || code === 'SPR064') return 'JSON e serializzazione';
-    if (['ADV020','ADV021','ADV076'].includes(code)) return 'Validazione';
-    if (['ADV037','ADV038','ADV073','ADV074','ADV075','ADV095','ADV096'].includes(code)) return 'Persistenza e database';
-    if (['ADV016','ADV069','ADV070','ADV087'].includes(code)) return 'Cache e idempotenza';
-    if (['ADV028','ADV029','ADV056','ADV072'].includes(code)) return 'Eventi e audit';
-    if (['ADV026','ADV027','ADV065'].includes(code)) return 'Osservabilità';
-    if (['ADV036','ADV058','ADV059','ADV061','ADV090'].includes(code)) return 'Sicurezza e filtri';
-    if (['ADV042','ADV043','ADV044','ADV060','ADV064','ADV077','ADV078','ADV091','ADV092'].includes(code)) return 'Web/API';
-    if (['ADV030','ADV031','ADV051','ADV052','ADV053','ADV093','ADV094','ADV099'].includes(code)) return 'Lifecycle e bean';
-    if (['ADV014','ADV015','ADV081','ADV082','ADV071'].includes(code)) return 'File, CSV e Batch';
-    if (numeric >= 1 && numeric <= 100) return 'Modernizzazione Spring';
+    const italian = this.selectedLanguage() === 'it';
+    if (['ADV003','ADV004','ADV005','ADV006','ADV007','ADV048','ADV084','ADV085','ADV089'].includes(code)) return italian ? 'Client HTTP e integrazioni' : 'HTTP clients and integrations';
+    if (['ADV012','ADV013','ADV049','ADV079','ADV080','ADV097','ADV098'].includes(code)) return italian ? 'Configurazione e proprietà' : 'Configuration and properties';
+    if (['ADV008','ADV009','ADV010','ADV011','ADV045','ADV046','ADV057','ADV066','ADV067','ADV086','ADV100'].includes(code)) return italian ? 'Thread, asincronia e schedulazione' : 'Threads, async and scheduling';
+    if (['ADV001','ADV002','ADV041','ADV062','ADV063','ADV083'].includes(code) || code === 'SPR064') return italian ? 'JSON e serializzazione' : 'JSON and serialization';
+    if (['ADV020','ADV021','ADV076'].includes(code)) return italian ? 'Validazione' : 'Validation';
+    if (['ADV037','ADV038','ADV073','ADV074','ADV075','ADV095','ADV096'].includes(code)) return italian ? 'Persistenza e database' : 'Persistence and databases';
+    if (['ADV016','ADV069','ADV070','ADV087'].includes(code)) return italian ? 'Cache e idempotenza' : 'Caching and idempotency';
+    if (['ADV028','ADV029','ADV056','ADV072'].includes(code)) return italian ? 'Eventi e audit' : 'Events and audit';
+    if (['ADV026','ADV027','ADV065'].includes(code)) return italian ? 'Osservabilità' : 'Observability';
+    if (['ADV036','ADV058','ADV059','ADV061','ADV090'].includes(code)) return italian ? 'Sicurezza e filtri' : 'Security and filters';
+    if (['ADV042','ADV043','ADV044','ADV060','ADV064','ADV077','ADV078','ADV091','ADV092'].includes(code)) return italian ? 'Web/API' : 'Web/API';
+    if (['ADV030','ADV031','ADV051','ADV052','ADV053','ADV093','ADV094','ADV099'].includes(code)) return italian ? 'Lifecycle e bean' : 'Lifecycle and beans';
+    if (['ADV014','ADV015','ADV081','ADV082','ADV071'].includes(code)) return italian ? 'File, CSV e Batch' : 'Files, CSV and Batch';
+    if (numeric >= 1 && numeric <= 100) return italian ? 'Modernizzazione Spring' : 'Spring modernization';
     return finding.findingTypeLabel || this.t('typeSpringAlternative');
   }
 
@@ -892,6 +904,8 @@ export class AppComponent {
 
   private executeScan(request$: Observable<ArchitectureReviewReport>): void {
     this.loading.set(true);
+    this.report.set(null);
+    this.resetFilters();
     request$.subscribe({
       next: (result) => {
         this.report.set(result);

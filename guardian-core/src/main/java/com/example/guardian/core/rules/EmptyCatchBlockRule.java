@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Deterministic Spring Guardian rule implementation for EmptyCatchBlockRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class EmptyCatchBlockRule implements SpringRule {
 

@@ -15,7 +15,7 @@ import java.util.Locale;
 /**
  * Detects Maven dependency declarations that make release builds less deterministic.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class MavenDependencyHygieneRule implements SpringRule {
 

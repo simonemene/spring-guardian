@@ -17,7 +17,7 @@ import java.util.Set;
 /**
  * Detects direct Maven dependency declarations that use conflicting versions across the reactor.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class MavenDependencyVersionConflictRule implements SpringRule {
 

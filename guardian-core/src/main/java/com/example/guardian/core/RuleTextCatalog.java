@@ -5,7 +5,7 @@ import com.example.guardian.core.model.ReportLanguage;
 /**
  * Provides localized texts for Spring Guardian rules.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 final class RuleTextCatalog {
 
@@ -44,12 +44,12 @@ final class RuleTextCatalog {
             case "SPR002_FIELD_INJECTION" -> new RuleText(
                     "Dipendenza iniettata su campo",
                     "L'iniezione su campo rende le dipendenze meno visibili, complica i test unitari e può lasciare oggetti in stato parziale.",
-                    "Usa constructor injection con campi final, preferibilmente con un solo costruttore oppure usa Lombok con @RequiredArgsConstructor."
+                    "Usa l'iniezione da costruttore con campi final, preferibilmente con un solo costruttore oppure con Lombok e @RequiredArgsConstructor."
             );
             case "SPR003_CONTROLLER_INJECTS_REPOSITORY" -> new RuleText(
                     "Controller collegato direttamente al repository",
-                    "Il controller dovrebbe gestire il contratto HTTP e delegare i casi d'uso. Saltare il service layer aumenta accoppiamento, duplicazione e difficoltà di test.",
-                    "Introduci un service applicativo e sposta le elaborazioni business, transazioni e accesso ai repository."
+                    "Il controller dovrebbe gestire il contratto HTTP e delegare i casi d'uso. Saltare il livello di servizio aumenta accoppiamento, duplicazione e difficoltà di test.",
+                    "Introduci un servizio applicativo e sposta le elaborazioni business, transazioni e accesso ai repository."
             );
             case "SPR004_FAT_CONTROLLER" -> new RuleText(
                     "Controller troppo grande",
@@ -58,13 +58,13 @@ final class RuleTextCatalog {
             );
             case "SPR005_MISSING_SERVICE_LAYER" -> new RuleText(
                     "Service layer mancante o poco evidente",
-                    "Senza un livello service chiaro, la logica applicativa finisce spesso in controller, repository o utility non governate.",
-                    "Crea service espliciti per i casi d'uso principali e lascia ai repository solo l'accesso ai dati. Anche un service inizialmente semplice rende il confine applicativo più chiaro e testabile."
+                    "Senza un livello di servizio chiaro, la logica applicativa finisce spesso in controller, repository o utility non governate.",
+                    "Crea servizi espliciti per i casi d'uso principali e lascia ai repository solo l'accesso ai dati. Anche un service inizialmente semplice rende il confine applicativo più chiaro e testabile."
             );
             case "SPR006_ENTITY_EXPOSED_IN_CONTROLLER" -> new RuleText(
                     "Entity JPA esposta dall'API",
                     "Esporre entity nei controller lega il contratto REST al modello database e può rivelare campi interni o relazioni indesiderate.",
-                    "Usa DTO per request/response e mapper espliciti tra API e dominio/persistenza."
+                    "Usa DTO per richiesta/risposta e mapper espliciti tra API e dominio/persistenza."
             );
             case "SPR007_SELF_INVOCATION_PROXY" -> new RuleText(
                     "Chiamata interna che può bypassare il proxy Spring",
@@ -84,18 +84,17 @@ final class RuleTextCatalog {
             case "SPR010_MISSING_REST_CONTROLLER_ADVICE" -> new RuleText(
                     "Gestione errori REST centralizzata mancante",
                     "Senza @RestControllerAdvice gli errori rischiano risposte incoerenti, stack trace o messaggi poco chiari per il client.",
-                    "Aggiungi un handler globale con @RestControllerAdvice e response standard per validazione, business error e errori tecnici."
+                    "Aggiungi un handler globale con @RestControllerAdvice e risposte standard per validazione, business error e errori tecnici."
             );
             case "SPR011_GENERIC_TRY_CATCH" -> new RuleText(
                     "Catch troppo generico",
-                    "Catturare Exception o Throwable nasconde errori diversi sotto lo stesso comportamento e può impedire rollback o gestione corretta. Spring usa quasi sempre unchecked, non controllare mai le eccezioni a meno di voler lanciare eccezioni business specifiche." +
-                            "Le RunTimeException non devono essere controllate perchè sono inattese, l'applicativo deve rompersi",
+                    "Catturare Exception o Throwable nasconde errori diversi sotto lo stesso comportamento e può impedire rollback o gestione corretta. Le eccezioni runtime inattese dovrebbero fallire in modo esplicito o essere mappate da un handler centralizzato, non essere nascoste localmente",
                     "Cattura eccezioni specifiche, lascia propagare quelle non gestibili e centralizza la mappatura degli errori con @RestControllerAdvice."
             );
             case "SPR012_MISSING_TESTS" -> new RuleText(
                     "Copertura test non rilevata",
                     "L'assenza di test rende rischiosi refactor e modifiche su controller, service e regole di business.",
-                    "Aggiungi unit test per la logica, slice test per controller/repository e integration test per flussi critici."
+                    "Aggiungi unit test per la logica, slice test per controller/repository e test di integrazione per flussi critici."
             );
             case "SPR013_API_VERSIONING_MISSING" -> new RuleText(
                     "Versionamento API mancante",
@@ -104,10 +103,10 @@ final class RuleTextCatalog {
             );
             case "SPR014_PATH_VARIABLE_WITHOUT_NAME" -> new RuleText(
                     "PathVariable senza nome esplicito",
-                    "Affidarsi al nome parametro compilato può essere fragile se la build non conserva i parameter names.",
+                    "Affidarsi al nome parametro compilato può essere fragile se la build non conserva i nomi dei parametri.",
                     "Specifica sempre il nome nella @PathVariable."
             );
-            case "SPR015_POM_QUALITY" -> new RuleText(
+            case "SPR015_POM_QUALITY", "SPR015_MAVEN_VERSION_AND_PROFILE_POLICY" -> new RuleText(
                     "Qualità Maven migliorabile",
                     "Un POM poco governato rende più difficile standardizzare build, versioni e plugin nel tempo.",
                     "Centralizza versioni, plugin e convenzioni nel parent o nel dependencyManagement."
@@ -120,7 +119,7 @@ final class RuleTextCatalog {
             case "SPR017_READ_ONLY_TRANSACTION_MISSING" -> new RuleText(
                     "Transazione readOnly mancante",
                     "Query e casi d'uso di sola lettura senza readOnly perdono un'informazione utile per ottimizzazione e chiarezza.",
-                    "Usa @Transactional(readOnly = true) sui service di sola lettura."
+                    "Usa @Transactional(readOnly = true) sui servizi di sola lettura."
             );
             case "SPR018_SERVICE_RETURNS_ENTITY" -> new RuleText(
                     "Service restituisce entity direttamente",
@@ -130,7 +129,7 @@ final class RuleTextCatalog {
             case "SPR019_CONTROLLER_TRANSACTIONAL" -> new RuleText(
                     "Transazione aperta nel controller",
                     "Il controller non dovrebbe definire il confine transazionale del caso d'uso.",
-                    "Sposta @Transactional nel service applicativo."
+                    "Sposta @Transactional nel servizio applicativo."
             );
             case "SPR020_OPTIONAL_GET_WITHOUT_GUARD" -> new RuleText(
                     "Optional.get senza controllo",
@@ -349,17 +348,17 @@ final class RuleTextCatalog {
             );
             case "SPR065_MANUAL_THREAD_CREATION" -> new RuleText(
                     "Thread creato manualmente",
-                    "I thread creati a mano non seguono lifecycle Spring, configurazione centralizzata, osservabilità e shutdown ordinato.",
+                    "I thread creati a mano non seguono ciclo di vita Spring, configurazione centralizzata, osservabilità e shutdown ordinato.",
                     "Usa TaskExecutor, ThreadPoolTaskExecutor, @Async o TaskScheduler in base al caso d'uso."
             );
             case "SPR066_MANUAL_EXECUTOR_CREATION" -> new RuleText(
                     "Executor creato manualmente",
-                    "ExecutorService creati direttamente possono uscire dal lifecycle Spring e rendere difficile tuning, shutdown e metriche.",
+                    "ExecutorService creati direttamente possono uscire dal ciclo di vita Spring e rendere difficile tuning, shutdown e metriche.",
                     "Esponi un TaskExecutor o ThreadPoolTaskExecutor come bean e iniettalo dove serve lavoro asincrono."
             );
             case "SPR067_TIMER_SCHEDULING" -> new RuleText(
                     "Scheduling con Timer",
-                    "Timer e TimerTask sono API di basso livello e si integrano male con profili, lifecycle e osservabilità Spring.",
+                    "Timer e TimerTask sono API di basso livello e si integrano male con profili, ciclo di vita e osservabilità Spring.",
                     "Usa @Scheduled o TaskScheduler con configurazione esplicita e test dedicati."
             );
             case "SPR068_MANUAL_JDBC_TEMPLATE" -> new RuleText(
@@ -384,7 +383,7 @@ final class RuleTextCatalog {
             );
             case "SPR072_SPRING_BEAN_CREATED_WITH_NEW" -> new RuleText(
                     "Collaboratore Spring creato con new",
-                    "Creare service, repository, client o adapter con new bypassa dependency injection, proxy, transazioni, validazione e test replacement.",
+                    "Creare service, repository, client o adapter con new bypassa dependency injection, proxy, transazioni, validazione e sostituzione nei test.",
                     "Registra il collaboratore come bean e iniettalo via costruttore."
             );
             case "SPR073_MOCKBEAN_MODERNIZATION_ADVISOR" -> new RuleText(
@@ -404,7 +403,7 @@ final class RuleTextCatalog {
             );
             case "SPR076_MANUAL_REST_TEMPLATE" -> new RuleText(
                     "RestTemplate creato manualmente",
-                    "Un RestTemplate creato a mano può saltare timeout, interceptor, error handling e osservabilità condivisa.",
+                    "Un RestTemplate creato a mano può saltare timeout, interceptor, gestione degli errori e osservabilità condivisa.",
                     "Inietta un bean RestTemplate configurato oppure valuta RestClient per nuovi client HTTP sincroni."
             );
             case "SPR077_WEBCLIENT_BUILDER_CREATED_MANUALLY" -> new RuleText(
@@ -507,18 +506,18 @@ final class RuleTextCatalog {
             case "SPR001_HARDCODED_CONFIG" -> new RuleText("Hardcoded technical value", "Timeouts, durations, URLs, thresholds and technical parameters hardcoded in source code are harder to change across environments and increase invasive change risk.", "Move the value to application configuration and bind it with @ConfigurationProperties, using explicit types such as Duration when possible.");
             case "SPR002_FIELD_INJECTION" -> new RuleText("Field injection", "Field injection hides dependencies, complicates unit testing and allows partially initialized objects.", "Use constructor injection with final fields, preferably with a single constructor.");
             case "SPR003_CONTROLLER_INJECTS_REPOSITORY" -> new RuleText("Controller directly depends on a repository", "A controller should orchestrate HTTP requests, not data access. Skipping the service layer increases coupling and duplication.", "Introduce an application service and move rules, transactions and repository access there.");
-            case "SPR004_FAT_CONTROLLER" -> new RuleText("Controller is too large", "Large controllers tend to mix validation, mapping, application logic and error handling, making the API fragile.", "Keep controllers thin and move logic to services, mappers and dedicated validators.");
+            case "SPR004_FAT_CONTROLLER" -> new RuleText("Controller is too large", "Large controllers tend to mix validation, mapping, application logic and gestione degli errori, making the API fragile.", "Keep controllers thin and move logic to services, mappers and dedicated validators.");
             case "SPR005_MISSING_SERVICE_LAYER" -> new RuleText("Service layer is missing or unclear", "Without a clear service layer, application logic often ends up in controllers, repositories or unmanaged utilities.", "Create explicit services for main use cases and keep repositories focused on data access.");
-            case "SPR006_ENTITY_EXPOSED_IN_CONTROLLER" -> new RuleText("JPA entity exposed by the API", "Exposing entities from controllers couples the REST contract to the database model and may leak internal fields or relationships.", "Use request/response DTOs and explicit mappers between API and domain or persistence models.");
+            case "SPR006_ENTITY_EXPOSED_IN_CONTROLLER" -> new RuleText("JPA entity exposed by the API", "Exposing entities from controllers couples the REST contract to the database model and may leak internal fields or relationships.", "Use richiesta/risposta DTOs and explicit mappers between API and domain or persistence models.");
             case "SPR007_SELF_INVOCATION_PROXY" -> new RuleText("Internal call may bypass the Spring proxy", "When a method calls another method of the same class annotated with @Transactional, @Async or similar, the Spring proxy may not be applied.", "Move the proxied method to another bean or reorganize the use case so the call crosses the Spring proxy.");
             case "SPR008_INVALID_TRANSACTIONAL_USAGE" -> new RuleText("Suspicious @Transactional usage", "Transactions placed at the wrong level may not protect the operation or may create unclear transactional boundaries.", "Place @Transactional on the service representing the use case and verify propagation, readOnly and exception handling.");
             case "SPR009_MANUAL_CONNECTION_MANAGEMENT" -> new RuleText("Manual JDBC connection management", "Opening or closing connections manually bypasses part of Spring management and may cause leaks or inconsistent transactions.", "Use JdbcTemplate, Spring repositories or the Spring transaction manager, avoiding DriverManager and unnecessary manual closes.");
-            case "SPR010_MISSING_REST_CONTROLLER_ADVICE" -> new RuleText("Central REST error handling is missing", "Without @RestControllerAdvice, errors may produce inconsistent responses, stack traces or unclear client messages.", "Add a global @RestControllerAdvice with standard responses for validation, business errors and technical failures.");
+            case "SPR010_MISSING_REST_CONTROLLER_ADVICE" -> new RuleText("Central REST gestione degli errori is missing", "Without @RestControllerAdvice, errors may produce inconsistent responses, stack traces or unclear client messages.", "Add a global @RestControllerAdvice with standard responses for validation, business errors and technical failures.");
             case "SPR011_GENERIC_TRY_CATCH" -> new RuleText("Overly generic catch block", "Catching Exception or Throwable hides different failure modes behind the same behavior and may prevent rollback or correct handling.", "Catch specific exceptions, let unmanaged exceptions propagate, and centralize error mapping with @RestControllerAdvice.");
             case "SPR012_MISSING_TESTS" -> new RuleText("No test coverage detected", "Missing tests make refactoring and changes on controllers, services and business rules risky.", "Add unit tests for logic, slice tests for controllers/repositories and integration tests for critical flows.");
             case "SPR013_API_VERSIONING_MISSING" -> new RuleText("API versioning is missing", "APIs without explicit versioning are harder to evolve without breaking existing clients.", "Use a stable prefix such as /api/v1 or a documented versioning strategy.");
-            case "SPR014_PATH_VARIABLE_WITHOUT_NAME" -> new RuleText("PathVariable has no explicit name", "Relying on compiled parameter names can be fragile when the build does not retain parameter metadata.", "Always specify the name in @PathVariable.");
-            case "SPR015_POM_QUALITY" -> new RuleText("Maven quality can be improved", "An unmanaged POM makes it harder to standardize builds, versions and plugins over time.", "Centralize versions, plugins and conventions in the parent or dependencyManagement.");
+            case "SPR014_PATH_VARIABLE_WITHOUT_NAME" -> new RuleText("PathVariable has no explicit name", "Relying on compiled nomi dei parametri can be fragile when the build does not retain parameter metadata.", "Always specify the name in @PathVariable.");
+            case "SPR015_POM_QUALITY", "SPR015_MAVEN_VERSION_AND_PROFILE_POLICY" -> new RuleText("Maven quality can be improved", "An unmanaged POM makes it harder to standardize builds, versions and plugins over time.", "Centralize versions, plugins and conventions in the parent or dependencyManagement.");
             case "SPR016_NAMING_CONVENTION" -> new RuleText("Naming is not consistent", "Inconsistent names make component roles and responsibilities harder to understand.", "Rename classes and beans using clear Spring conventions: Controller, Service, Repository, Configuration, Properties.");
             case "SPR017_READ_ONLY_TRANSACTION_MISSING" -> new RuleText("Read-only transaction is missing", "Read-only use cases without readOnly lose useful information for optimization and clarity.", "Use @Transactional(readOnly = true) on read-only service methods.");
             case "SPR018_SERVICE_RETURNS_ENTITY" -> new RuleText("Service returns an entity directly", "Letting entities escape services may propagate persistence details outside the application boundary.", "Return DTOs, projections or dedicated domain models when data crosses external layers.");
@@ -573,11 +572,11 @@ final class RuleTextCatalog {
             case "SPR069_MANUAL_PASSWORD_ENCODER" -> new RuleText("PasswordEncoder created manually", "Password encoding should be centrally governed to avoid different strategies across login, tests and migrations.", "Define one PasswordEncoder bean and inject it where passwords are encoded or verified.");
             case "SPR070_DIRECT_ENVIRONMENT_ACCESS" -> new RuleText("Environment read directly from code", "System.getenv or System.getProperty hides configuration, validation and profile handling from Spring.", "Use @ConfigurationProperties, Environment or validated properties classes.");
             case "SPR071_MANUAL_FILE_RESOURCE_ACCESS" -> new RuleText("File resource opened manually", "Direct file access makes it harder to switch between classpath, filesystem and external resources.", "Use Resource, ResourceLoader or configurable properties to make resource access explicit and testable.");
-            case "SPR072_SPRING_BEAN_CREATED_WITH_NEW" -> new RuleText("Spring collaborator created with new", "Creating services, repositories, clients or adapters with new bypasses dependency injection, proxies, transactions, validation and test replacement.", "Register the collaborator as a bean and inject it through constructor injection.");
+            case "SPR072_SPRING_BEAN_CREATED_WITH_NEW" -> new RuleText("Spring collaborator created with new", "Creating services, repositories, clients or adapters with new bypasses dependency injection, proxies, transactions, validation and sostituzione nei test.", "Register the collaborator as a bean and inject it through constructor injection.");
             case "SPR073_MOCKBEAN_MODERNIZATION_ADVISOR" -> new RuleText("Spring Boot Mockito annotation should be modernized", "@MockBean and related annotations are deprecated in recent Spring Boot versions in favor of Spring Framework support.", "Evaluate @MockitoBean and @MockitoSpyBean for new tests or progressive modernization.");
             case "SPR074_STRUCTURED_LOGGING_ADVISOR" -> new RuleText("Structured logging is not configured", "Structured logs improve diagnostics, correlation and aggregation in modern environments without custom logging code.", "Evaluate Spring Boot structured logging with ECS, GELF or Logstash formats for production profiles.");
             case "SPR075_MOCKMVC_TESTER_ADVISOR" -> new RuleText("MockMvcTester opportunity", "MockMvcTester provides more fluent MVC assertions in recent Spring Boot projects.", "Evaluate MockMvcTester for new controller slice tests while keeping existing MockMvc tests stable.");
-            case "SPR076_MANUAL_REST_TEMPLATE" -> new RuleText("RestTemplate created manually", "A manually created RestTemplate can bypass shared timeout, interceptor, error handling and observability configuration.", "Inject a configured RestTemplate bean, or evaluate RestClient for new synchronous HTTP clients.");
+            case "SPR076_MANUAL_REST_TEMPLATE" -> new RuleText("RestTemplate created manually", "A manually created RestTemplate can bypass shared timeout, interceptor, gestione degli errori and observability configuration.", "Inject a configured RestTemplate bean, or evaluate RestClient for new synchronous HTTP clients.");
             case "SPR077_WEBCLIENT_BUILDER_CREATED_MANUALLY" -> new RuleText("WebClient created manually", "Direct WebClient creation can duplicate codecs, base URLs, filters, metrics and TLS/proxy configuration.", "Inject WebClient.Builder or a centrally configured WebClient bean.");
             case "SPR078_RESTCLIENT_BUILDER_CREATED_MANUALLY" -> new RuleText("RestClient created directly", "RestClient is modern, but repeated local builders can duplicate timeouts, interceptors and observability configuration.", "Expose a RestClient.Builder or RestClient bean when the client is used by application services.");
             case "SPR079_LOW_LEVEL_HTTP_CLIENT" -> new RuleText("Low-level HTTP client", "Low-level HTTP clients make timeout, retry, proxy, TLS, tracing and tests less consistent.", "Prefer RestClient, WebClient or a centrally configured HTTP client bean.");
@@ -607,7 +606,8 @@ final class RuleTextCatalog {
             return fallback;
         }
         String id = ruleId == null ? "" : ruleId;
-        String title = italianTitleFromFallback(fallback == null ? id : fallback);
+        String mappedTitle = mappedItalianTitle(id);
+        String title = mappedTitle == null ? italianTitleFromFallback(fallback == null ? id : fallback) : mappedTitle;
         if (part == TextPart.TITLE) {
             return title;
         }
@@ -629,29 +629,88 @@ final class RuleTextCatalog {
         if (id.startsWith("BAT")) {
             return part == TextPart.WHY
                     ? "La configurazione Batch rilevata può compromettere riavvio, idempotenza, osservabilità o gestione degli errori. In produzione questi aspetti sono essenziali per esecuzioni ripetibili e governabili."
-                    : "Rendi espliciti parametri, chunk size, reader, writer, retry, skip, listener, metriche e semantica di restart. Evita stato mutabile non controllato e operazioni non idempotenti.";
+                    : "Rendi espliciti parametri, dimensione del chunk, reader, writer, retry, skip, listener, metriche e semantica di riavvio. Evita stato mutabile non controllato e operazioni non idempotenti.";
         }
         if (id.startsWith("CLD")) {
             return part == TextPart.WHY
-                    ? "Il progetto contiene elementi che riducono la neutralità dell'artefatto rispetto all'ambiente. Questo ostacola deploy ripetibili, configurazione esterna e scalabilità operativa."
-                    : "Sposta valori runtime e dipendenze ambientali fuori dall'artefatto. Usa proprietà tipizzate, variabili ambiente, configurazione montata, secret manager e impostazioni esplicite per readiness, logging e shutdown.";
+                    ? "Il progetto contiene elementi che riducono la neutralità dell'artefatto rispetto all'ambiente. Questo ostacola rilasci ripetibili, configurazione esterna e scalabilità operativa."
+                    : "Sposta valori runtime e dipendenze ambientali fuori dall'artefatto. Usa proprietà tipizzate, variabili ambiente, configurazione montata, secret manager e impostazioni esplicite per readiness, log e arresto controllato.";
         }
         if (id.startsWith("OBS")) {
             return part == TextPart.WHY
                     ? "L'osservabilità rilevata è insufficiente o non centralizzata. Senza log, metriche, health check e correlazione affidabili, diagnosi e gestione operativa diventano più lente."
-                    : "Usa Actuator, Micrometer, logging strutturato, correlation ID e HealthIndicator dedicati. Evita log manuali o non governati e centralizza la raccolta delle informazioni operative.";
+                    : "Usa Actuator, Micrometer, logging strutturato, ID di correlazione e HealthIndicator dedicati. Evita log manuali o non governati e centralizza la raccolta delle informazioni operative.";
         }
         if (id.startsWith("POM")) {
             return part == TextPart.WHY
-                    ? "Il POM Maven mostra una configurazione che può rendere build, versioni, plugin o dipendenze meno governabili. Nei progetti Spring Boot il dependency management è parte dell'architettura applicativa."
+                    ? "Il POM Maven mostra una configurazione che può rendere build, versioni, plugin o dipendenze meno governabili. Nei progetti Spring Boot la gestione delle dipendenze è parte dell'architettura applicativa."
                     : "Centralizza versioni e plugin nel parent o nel dependencyManagement, usa il BOM di Spring Boot, evita scope impropri e mantieni coerenti starter, driver, librerie di test e packaging.";
         }
         if (id.startsWith("ADV")) {
             return part == TextPart.WHY
-                    ? "Il codice usa una soluzione Java manuale o un'API di basso livello che può funzionare, ma non sfrutta pienamente configurazione, lifecycle, testabilità e osservabilità offerte da Spring."
+                    ? "Il codice usa una soluzione Java manuale o un'API di basso livello che può funzionare, ma non sfrutta pienamente configurazione, ciclo di vita, testabilità e osservabilità offerte da Spring."
                     : "Valuta l'alternativa Spring indicata dalla regola. Centralizza la configurazione come bean, usa astrazioni Spring idiomatiche e mantieni il codice applicativo più semplice e governabile.";
         }
         return fallback;
+    }
+
+
+    private static String mappedItalianTitle(String ruleId) {
+        String code = shortCode(ruleId);
+        return switch (code) {
+            case "CLD001" -> "URL o datasource specifico dell'ambiente nel pacchetto";
+            case "CLD002" -> "Profilo Spring attivo salvato nella configurazione";
+            case "CLD003" -> "Possibile segreto nella configurazione";
+            case "CLD004" -> "Porta server specifica dell'ambiente";
+            case "CLD005" -> "Cron operativo incluso nel pacchetto";
+            case "CLD006" -> "Percorso locale assoluto in configurazione";
+            case "CLD007" -> "Log scritti su file locale";
+            case "CLD008" -> "Stato runtime scritto sul filesystem locale";
+            case "CLD009" -> "Stato HTTP locale tramite sessione";
+            case "CLD010" -> "Stato locale in memoria";
+            case "CLD011" -> "Host o endpoint hardcoded nel codice Java";
+            case "CLD012" -> "Feature flag hardcoded";
+            case "CLD013" -> "Configurazione non tipizzata";
+            case "CLD014" -> "@ConfigurationProperties senza validazione";
+            case "CLD015" -> "Endpoint health configurato in modo rischioso";
+            case "CLD016" -> "Readiness/liveness non configurate";
+            case "CLD017" -> "Graceful shutdown non governato";
+            case "CLD018" -> "Profili ambiente mischiati nello stesso file";
+            case "CLD020" -> "Valori di ambiente inclusi nell'artefatto";
+            case "CLD021" -> "Timezone implicita";
+            case "CLD022" -> "Percorsi input/output batch da esternalizzare";
+            case "CLD023" -> "Segreti non separati dalla configurazione ordinaria";
+            case "CLD024" -> "Endpoint esterno non modellato come proprietà tipizzata";
+            case "CLD025" -> "Timeout del client HTTP non evidente";
+            case "CLD026" -> "Impostazioni connection pool incluse nel pacchetto";
+            case "CLD027" -> "File di profilo produzione committato";
+            case "CLD028" -> "Valore runtime senza placeholder";
+            case "CLD029" -> "Strategia di configurazione esterna da documentare";
+            case "CLD030" -> "Build, rilascio e runtime sembrano mescolati";
+            case "WEB001" -> "@RestController senza @RequestMapping di base";
+            case "WEB002" -> "Endpoint senza @Operation OpenAPI";
+            case "WEB004" -> "DTO di richiesta senza Bean Validation";
+            case "WEB006" -> "Entity usata come request body";
+            case "WEB010" -> "Endpoint GET con possibile modifica di stato";
+            case "WEB029" -> "Messaggio di eccezione esposto al client";
+            case "WEB035" -> "Risposta lista potenzialmente senza paginazione";
+            case "WEB036" -> "Page<Entity> esposto direttamente";
+            case "OBS006" -> "Uso di System.out al posto del logger";
+            case "OBS007" -> "Uso di printStackTrace";
+            case "OBS009" -> "Blocco catch vuoto";
+            case "OBS010" -> "Errore nascosto nel catch";
+            case "OBS011" -> "Errore loggato senza throwable";
+            case "OBS025" -> "Dettagli health sempre esposti";
+            default -> null;
+        };
+    }
+
+    private static String shortCode(String ruleId) {
+        if (ruleId == null) {
+            return "";
+        }
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("^(SPR|SEC|WEB|BAT|CLD|OBS|POM|ADV|ARCH)\\d+").matcher(ruleId);
+        return matcher.find() ? matcher.group() : ruleId;
     }
 
     private static String italianTitleFromFallback(String fallback) {
@@ -692,7 +751,73 @@ final class RuleTextCatalog {
                 .replace("REST", "REST")
                 .replace("Web", "Web")
                 .replace("code", "codice")
-                .replace("Code", "Codice");
+                .replace("Code", "Codice")
+                .replace("ItemProcessor should be stateless", "ItemProcessor dovrebbe essere stateless")
+                .replace("Business logic in writer", "Logica applicativa nel writer")
+                .replace("Repository call inside processor loop", "Chiamata al repository dentro il ciclo del processor")
+                .replace("ExecutionContext should store serializable simple state", "ExecutionContext dovrebbe contenere solo stato semplice e serializzabile")
+                .replace("Reader", "Reader")
+                .replace("Writer", "Writer")
+                .replace("processor", "processor")
+                .replace("writer", "writer")
+                .replace("reader", "reader")
+                .replace("stateless", "stateless")
+                .replace("Serializable", "serializzabile")
+                .replace("serializable", "serializzabile")
+                .replace("state", "stato")
+                .replace("State", "Stato")
+                .replace("loop", "ciclo")
+                .replace("Loop", "Ciclo")
+                .replace("call", "chiamata")
+                .replace("Call", "Chiamata")
+                .replace("Spring Boot starter version override", "Versione starter Spring Boot sovrascritta")
+                .replace("Java version not governed", "Versione Java non governata")
+                .replace("system scoped dependency", "dipendenza con scope system")
+                .replace("Test dependency without test scope", "Dipendenza di test senza scope test")
+                .replace("H2 compile scope in production", "H2 con scope compile in produzione")
+                .replace("Custom repositories in project POM", "Repository custom nel POM del progetto")
+                .replace("Multiple SecurityFilterChain beans should be ordered", "Più bean SecurityFilterChain dovrebbero avere un ordine esplicito")
+                .replace("Public path pattern may be too broad", "Pattern pubblico potenzialmente troppo ampio")
+                .replace("Development and production security mixed", "Configurazione di sviluppo e produzione mescolata")
+                .replace("Generic security exception handling", "Gestione generica delle eccezioni di sicurezza")
+                .replace("Mutating endpoint may lack authorization granularity", "Endpoint di modifica con autorizzazione potenzialmente poco granulare")
+                .replace("Admin operation should be audited", "Operazione amministrativa da tracciare in audit")
+                .replace("Error logged senza throwable", "Errore loggato senza throwable")
+                .replace("Console print used instead of logger", "Uso della console al posto del logger")
+                .replace("printStackTrace used", "Uso di printStackTrace")
+                .replace("Metric tag may have high cardinality", "Tag metrica potenzialmente ad alta cardinalità")
+                .replace("Endpoint should declare media contract when needed", "Endpoint con contratto media type da dichiarare quando necessario")
+                .replace("Create endpoint may return generic 200", "Endpoint di creazione con possibile risposta 200 generica")
+                .replace("DELETE endpoint status should be explicit", "Endpoint DELETE con stato HTTP da rendere esplicito")
+                .replace("Manual validation in controller", "Validazione manuale nel controller")
+                .replace("Request parameter should declare validation/default policy", "Parametro di richiesta senza policy chiara di validazione o default")
+                .replace("Path variable should be explicit and validated", "Path variable da rendere esplicita e validata")
+                .replace("Manual mapping inside controller", "Mapping manuale dentro il controller")
+                .replace("Boot without parent or bom", "Spring Boot senza parent o BOM")
+                .replace("Boot senza parent or bom", "Spring Boot senza parent o BOM")
+                .replace("Lombok scope not explicit", "Scope Lombok non esplicito")
+                .replace("Enforcer plugin not configured", "Plugin Maven Enforcer non configurato")
+                .replace("Dependency security scan not evident", "Scansione sicurezza dipendenze non evidente")
+                .replace("Maven dependency versions potrebbe essere hardcoded", "Versioni Maven potenzialmente hardcoded")
+                .replace("could be hardcoded", "potrebbero essere hardcoded")
+                .replace("might be hardcoded", "potrebbero essere hardcoded")
+                .replace("ItemProcessor dovrebbe essere statoless", "ItemProcessor dovrebbe essere stateless")
+                .replace("operazioneal", "operativo")
+                .replace("operazioneally", "operativamente")
+                .replace("declare", "dichiarare")
+                .replace("expose", "esporre")
+                .replace("mapped", "mappato")
+                .replace("explicit", "esplicita")
+                .replace("Remote", "Remota")
+                .replace("remote", "remota")
+                .replace("Restartability", "Riavviabilità")
+                .replace("strategy", "strategia")
+                .replace("Critical dependency", "Dipendenza critica")
+                .replace("have health signal", "avere un segnale health")
+                .replace("Batch dovrebbe expose", "Batch dovrebbe esporre")
+                .replace("dovrebbe have", "dovrebbe avere")
+                .replace("dovrebbe declare", "dovrebbe dichiarare")
+                .replace("dovrebbe expose", "dovrebbe esporre");
     }
 
     private static String normalizeItalian(String value, ReportLanguage language) {
@@ -722,7 +847,60 @@ final class RuleTextCatalog {
                 .replace("esposto directly", "esposto direttamente")
                 .replace("hardcodiced", "hardcoded")
                 .replace("precorrezione", "versione")
-                .replace("to client", "al client");
+                .replace("to client", "al client")
+                .replace("should be", "dovrebbe essere")
+                .replace("Should be", "Dovrebbe essere")
+                .replace("may be", "potrebbe essere")
+                .replace("May be", "Potrebbe essere")
+                .replace("appears", "sembra")
+                .replace("Appears", "Sembra")
+                .replace("packaged", "incluso nel pacchetto")
+                .replace("Packaged", "Incluso nel pacchetto")
+                .replace("intentionally", "in modo esplicito")
+                .replace("Intentionally", "In modo esplicito")
+                .replace("External endpoint", "Endpoint esterno")
+                .replace("Environment-specific", "Specifico per ambiente")
+                .replace("Secret-like value", "Possibile segreto")
+                .replace("Operational cron", "Cron operativo")
+                .replace("Artifact contains", "Artefatto contiene")
+                .replace("Connection pool settings are packaged", "Impostazioni connection pool incluse nel pacchetto")
+                .replace("Runtime value", "Valore runtime")
+                .replace("Health endpoint", "Endpoint health")
+                .replace("Dockerfile/container strategy", "Strategia Docker/container")
+                .replace("Request DTO", "DTO di richiesta")
+                .replace("Entity used", "Entity usata")
+                .replace("GET endpoint", "Endpoint GET")
+                .replace("Exception message", "Messaggio eccezione")
+                .replace("Page<Entity>", "Page<Entity>")
+                .replace("List response", "Risposta lista")
+                .replace("Controller may be too large", "Controller potenzialmente troppo grande")
+                .replace("Controller appears to orchestrate multiple collaborators", "Controller che sembra orchestrare troppi collaboratori")
+                .replace("Possible circular dependency workaround", "Possibile workaround per dipendenza circolare")
+                .replace("Internal package appears outside its module boundary", "Package interno usato fuori dal confine del modulo")
+                .replace("Common util package may contain business logic", "Package common/util con possibile logica applicativa")
+                .replace("Possible missing mapper between API and domain model", "Possibile mapper mancante tra API e modello di dominio")
+                .replace("should", "dovrebbe")
+                .replace("Should", "Dovrebbe")
+                .replace("directly", "direttamente")
+                .replace("Directly", "Direttamente")
+                .replace("inside", "dentro")
+                .replace("Inside", "Dentro")
+                .replace("business logic", "logica applicativa")
+                .replace("Business logic", "Logica applicativa")
+                .replace("used", "usato")
+                .replace("Used", "Usato")
+                .replace("controller", "controller")
+                .replace("Controller", "Controller")
+                .replace("operation", "operazione")
+                .replace("Operation", "Operazione")
+                .replace("empty", "vuoto")
+                .replace("Empty", "Vuoto")
+                .replace("catch block", "blocco catch")
+                .replace("Catch block", "Blocco catch")
+                .replace("exposed", "esposto")
+                .replace("Exposed", "Esposto")
+                .replace("packaged", "incluso nel pacchetto")
+                .replace("Packaged", "Incluso nel pacchetto");
     }
 
     private enum TextPart {

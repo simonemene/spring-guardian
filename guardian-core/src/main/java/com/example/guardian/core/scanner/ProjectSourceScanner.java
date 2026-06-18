@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 /**
  * Scans project sources and builds the immutable rule evaluation context.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class ProjectSourceScanner {
 
@@ -53,7 +53,7 @@ public class ProjectSourceScanner {
             try (Stream<Path> stream = Files.walk(root)) {
                 allFiles = stream
                         .filter(Files::isRegularFile)
-                        .filter(path -> !isIgnored(path))
+                        .filter(path -> !isIgnored(root, path))
                         .toList();
             }
 
@@ -182,13 +182,29 @@ public class ProjectSourceScanner {
                         || a.getNameAsString().endsWith("." + simpleName));
     }
 
-    private boolean isIgnored(Path path) {
-        String normalized = normalize(path);
-        return normalized.contains("/target/")
+    private boolean isIgnored(Path root, Path path) {
+        String relative = normalize(root.relativize(path)).toLowerCase();
+        String normalized = "/" + relative;
+        if (normalized.contains("/target/")
                 || normalized.contains("/build/")
                 || normalized.contains("/.git/")
                 || normalized.contains("/.idea/")
-                || normalized.contains("/node_modules/");
+                || normalized.contains("/.gradle/")
+                || normalized.contains("/node_modules/")
+                || normalized.contains("/dist/")
+                || normalized.contains("/.angular/")
+                || normalized.contains("/coverage/")
+                || normalized.contains("/tmp/")
+                || normalized.contains("/temp/")) {
+            return true;
+        }
+        String fileName = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase();
+        return !(normalized.contains("/src/main/")
+                || normalized.contains("/src/test/")
+                || fileName.equals("pom.xml")
+                || fileName.equals("dockerfile")
+                || fileName.equals("docker-compose.yml")
+                || fileName.equals("docker-compose.yaml"));
     }
 
     private String normalize(Path path) {

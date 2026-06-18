@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 /**
  * Deterministic Spring Guardian rule implementation for HardcodedConfigRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class HardcodedConfigRule implements SpringRule {
 

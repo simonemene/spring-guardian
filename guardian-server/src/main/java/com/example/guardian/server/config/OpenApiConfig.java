@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Configures the OpenAPI documentation exposed by the backend.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 @Configuration
 public class OpenApiConfig {

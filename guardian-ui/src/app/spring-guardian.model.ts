@@ -13,6 +13,7 @@ export interface ScanProfile {
 
 export interface ArchitectureReviewReport {
   projectName: string;
+  projectRootPath?: string;
   scannedAt: string;
   profile: ScanProfile;
   capabilities: ProjectCapabilities;

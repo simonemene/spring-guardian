@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 /**
  * Suggests Spring Boot structured logging when a modern Boot project still uses only plain log output.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class StructuredLoggingAdvisorRule implements SpringRule {
 

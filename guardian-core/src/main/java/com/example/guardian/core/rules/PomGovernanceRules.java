@@ -18,7 +18,7 @@ import java.util.Set;
 /**
  * Performs Spring Boot oriented Maven dependency and build governance checks.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class PomGovernanceRules implements SpringRule {
 

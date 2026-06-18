@@ -3,11 +3,14 @@ package com.example.guardian.server.e2e;
 import com.example.guardian.core.model.ArchitectureReviewReport;
 import com.example.guardian.core.model.FindingGroup;
 import com.example.guardian.server.GuardianServerApplication;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.web.context.WebServerApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -19,6 +22,7 @@ import org.springframework.util.MultiValueMap;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -29,14 +33,31 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.HttpStatus.OK;
 
-@SpringBootTest(classes = GuardianServerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ScanControllerE2EIT {
+class ScanControllerE2ETest {
 
-    @LocalServerPort
-    int port;
+    private ConfigurableApplicationContext context;
+    private int port;
 
     @TempDir
     Path tempDir;
+
+    @BeforeEach
+    void startApplication() {
+        SpringApplication application = new SpringApplication(GuardianServerApplication.class);
+        application.setDefaultProperties(Map.of(
+                "server.port", "0",
+                "spring.main.banner-mode", "off"
+        ));
+        context = application.run();
+        port = ((WebServerApplicationContext) context).getWebServer().getPort();
+    }
+
+    @AfterEach
+    void stopApplication() {
+        if (context != null) {
+            context.close();
+        }
+    }
 
     @Test
     void uploadZipScansProjectAndReturnsEnglishReport() throws Exception {

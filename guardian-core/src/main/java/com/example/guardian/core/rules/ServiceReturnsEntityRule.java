@@ -11,7 +11,7 @@ import java.util.Set;
 /**
  * Deterministic Spring Guardian rule implementation for ServiceReturnsEntityRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class ServiceReturnsEntityRule implements SpringRule {
 

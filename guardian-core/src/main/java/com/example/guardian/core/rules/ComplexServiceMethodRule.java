@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Deterministic Spring Guardian rule implementation for ComplexServiceMethodRule.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class ComplexServiceMethodRule implements SpringRule {
 

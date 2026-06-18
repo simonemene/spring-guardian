@@ -14,7 +14,7 @@ import java.util.Locale;
 /**
  * Detects dependency combinations that usually deserve an explicit architectural decision.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class MavenMixedStackDependencyRule implements SpringRule {
 

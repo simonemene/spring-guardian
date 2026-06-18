@@ -10,7 +10,7 @@ package com.example.guardian.core.model;
  * @param criticalFindings critical findings for this area
  * @param majorFindings high-severity findings for this area
  * @param readinessStatus stable area readiness status
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public record ArchitectureAreaReport(
         String code,

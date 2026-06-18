@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Detects service classes depending on web layer details.
  *
- * @author p15518 - Simone Meneghetti
+ * @author Simone Meneghetti
  */
 public class ServiceDependsOnWebLayerRule implements SpringRule {
 
