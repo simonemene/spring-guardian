@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExtendedSpringArchitectureRulesTest {
@@ -233,4 +234,60 @@ class ExtendedSpringArchitectureRulesTest {
                 .filter(group -> group.ruleId().equals("SEC002_ANY_REQUEST_PERMIT_ALL"))
                 .anyMatch(group -> group.guidance().detectedProblem().contains("Security")));
     }
+
+    @Test
+    void doesNotReportArchitectureBoundariesFromBaseWebPackageOrComments() throws Exception {
+        Files.createDirectories(tempDir.resolve("src/main/java/com/acme/web/restcamel/config"));
+        Files.createDirectories(tempDir.resolve("src/main/java/com/acme/web/restcamel/controller"));
+
+        Files.writeString(tempDir.resolve("pom.xml"), """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.springframework.boot</groupId>
+                            <artifactId>spring-boot-starter-web</artifactId>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """);
+
+        Files.writeString(tempDir.resolve("src/main/java/com/acme/web/restcamel/config/CamelConfiguration.java"), """
+                package com.acme.web.restcamel.config;
+
+                class CamelConfiguration {
+                    Object format() {
+                        return new JacksonDataFormat(IntegrationPayload.class);
+                    }
+                }
+                """);
+
+        Files.writeString(tempDir.resolve("src/main/java/com/acme/web/restcamel/controller/ExportController.java"), """
+                package com.acme.web.restcamel.controller;
+
+                import org.springframework.http.HttpStatus;
+                import org.springframework.http.ResponseEntity;
+                import org.springframework.web.bind.annotation.GetMapping;
+                import org.springframework.web.bind.annotation.RestController;
+
+                @RestController
+                class ExportController {
+                    // private final SslApiService sslApiService;
+
+                    @GetMapping("/export")
+                    ResponseEntity<String> export() {
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ko");
+                    }
+                }
+                """);
+
+        var report = new ProjectScanService(GuardianSettings.defaults()).scan(tempDir, ReportLanguage.ITALIAN);
+        Set<String> ruleIds = report.findings().stream().map(FindingGroup::ruleId).collect(Collectors.toSet());
+
+        assertFalse(ruleIds.contains("ARCH007_INFRASTRUCTURE_ADAPTER_CALLED_DIRECTLY_BY_CONTROLLER"));
+        assertFalse(ruleIds.contains("ARCH008_CONTROLLER_ORCHESTRATES_MULTIPLE_BOUNDED_CONTEXTS"));
+        assertFalse(ruleIds.contains("ARCH018_MAPPER_MISSING_BETWEEN_API_AND_DOMAIN"));
+        assertFalse(ruleIds.contains("ARCH020_BOUNDED_CONTEXT_EXPOSES_INTERNAL_PACKAGE"));
+    }
+
 }

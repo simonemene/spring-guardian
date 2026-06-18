@@ -79,3 +79,15 @@ http://localhost:8080/api/v1/health
 Non sono inclusi `.npmrc` o `package-lock.json`: `npm install` userà il registry configurato sulla macchina. Il `package-lock.json` è ignorato dal Git del progetto per evitare di committare lock generati con registry aziendali o locali.
 
 Se sei in azienda puoi usare il registry Nexus aziendale; se sei fuori azienda puoi usare `https://registry.npmjs.org/`.
+
+## Brand assets
+
+The UI includes three brand assets:
+
+```text
+src/assets/spring-guardian-logo.svg
+src/assets/spring-guardian-wordmark.svg
+src/assets/favicon.svg
+```
+
+The mark uses a friendly guardian mascot with a shield that deflects broken legacy-code fragments. The compact logo is used in the header and favicon; the wordmark is used in the hero section.

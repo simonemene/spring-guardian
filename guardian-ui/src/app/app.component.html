@@ -1,6 +1,14 @@
 <div class="shell">
   <header class="hero">
-    <div>
+    <div class="hero-copy">
+      <div class="brand-lockup" aria-label="Spring Guardian brand">
+        <img class="brand-logo" src="assets/spring-guardian-logo.svg" alt="Spring Guardian logo">
+        <div class="brand-text">
+          <span class="brand-name">Spring Guardian</span>
+          <span class="brand-subtitle">{{ t('brandSubtitle') }}</span>
+        </div>
+      </div>
+
       <div class="hero-topline">
         <p class="eyebrow">{{ t('eyebrow') }}</p>
         <div class="language-switch" role="group" [attr.aria-label]="t('language')">
@@ -9,7 +17,7 @@
           <button [class.active]="selectedLanguage() === 'en'" type="button" (click)="selectLanguage('en')">{{ t('english') }}</button>
         </div>
       </div>
-      <h1>Spring Guardian</h1>
+      <h1>{{ t('heroTitle') }}</h1>
       <p class="hero-text">{{ t('heroText') }}</p>
     </div>
 
@@ -256,16 +264,16 @@
 
     <section *ngIf="activeTab() === 'findings'" class="panel">
       <div class="toolbar">
-        <input type="search" [(ngModel)]="search" [placeholder]="t('searchPlaceholder')">
-        <select [(ngModel)]="severityFilter" aria-label="Severity filter">
+        <input type="search" [(ngModel)]="search" (ngModelChange)="touchFilters()" [placeholder]="t('searchPlaceholder')">
+        <select [(ngModel)]="severityFilter" (ngModelChange)="touchFilters()" aria-label="Severity filter">
           <option value="ALL">{{ t('allSeverities') }}</option>
           <option *ngFor="let severity of severityOrder" [value]="severity">{{ severityLabel(severity) }}</option>
         </select>
-        <select [(ngModel)]="categoryFilter" aria-label="Category filter">
+        <select [(ngModel)]="categoryFilter" (ngModelChange)="touchFilters()" aria-label="Category filter">
           <option value="ALL">{{ t('allAreas') }}</option>
           <option *ngFor="let category of categories()" [value]="category">{{ category }}</option>
         </select>
-        <select [(ngModel)]="typeFilter" [attr.aria-label]="t('findingType')">
+        <select [(ngModel)]="typeFilter" (ngModelChange)="touchFilters()" [attr.aria-label]="t('findingType')">
           <option value="ALL">{{ t('allTypes') }}</option>
           <option *ngFor="let type of findingTypes()" [value]="type">{{ findingTypeLabel(type) }}</option>
         </select>
@@ -476,6 +484,7 @@
 
   <ng-template #emptyState>
     <section class="empty">
+      <img class="empty-logo" src="assets/spring-guardian-logo.svg" alt="Spring Guardian logo">
       <h2>{{ t('emptyTitle') }}</h2>
       <p>{{ t('emptyText') }}</p>
     </section>

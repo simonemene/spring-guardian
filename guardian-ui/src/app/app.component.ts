@@ -14,6 +14,8 @@ type TranslationKey = keyof typeof TRANSLATIONS.it;
 const TRANSLATIONS = {
   it: {
     eyebrow: 'Scanner architetturale Spring',
+    heroTitle: 'Proteggi la tua architettura Spring',
+    brandSubtitle: 'Architecture · Readiness · Modernization',
     heroText: 'Analizza progetti Spring Boot, raggruppa i problemi per area tecnica e mostra in modo chiaro cosa correggere, perché conta e quali classi o file sono coinvolti.',
     language: 'Lingua report',
     italian: 'Italiano',
@@ -86,8 +88,8 @@ const TRANSLATIONS = {
     focusedLane: 'Filtro decisionale attivo',
     showingFirstComponents: 'Mostro le prime occorrenze rilevanti. Il JSON tecnico contiene l’elenco completo.',
     moreComponents: 'altre occorrenze nel JSON tecnico',
-    currentFinding: 'Codice rilevato',
-    expectedImplementation: 'Esempio di soluzione',
+    currentFinding: 'Esempio problematico',
+    expectedImplementation: 'Esempio di implementazione consigliata',
     findingType: 'Tipo problema',
     typeCode: 'Codice Java',
     typePom: 'POM Maven',
@@ -170,6 +172,8 @@ const TRANSLATIONS = {
   },
   en: {
     eyebrow: 'Spring architecture scanner',
+    heroTitle: 'Protect your Spring architecture',
+    brandSubtitle: 'Architecture · Readiness · Modernization',
     heroText: 'Analyze Spring Boot projects, group findings by technical area and clearly show what should be fixed, why it matters and which classes or files are involved.',
     language: 'Report language',
     italian: 'Italian',
@@ -242,8 +246,8 @@ const TRANSLATIONS = {
     focusedLane: 'Active decision filter',
     showingFirstComponents: 'Showing the first relevant occurrences. The technical JSON contains the full list.',
     moreComponents: 'more occurrences in the technical JSON',
-    currentFinding: 'Detected code',
-    expectedImplementation: 'Solution example',
+    currentFinding: 'Problematic example',
+    expectedImplementation: 'Recommended implementation example',
     findingType: 'Finding type',
     typeCode: 'Java code',
     typePom: 'Maven POM',
@@ -348,6 +352,7 @@ export class AppComponent {
   readonly activeTab = signal<Tab>('overview');
   readonly activeDecisionLane = signal<DecisionLane | null>(null);
   readonly selectedLanguage = signal<ReportLanguage>('it');
+  readonly filterVersion = signal(0);
 
   localPath = '';
   search = '';
@@ -453,6 +458,7 @@ export class AppComponent {
       return [];
     }
 
+    this.filterVersion();
     const term = this.search.trim().toLowerCase();
 
     return current.findings.filter((finding) => {
@@ -561,6 +567,11 @@ export class AppComponent {
     this.categoryFilter = 'ALL';
     this.typeFilter = 'ALL';
     this.activeDecisionLane.set(null);
+    this.touchFilters();
+  }
+
+  touchFilters(): void {
+    this.filterVersion.update((version) => version + 1);
   }
 
   decisionCount(report: ArchitectureReviewReport, lane: DecisionLane): number {
@@ -574,22 +585,27 @@ export class AppComponent {
     this.activeDecisionLane.set(lane);
     if (lane === 'ADVISOR') {
       this.activeTab.set('advisor');
+      this.touchFilters();
       return;
     }
     this.activeTab.set('findings');
     if (lane === 'BLOCKERS') {
       this.severityFilter = 'CRITICAL';
+      this.touchFilters();
       return;
     }
     if (lane === 'IMPORTANT') {
       this.severityFilter = 'MAJOR';
+      this.touchFilters();
       return;
     }
     if (lane === 'IMPROVEMENTS') {
       this.severityFilter = 'MINOR';
+      this.touchFilters();
       return;
     }
     this.severityFilter = 'INFO';
+    this.touchFilters();
   }
 
   private inDecisionLane(finding: FindingGroup, lane: DecisionLane): boolean {
@@ -613,8 +629,13 @@ export class AppComponent {
   }
 
   setTypeFilter(type: string): void {
+    this.search = '';
+    this.severityFilter = 'ALL';
+    this.categoryFilter = 'ALL';
     this.typeFilter = type;
+    this.activeDecisionLane.set(null);
     this.activeTab.set('findings');
+    this.touchFilters();
   }
 
   visibleComponents(finding: FindingGroup): AffectedComponent[] {

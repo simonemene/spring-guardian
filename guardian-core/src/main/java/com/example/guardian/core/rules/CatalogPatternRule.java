@@ -126,6 +126,9 @@ public class CatalogPatternRule implements SpringRule {
         String[] lines = content.split("\\R", -1);
         int emitted = 0;
         for (int i = 0; i < lines.length; i++) {
+            if (ignoredLine(normalizedPath, lines[i])) {
+                continue;
+            }
             String lowerLine = lines[i].toLowerCase(Locale.ROOT);
             if (!containsAll(lowerLine, definition.requiredInLine())) {
                 continue;
@@ -197,6 +200,30 @@ public class CatalogPatternRule implements SpringRule {
                 || normalized.contains("/.idea/")
                 || normalized.contains("/node_modules/")
                 || normalized.contains("/dist/");
+    }
+
+    private boolean ignoredLine(String normalizedPath, String line) {
+        if (line == null) {
+            return true;
+        }
+        String trimmed = line.strip();
+        if (trimmed.isEmpty()) {
+            return true;
+        }
+        String lowerPath = normalizedPath.toLowerCase(Locale.ROOT);
+        if (lowerPath.endsWith(".java")) {
+            return trimmed.startsWith("//")
+                    || trimmed.startsWith("/*")
+                    || trimmed.startsWith("*")
+                    || trimmed.startsWith("*/");
+        }
+        if (lowerPath.endsWith(".properties") || lowerPath.endsWith(".yml") || lowerPath.endsWith(".yaml")) {
+            return trimmed.startsWith("#") || trimmed.startsWith("!");
+        }
+        if (lowerPath.endsWith(".xml")) {
+            return trimmed.startsWith("<!--") || trimmed.endsWith("-->");
+        }
+        return false;
     }
 
     /**

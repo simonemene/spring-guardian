@@ -21,6 +21,25 @@ Its goal is not to produce a noisy list of generic static-analysis warnings. Its
 
 Spring Guardian is complementary to tools such as SonarQube. It focuses on Spring architecture, framework usage, modernization opportunities, cloud readiness, maintainability and release-readiness patterns.
 
+
+## Brand identity
+
+The application now includes a simple Spring Guardian brand system:
+
+```text
+guardian mascot + shield + deflected legacy code
+```
+
+The official UI assets are stored under:
+
+```text
+guardian-ui/src/assets/spring-guardian-logo.svg
+guardian-ui/src/assets/spring-guardian-wordmark.svg
+guardian-ui/src/assets/favicon.svg
+```
+
+The visual direction is intentionally minimal and professional: the shield communicates protection, the mascot makes the tool recognizable, and the small code fragments represent legacy code, anti-patterns and unsafe configuration being blocked. The compact logo is used as favicon and header mark; the wordmark is used as the hero/brand illustration.
+
 ## What Spring Guardian is not
 
 Spring Guardian is intentionally scoped:
@@ -570,6 +589,25 @@ L'obiettivo non è produrre una lista rumorosa di segnalazioni generiche, ma ris
 - qual è la correzione consigliata in ottica Spring?
 
 Spring Guardian non sostituisce strumenti generici come SonarQube. È complementare: si concentra su architettura Spring, uso corretto del framework, modernizzazione, prontezza cloud, manutenibilità e readiness di rilascio.
+
+
+## Identità visiva
+
+L'applicazione include ora un piccolo sistema di brand per Spring Guardian:
+
+```text
+mascotte guardiana + scudo + codice legacy respinto
+```
+
+Gli asset ufficiali della UI sono disponibili in:
+
+```text
+guardian-ui/src/assets/spring-guardian-logo.svg
+guardian-ui/src/assets/spring-guardian-wordmark.svg
+guardian-ui/src/assets/favicon.svg
+```
+
+La direzione visiva è volutamente semplice e professionale: lo scudo comunica protezione, la mascotte rende il prodotto riconoscibile e i frammenti di codice rappresentano legacy, anti-pattern e configurazioni rischiose che vengono intercettate. Il logo compatto viene usato come favicon e marchio nell'header; il wordmark viene usato come illustrazione principale.
 
 ## Cosa non è Spring Guardian
 

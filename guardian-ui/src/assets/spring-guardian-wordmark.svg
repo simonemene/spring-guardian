@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 220" role="img" aria-labelledby="title desc">
+  <title id="title">Spring Guardian</title>
+  <desc id="desc">Spring Guardian modern wordmark with shield and code symbol.</desc>
+  <defs>
+    <linearGradient id="panel" x1="0" y1="0" x2="820" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0f241e"/>
+      <stop offset="1" stop-color="#07130f"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="75" y1="28" x2="156" y2="190" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7df2b5"/>
+      <stop offset="0.52" stop-color="#2bd487"/>
+      <stop offset="1" stop-color="#0f8f61"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000" flood-opacity="0.32"/>
+    </filter>
+  </defs>
+  <rect width="820" height="220" rx="44" fill="url(#panel)"/>
+  <g transform="translate(42 24)" filter="url(#shadow)">
+    <path d="M78 0l70 27v54c0 44-26 79-70 98C34 160 8 125 8 81V27L78 0z" fill="url(#shield)" stroke="#d1fae5" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M46 70L28 88l18 18" fill="none" stroke="#052e16" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M110 70l18 18-18 18" fill="none" stroke="#052e16" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M91 54L65 126" fill="none" stroke="#052e16" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(226 72)">
+    <text x="0" y="42" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="52" font-weight="850" fill="#ecfdf5" letter-spacing="-1.4">Spring Guardian</text>
+    <text x="3" y="84" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="18" font-weight="760" fill="#86efac" letter-spacing="3.2">SPRING ARCHITECTURE • RELEASE READINESS • MODERNIZATION</text>
+  </g>
+</svg>

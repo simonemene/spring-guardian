@@ -894,3 +894,97 @@ pre {
   max-height: 260px;
   overflow: auto;
 }
+
+/* =========================
+   Spring Guardian brand
+   ========================= */
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  width: fit-content;
+  padding: 10px 14px 10px 10px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(187, 247, 208, .18);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, .72), rgba(6, 78, 59, .34));
+  box-shadow: 0 18px 70px rgba(0, 0, 0, .22);
+}
+
+.brand-logo {
+  width: 68px;
+  height: 68px;
+  flex: 0 0 auto;
+  border-radius: 18px;
+  box-shadow: 0 14px 36px rgba(16, 185, 129, .18);
+}
+
+.brand-text {
+  display: grid;
+  gap: 3px;
+}
+
+.brand-name {
+  color: #ecfdf5;
+  font-weight: 950;
+  font-size: 20px;
+  letter-spacing: -.04em;
+}
+
+.brand-subtitle {
+  color: #86efac;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.hero-brand-card {
+  width: min(100%, 720px);
+  margin-top: 24px;
+  border-radius: 34px;
+  overflow: hidden;
+  border: 1px solid rgba(187, 247, 208, .14);
+  box-shadow: 0 22px 90px rgba(0, 0, 0, .28);
+}
+
+.hero-brand-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.empty-logo {
+  width: 116px;
+  height: 116px;
+  margin-bottom: 18px;
+  border-radius: 28px;
+  box-shadow: 0 18px 60px rgba(16, 185, 129, .2);
+}
+
+@media (max-width: 700px) {
+  .brand-lockup {
+    width: 100%;
+  }
+
+  .brand-logo {
+    width: 56px;
+    height: 56px;
+  }
+
+  .brand-name {
+    font-size: 18px;
+  }
+
+  .brand-subtitle {
+    font-size: 10px;
+    letter-spacing: .1em;
+  }
+}
