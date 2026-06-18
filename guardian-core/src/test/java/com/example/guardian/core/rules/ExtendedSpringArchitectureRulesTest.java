@@ -225,5 +225,12 @@ class ExtendedSpringArchitectureRulesTest {
         assertTrue(report.findings().stream()
                 .flatMap(group -> group.affectedComponents().stream())
                 .anyMatch(component -> component.codeSnippet() != null && component.codeSnippet().contains("permitAll")));
+        assertTrue(report.findings().stream()
+                .filter(group -> group.ruleId().equals("ADV066_COMPLETABLE_FUTURE_DEFAULT_EXECUTOR"))
+                .anyMatch(group -> group.guidance().springAlternative().contains("@Async")
+                        && group.guidance().documentationUrl().contains("spring-framework")));
+        assertTrue(report.findings().stream()
+                .filter(group -> group.ruleId().equals("SEC002_ANY_REQUEST_PERMIT_ALL"))
+                .anyMatch(group -> group.guidance().detectedProblem().contains("Security")));
     }
 }

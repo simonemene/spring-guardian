@@ -60,6 +60,56 @@ The UI highlights five lanes:
 
 This makes the tool usable even with a large catalog: the reviewer immediately sees what must be fixed now and what can be planned later.
 
+
+## Action-oriented finding cards
+
+Every finding card is now intentionally short and decision-oriented. The report does not only say that a rule matched. It separates the information needed to act:
+
+```text
+What was detected
+Possible impact
+Recommended solution
+Detected class/file/line
+Source evidence
+```
+
+Spring Alternative Advisor cards have an additional structure:
+
+```text
+Detected manual/low-level implementation
+Spring alternative to use
+Official documentation link
+Before example
+After example
+Affected source code
+```
+
+Example:
+
+```text
+Detected: new ObjectMapper().
+Use: the ObjectMapper managed by Spring Boot.
+Documentation: https://docs.spring.io/spring-boot/reference/features/json.html
+```
+
+Before:
+
+```java
+private final ObjectMapper mapper = new ObjectMapper();
+```
+
+After:
+
+```java
+private final ObjectMapper mapper;
+
+public MyProcessor(ObjectMapper mapper) {
+    this.mapper = mapper;
+}
+```
+
+This keeps the Advisor useful: it must say exactly what was detected, which Spring abstraction should replace it and why that alternative is safer for configuration, lifecycle, testing and observability.
+
 ## Modules
 
 ```text
@@ -540,6 +590,56 @@ La UI evidenzia cinque gruppi:
 ```
 
 In questo modo il report resta leggibile anche con molte regole: il reviewer capisce subito cosa correggere immediatamente e cosa pianificare in seguito.
+
+
+## Schede problema orientate all'azione
+
+Ogni scheda del report è stata resa più sintetica e operativa. Il report non si limita a dire che una regola è scattata: separa chiaramente le informazioni necessarie per intervenire:
+
+```text
+Cosa ho rilevato
+Cosa può comportare
+Soluzione consigliata
+Classe/file/riga coinvolti
+Evidenza del codice
+```
+
+Le schede dello Spring Alternative Advisor hanno una struttura ancora più esplicita:
+
+```text
+Implementazione manuale o API di basso livello rilevata
+Alternativa Spring da usare
+Link alla documentazione ufficiale
+Esempio prima
+Esempio dopo
+Codice sorgente coinvolto
+```
+
+Esempio:
+
+```text
+Ho rilevato: new ObjectMapper().
+Usa: ObjectMapper gestito da Spring Boot.
+Documentazione: https://docs.spring.io/spring-boot/reference/features/json.html
+```
+
+Prima:
+
+```java
+private final ObjectMapper mapper = new ObjectMapper();
+```
+
+Dopo:
+
+```java
+private final ObjectMapper mapper;
+
+public MyProcessor(ObjectMapper mapper) {
+    this.mapper = mapper;
+}
+```
+
+In questo modo l'Advisor non resta generico: deve dire esattamente cosa ha rilevato, quale astrazione Spring usare e perché quella soluzione è più governabile per configurazione, lifecycle, testabilità e osservabilità.
 
 ## Moduli
 

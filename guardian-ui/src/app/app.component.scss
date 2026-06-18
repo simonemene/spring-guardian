@@ -683,3 +683,102 @@ pre {
     grid-template-columns: 1fr;
   }
 }
+
+/* Action-oriented finding cards -------------------------------------------- */
+.finding-guidance,
+.advisor-flow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.advisor-flow {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.guidance-item,
+.advisor-flow > div {
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(255,255,255,.045);
+}
+
+.guidance-item span,
+.advisor-flow span,
+.advisor-group-title span {
+  display: inline-flex;
+  color: #bbf7d0;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.guidance-item.detected { border-color: rgba(96, 165, 250, .32); }
+.guidance-item.risk { border-color: rgba(251, 191, 36, .28); }
+.guidance-item.solution { border-color: rgba(52, 211, 153, .28); }
+
+.doc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: #bbf7d0;
+  background: rgba(52, 211, 153, .12);
+  border: 1px solid rgba(52, 211, 153, .28);
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.before-after {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 10px 0 16px;
+}
+
+.before-after h4 {
+  color: var(--muted);
+  margin: 0 0 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.advisor-group-list {
+  display: grid;
+  gap: 18px;
+}
+
+.advisor-group {
+  border: 1px solid rgba(52, 211, 153, .20);
+  border-radius: 24px;
+  padding: 16px;
+  background: rgba(0,0,0,.12);
+}
+
+.advisor-group-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.advisor-group-title h3 {
+  margin: 0;
+}
+
+@media (max-width: 1100px) {
+  .finding-guidance,
+  .advisor-flow,
+  .before-after {
+    grid-template-columns: 1fr;
+  }
+}

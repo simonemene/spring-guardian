@@ -100,7 +100,16 @@ const TRANSLATIONS = {
     typeObservability: 'Osservabilità',
     technicalCode: 'Codice tecnico',
     whyItMatters: 'Perché conta',
-    recommendedFix: 'Correzione consigliata',
+    recommendedFix: 'Soluzione consigliata',
+    detectedProblem: 'Cosa ho rilevato',
+    riskImpact: 'Cosa può comportare',
+    springAlternativeToUse: 'Alternativa Spring da usare',
+    officialDocs: 'Documentazione ufficiale',
+    beforeExample: 'Prima',
+    afterExample: 'Dopo',
+    currentCode: 'Codice rilevato',
+    solutionPattern: 'Come dovrebbe essere fatto',
+    advisorArea: 'Area advisor',
     involvedComponents: 'Classi e file coinvolti',
     technicalEvidence: 'Evidenza rilevata',
     recommendedActions: 'Azioni consigliate',
@@ -241,7 +250,16 @@ const TRANSLATIONS = {
     typeObservability: 'Observability',
     technicalCode: 'Technical code',
     whyItMatters: 'Why it matters',
-    recommendedFix: 'Recommended fix',
+    recommendedFix: 'Recommended solution',
+    detectedProblem: 'What was detected',
+    riskImpact: 'Possible impact',
+    springAlternativeToUse: 'Spring alternative to use',
+    officialDocs: 'Official documentation',
+    beforeExample: 'Before',
+    afterExample: 'After',
+    currentCode: 'Detected code',
+    solutionPattern: 'Expected implementation',
+    advisorArea: 'Advisor area',
     involvedComponents: 'Involved classes and files',
     technicalEvidence: 'Technical evidence',
     recommendedActions: 'Recommended actions',
@@ -316,6 +334,7 @@ export class AppComponent {
   readonly selectedFolderName = signal<string | null>(null);
   readonly uploadMode = signal<UploadMode>('zip');
   readonly activeTab = signal<Tab>('overview');
+  readonly activeDecisionLane = signal<DecisionLane | null>(null);
   readonly selectedLanguage = signal<ReportLanguage>('it');
 
   localPath = '';
@@ -351,6 +370,17 @@ export class AppComponent {
     return current.findings.filter((finding) => this.isSpringAdvisorFinding(finding));
   });
 
+  readonly advisorGroups = computed(() => {
+    const groups = new Map<string, FindingGroup[]>();
+    for (const finding of this.springAdvisorFindings()) {
+      const area = this.advisorArea(finding);
+      groups.set(area, [...(groups.get(area) ?? []), finding]);
+    }
+    return Array.from(groups.entries())
+      .map(([area, findings]) => ({ area, findings, occurrences: findings.reduce((total, finding) => total + finding.occurrences, 0) }))
+      .sort((left, right) => left.area.localeCompare(right.area));
+  });
+
 
   readonly decisionLanes = computed(() => {
     const current = this.report();
@@ -375,6 +405,8 @@ export class AppComponent {
     const term = this.search.trim().toLowerCase();
 
     return current.findings.filter((finding) => {
+      const activeLane = this.activeDecisionLane();
+      const matchesLane = activeLane === null || this.inDecisionLane(finding, activeLane);
       const matchesSeverity = this.severityFilter === 'ALL' || finding.severity === this.severityFilter;
       const matchesCategory = this.categoryFilter === 'ALL' || finding.category === this.categoryFilter;
       const matchesType = this.typeFilter === 'ALL' || this.findingType(finding) === this.typeFilter;
@@ -393,7 +425,7 @@ export class AppComponent {
         ])
       ].join(' ').toLowerCase();
 
-      return matchesSeverity && matchesCategory && matchesType && (!term || searchable.includes(term));
+      return matchesLane && matchesSeverity && matchesCategory && matchesType && (!term || searchable.includes(term));
     });
   });
 
@@ -472,6 +504,7 @@ export class AppComponent {
     this.severityFilter = 'ALL';
     this.categoryFilter = 'ALL';
     this.typeFilter = 'ALL';
+    this.activeDecisionLane.set(null);
   }
 
   decisionCount(report: ArchitectureReviewReport, lane: DecisionLane): number {
@@ -482,6 +515,7 @@ export class AppComponent {
 
   focusDecisionLane(lane: DecisionLane): void {
     this.resetFilters();
+    this.activeDecisionLane.set(lane);
     if (lane === 'ADVISOR') {
       this.activeTab.set('advisor');
       return;
@@ -715,6 +749,27 @@ export class AppComponent {
       capabilities.usesSpringBatch ? 'Spring Batch' : ''
     ].filter(Boolean);
     return values.length > 0 ? values : [this.t('noFindings')];
+  }
+
+
+  advisorArea(finding: FindingGroup): string {
+    const code = this.ruleCode(finding.ruleId);
+    const numeric = Number(code.replace(/\D/g, ''));
+    if (['ADV003','ADV004','ADV005','ADV006','ADV007','ADV048','ADV084','ADV085','ADV089'].includes(code)) return 'HTTP client e integrazioni';
+    if (['ADV012','ADV013','ADV049','ADV079','ADV080','ADV097','ADV098'].includes(code)) return 'Configurazione e proprietà';
+    if (['ADV008','ADV009','ADV010','ADV011','ADV045','ADV046','ADV057','ADV066','ADV067','ADV086','ADV100'].includes(code)) return 'Threading, async e scheduling';
+    if (['ADV001','ADV002','ADV041','ADV062','ADV063','ADV083'].includes(code) || code === 'SPR064') return 'JSON e serializzazione';
+    if (['ADV020','ADV021','ADV076'].includes(code)) return 'Validazione';
+    if (['ADV037','ADV038','ADV073','ADV074','ADV075','ADV095','ADV096'].includes(code)) return 'Persistenza e database';
+    if (['ADV016','ADV069','ADV070','ADV087'].includes(code)) return 'Cache e idempotenza';
+    if (['ADV028','ADV029','ADV056','ADV072'].includes(code)) return 'Eventi e audit';
+    if (['ADV026','ADV027','ADV065'].includes(code)) return 'Osservabilità';
+    if (['ADV036','ADV058','ADV059','ADV061','ADV090'].includes(code)) return 'Sicurezza e filtri';
+    if (['ADV042','ADV043','ADV044','ADV060','ADV064','ADV077','ADV078','ADV091','ADV092'].includes(code)) return 'Web/API';
+    if (['ADV030','ADV031','ADV051','ADV052','ADV053','ADV093','ADV094','ADV099'].includes(code)) return 'Lifecycle e bean';
+    if (['ADV014','ADV015','ADV081','ADV082','ADV071'].includes(code)) return 'File, CSV e Batch';
+    if (numeric >= 1 && numeric <= 100) return 'Modernizzazione Spring';
+    return finding.findingTypeLabel || this.t('typeSpringAlternative');
   }
 
   private currentProfile(): ScanProfile {

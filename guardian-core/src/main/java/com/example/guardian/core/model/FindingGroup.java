@@ -16,6 +16,7 @@ import java.util.List;
  * @param whyItMatters localized risk explanation
  * @param suggestedFix localized remediation
  * @param explanation localized group explanation
+ * @param guidance action-oriented guidance used by the UI
  * @author Simone Meneghetti
  */
 public record FindingGroup(
@@ -29,6 +30,7 @@ public record FindingGroup(
         List<AffectedComponent> affectedComponents,
         String whyItMatters,
         String suggestedFix,
-        String explanation
+        String explanation,
+        RuleGuidance guidance
 ) {
 }

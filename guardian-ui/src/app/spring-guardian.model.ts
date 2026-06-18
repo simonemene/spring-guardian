@@ -129,6 +129,17 @@ export interface FindingGroup {
   whyItMatters: string;
   suggestedFix: string;
   explanation: string;
+  guidance: RuleGuidance;
+}
+
+export interface RuleGuidance {
+  detectedProblem: string;
+  riskImpact: string;
+  recommendedApproach: string;
+  springAlternative: string;
+  documentationUrl: string;
+  beforeExample: string;
+  afterExample: string;
 }
 
 export interface AffectedComponent {

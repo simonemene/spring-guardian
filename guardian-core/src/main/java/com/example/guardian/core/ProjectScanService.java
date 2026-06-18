@@ -17,6 +17,7 @@ import com.example.guardian.core.model.ReleaseTarget;
 import com.example.guardian.core.model.ReportExplanation;
 import com.example.guardian.core.model.ReportLanguage;
 import com.example.guardian.core.model.ReportSummary;
+import com.example.guardian.core.model.RuleGuidance;
 import com.example.guardian.core.model.Severity;
 import com.example.guardian.core.rules.GuardianRules;
 import com.example.guardian.core.rules.SpringRule;
@@ -330,18 +331,23 @@ public class ProjectScanService {
                             .toList();
                     Finding first = ruleFindings.get(0);
                     String findingType = findingTypeFor(first);
+                    String localizedTitle = RuleTextCatalog.title(first.ruleId(), first.title(), language);
+                    String localizedWhy = RuleTextCatalog.why(first.ruleId(), first.whyItMatters(), language);
+                    String localizedFix = RuleTextCatalog.fix(first.ruleId(), first.suggestedFix(), language);
+                    RuleGuidance guidance = RuleGuidanceCatalog.guidance(first, localizedTitle, localizedWhy, localizedFix, language);
                     groups.add(new FindingGroup(
                             first.ruleId(),
                             first.severity(),
                             categoryFor(first, language),
                             findingType,
                             findingTypeLabel(findingType, language),
-                            RuleTextCatalog.title(first.ruleId(), first.title(), language),
+                            localizedTitle,
                             ruleFindings.size(),
                             ruleFindings.stream().map(finding -> affectedComponentOf(finding, context)).toList(),
-                            RuleTextCatalog.why(first.ruleId(), first.whyItMatters(), language),
-                            RuleTextCatalog.fix(first.ruleId(), first.suggestedFix(), language),
-                            groupExplanation(first, ruleFindings.size(), language)
+                            localizedWhy,
+                            localizedFix,
+                            groupExplanation(first, ruleFindings.size(), language, guidance),
+                            guidance
                     ));
                 });
 
@@ -484,9 +490,9 @@ public class ProjectScanService {
                 case "WEB_LAYER" -> "Web/API layer";
                 case "SPRING_BATCH" -> "Spring Batch";
                 case "ARCHITECTURE" -> "Architecture and boundaries";
-                case "CLOUD_READINESS" -> "Prontezza cloud";
+                case "CLOUD_READINESS" -> "Cloud readiness";
                 case "OBSERVABILITY" -> "Observability";
-                case "DEPENDENCY_INJECTION" -> "Iniezione delle dipendenze";
+                case "DEPENDENCY_INJECTION" -> "Dependency injection";
                 case "RUNTIME_CODE" -> "Runtime code";
                 default -> "Java code";
             };
@@ -502,9 +508,9 @@ public class ProjectScanService {
             case "WEB_LAYER" -> "Layer web/API";
             case "SPRING_BATCH" -> "Spring Batch";
             case "ARCHITECTURE" -> "Architettura e confini";
-            case "CLOUD_READINESS" -> "Prontezza cloud";
+            case "CLOUD_READINESS" -> "Cloud readiness";
             case "OBSERVABILITY" -> "Osservabilità";
-            case "DEPENDENCY_INJECTION" -> "Iniezione delle dipendenze";
+            case "DEPENDENCY_INJECTION" -> "Dependency injection";
             case "RUNTIME_CODE" -> "Codice runtime";
             default -> "Codice Java";
         };
@@ -543,20 +549,14 @@ public class ProjectScanService {
         return fileName;
     }
 
-    private String groupExplanation(Finding first, int occurrences, ReportLanguage language) {
+    private String groupExplanation(Finding first, int occurrences, ReportLanguage language, RuleGuidance guidance) {
+        String count = language == ReportLanguage.ENGLISH
+                ? (occurrences == 1 ? "1 affected component" : occurrences + " affected components")
+                : (occurrences == 1 ? "1 componente coinvolto" : occurrences + " componenti coinvolti");
         if (language == ReportLanguage.ENGLISH) {
-            String target = occurrences == 1 ? "1 affected component" : occurrences + " affected components";
-            return target + " matched this rule. "
-                    + RuleTextCatalog.why(first.ruleId(), first.whyItMatters(), language)
-                    + " Recommended action: "
-                    + RuleTextCatalog.fix(first.ruleId(), first.suggestedFix(), language);
+            return count + ". " + guidance.detectedProblem() + " Recommended solution: " + guidance.recommendedApproach();
         }
-
-        String target = occurrences == 1 ? "1 componente coinvolto" : occurrences + " componenti coinvolti";
-        return target + " rilevato da questa regola. "
-                + RuleTextCatalog.why(first.ruleId(), first.whyItMatters(), language)
-                + " Intervento consigliato: "
-                + RuleTextCatalog.fix(first.ruleId(), first.suggestedFix(), language);
+        return count + ". " + guidance.detectedProblem() + " Soluzione: " + guidance.recommendedApproach();
     }
 
     private List<RecommendedAction> buildRecommendedActions(List<FindingGroup> groupedFindings, ReportLanguage language) {
