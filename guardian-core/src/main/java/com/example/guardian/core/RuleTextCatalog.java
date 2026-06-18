@@ -493,7 +493,7 @@ final class RuleTextCatalog {
                     "Mantieni solo lo stack necessario oppure documenta la scelta e isola la configurazione del caso speciale."
             );
             case "SPR095_MAVEN_DEPENDENCY_HYGIENE" -> new RuleText(
-                    "Igiene dipendenze Maven migliorabile",
+                    "Qualità dipendenze Maven migliorabile",
                     "Versioni SNAPSHOT, range, RELEASE/LATEST, systemPath o scope mancanti rendono meno governabile il rilascio e più fragile la pipeline.",
                     "Usa versioni rilasciate e fisse, dependencyManagement, repository Maven governati e scope espliciti per strumenti come Lombok."
             );
