@@ -1,5 +1,8 @@
 package com.example.guardian.core.rules;
 
+import com.example.guardian.core.model.ProjectScanContext;
+import com.example.guardian.core.model.ProjectType;
+import com.example.guardian.core.model.ArchitectureStyle;
 import com.example.guardian.core.model.Severity;
 
 import java.util.ArrayList;
@@ -21,6 +24,22 @@ import static com.example.guardian.core.rules.CatalogPatternRule.SourceTarget.PO
 final class ExtendedRuleCatalogs {
 
     private ExtendedRuleCatalogs() {
+    }
+
+    private static boolean isBatchRelevant(ProjectScanContext context) {
+        return context.profile().projectType() == ProjectType.BATCH || context.capabilities().usesSpringBatch();
+    }
+
+    private static boolean isHexagonalProfile(ProjectScanContext context) {
+        return context.profile().architectureStyle() == ArchitectureStyle.HEXAGONAL;
+    }
+
+    private static boolean isDddProfile(ProjectScanContext context) {
+        return context.profile().architectureStyle() == ArchitectureStyle.DOMAIN_DRIVEN_DESIGN;
+    }
+
+    private static boolean isLegacyBaseline(ProjectScanContext context) {
+        return context.profile().knownIssuesAccepted() || context.profile().projectType() == ProjectType.UNKNOWN;
     }
 
     /**
@@ -52,9 +71,9 @@ final class ExtendedRuleCatalogs {
         definitions.add(line("ARCH020_BOUNDED_CONTEXT_EXPOSES_INTERNAL_PACKAGE", Severity.MAJOR, JAVA_MAIN, Set.of("internal.", "Internal"), "Internal package appears outside its module boundary", "Using another module internal package bypasses the published API and creates brittle coupling.", "Depend on the module public API, application service, event or port instead of internal classes."));
         definitions.add(line("ARCH021_PACKAGE_STRUCTURE_DOES_NOT_MATCH_SELECTED_STYLE", Severity.MINOR, JAVA_MAIN, Set.of("@SpringBootApplication"), "Package structure does not express the selected architecture style", "Projects with Spring Web/JPA/Security should make boundaries visible through package structure.", "Use clear package-by-feature or controller/application/domain/infrastructure boundaries."));
         definitions.add(line("ARCH022_LAYERED_PROJECT_WITHOUT_CLEAR_LAYER_SEPARATION", Severity.MINOR, JAVA_MAIN, Set.of("@RestController", "@Service", "@Repository"), "Layered project has weak layer separation signals", "A layered application should have visible controller, service and repository responsibilities.", "Align packages and dependencies so controllers call services and services coordinate repositories."));
-        definitions.add(line("ARCH023_HEXAGONAL_PROJECT_WITHOUT_PORT_ADAPTER_SEPARATION", Severity.MINOR, JAVA_MAIN, Set.of("Adapter", "Port"), "Hexagonal project should separate ports and adapters", "Without clear ports and adapters, hexagonal naming becomes cosmetic and boundaries remain unclear.", "Place ports in application/domain and adapters in infrastructure with explicit direction of dependency."));
-        definitions.add(line("ARCH024_DDD_PROJECT_WITHOUT_DOMAIN_APPLICATION_INFRASTRUCTURE", Severity.MINOR, JAVA_MAIN, Set.of("domain", "application", "infrastructure"), "DDD project should expose domain/application/infrastructure boundaries", "DDD projects need clear separation between model, use cases and technical adapters.", "Organize packages around bounded contexts with domain, application and infrastructure responsibilities."));
-        definitions.add(line("ARCH025_LEGACY_BASELINE_STILL_HAS_RELEASE_BLOCKERS", Severity.MAJOR, JAVA_MAIN, Set.of("TODO", "FIXME", "legacy"), "Legacy baseline contains unresolved release blockers", "Legacy mode can calibrate severity, but it should not hide release blockers or security risks.", "Track accepted issues explicitly and keep critical/security findings blocking even in legacy baseline."));
+        definitions.add(line("ARCH023_HEXAGONAL_PROJECT_WITHOUT_PORT_ADAPTER_SEPARATION", Severity.MINOR, JAVA_MAIN, Set.of("Adapter", "Port"), "Hexagonal project should separate ports and adapters", "Without clear ports and adapters, hexagonal naming becomes cosmetic and boundaries remain unclear.", "Place ports in application/domain and adapters in infrastructure with explicit direction of dependency.").onlyWhen(ExtendedRuleCatalogs::isHexagonalProfile));
+        definitions.add(line("ARCH024_DDD_PROJECT_WITHOUT_DOMAIN_APPLICATION_INFRASTRUCTURE", Severity.MINOR, JAVA_MAIN, Set.of("domain", "application", "infrastructure"), "DDD project should expose domain/application/infrastructure boundaries", "DDD projects need clear separation between model, use cases and technical adapters.", "Organize packages around bounded contexts with domain, application and infrastructure responsibilities.").onlyWhen(ExtendedRuleCatalogs::isDddProfile));
+        definitions.add(line("ARCH025_LEGACY_BASELINE_STILL_HAS_RELEASE_BLOCKERS", Severity.MAJOR, JAVA_MAIN, Set.of("TODO", "FIXME", "legacy"), "Legacy baseline contains unresolved release blockers", "Legacy mode can calibrate severity, but it should not hide release blockers or security risks.", "Track accepted issues explicitly and keep critical/security findings blocking even in legacy baseline.").onlyWhen(ExtendedRuleCatalogs::isLegacyBaseline));
         return asRules(definitions);
     }
 
@@ -205,7 +224,7 @@ final class ExtendedRuleCatalogs {
         definitions.add(line("BAT038_EXIT_STATUS_NOT_MAPPED", Severity.MINOR, JAVA_MAIN, Set.of("ExitStatus"), "Custom ExitStatus should be mapped operationally", "Spring Batch jobs must be restartable, observable and operationally safe. This pattern can weaken restart, idempotency, error handling or production diagnosis.", "Externalize operational parameters, make restart/idempotency explicit and add listeners, retry/skip policy, metrics and tests where appropriate."));
         definitions.add(line("BAT039_RESTARTABILITY_NOT_DOCUMENTED", Severity.MINOR, JAVA_MAIN, Set.of("JobBuilder"), "Restartability strategy should be explicit", "Spring Batch jobs must be restartable, observable and operationally safe. This pattern can weaken restart, idempotency, error handling or production diagnosis.", "Externalize operational parameters, make restart/idempotency explicit and add listeners, retry/skip policy, metrics and tests where appropriate."));
         definitions.add(line("BAT040_BATCH_INPUT_OUTPUT_PATH_HARDCODED", Severity.MAJOR, JAVA_MAIN, Set.of("/tmp/", "C:\\", "FileInputStream"), "Batch input/output path should be externalized", "Spring Batch jobs must be restartable, observable and operationally safe. This pattern can weaken restart, idempotency, error handling or production diagnosis.", "Externalize operational parameters, make restart/idempotency explicit and add listeners, retry/skip policy, metrics and tests where appropriate."));
-        return asRules(definitions);
+        return asBatchRules(definitions);
     }
 
     /**
@@ -395,5 +414,13 @@ final class ExtendedRuleCatalogs {
 
     private static List<SpringRule> asRules(List<CatalogPatternRule.Definition> definitions) {
         return definitions.stream().map(CatalogPatternRule::new).map(SpringRule.class::cast).toList();
+    }
+
+    private static List<SpringRule> asBatchRules(List<CatalogPatternRule.Definition> definitions) {
+        return definitions.stream()
+                .map(definition -> definition.onlyWhen(ExtendedRuleCatalogs::isBatchRelevant).requiringFile("org.springframework.batch"))
+                .map(CatalogPatternRule::new)
+                .map(SpringRule.class::cast)
+                .toList();
     }
 }

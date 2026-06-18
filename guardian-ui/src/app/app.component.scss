@@ -782,3 +782,115 @@ pre {
     grid-template-columns: 1fr;
   }
 }
+
+/* Problem experience -------------------------------------------------------- */
+.problem-area-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.strip-title {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-right: 4px;
+}
+
+.type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(148, 163, 184, .20);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--text);
+  background: rgba(15, 23, 42, .46);
+  cursor: pointer;
+}
+
+.type-pill.active,
+.type-pill:hover {
+  border-color: rgba(52, 211, 153, .42);
+  background: rgba(52, 211, 153, .14);
+}
+
+.type-pill strong {
+  display: inline-flex;
+  min-width: 26px;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: rgba(255, 255, 255, .08);
+}
+
+.active-filter {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-left: 4px solid #34d399;
+  border-radius: 14px;
+  background: rgba(52, 211, 153, .10);
+  color: var(--muted);
+}
+
+.finding-list.grouped {
+  display: grid;
+  gap: 22px;
+}
+
+.problem-group {
+  display: grid;
+  gap: 14px;
+}
+
+.problem-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: linear-gradient(90deg, rgba(52, 211, 153, .14), rgba(15, 23, 42, .18));
+  border: 1px solid rgba(52, 211, 153, .18);
+}
+
+.problem-group-head span {
+  color: #bbf7d0;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.problem-group-head h3 {
+  margin: 4px 0 0;
+}
+
+.finding .finding-guidance.action-oriented {
+  grid-template-columns: 1fr;
+}
+
+.finding .guidance-item {
+  padding: 12px 14px;
+}
+
+.finding .guidance-item p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.before-after.compact {
+  margin-top: 14px;
+}
+
+.before-after.compact .code-evidence {
+  max-height: 260px;
+  overflow: auto;
+}

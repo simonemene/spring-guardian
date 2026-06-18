@@ -82,6 +82,12 @@ const TRANSLATIONS = {
     allAreas: 'Tutte le aree',
     allTypes: 'Tutti i tipi',
     clearFilters: 'Rimuovi filtri',
+    problemAreasTitle: 'Aree dei problemi',
+    focusedLane: 'Filtro decisionale attivo',
+    showingFirstComponents: 'Mostro le prime occorrenze rilevanti. Il JSON tecnico contiene l’elenco completo.',
+    moreComponents: 'altre occorrenze nel JSON tecnico',
+    currentFinding: 'Codice rilevato',
+    expectedImplementation: 'Esempio di soluzione',
     findingType: 'Tipo problema',
     typeCode: 'Codice Java',
     typePom: 'POM Maven',
@@ -232,6 +238,12 @@ const TRANSLATIONS = {
     allAreas: 'All areas',
     allTypes: 'All types',
     clearFilters: 'Clear filters',
+    problemAreasTitle: 'Finding areas',
+    focusedLane: 'Active decision filter',
+    showingFirstComponents: 'Showing the first relevant occurrences. The technical JSON contains the full list.',
+    moreComponents: 'more occurrences in the technical JSON',
+    currentFinding: 'Detected code',
+    expectedImplementation: 'Solution example',
     findingType: 'Finding type',
     typeCode: 'Java code',
     typePom: 'Maven POM',
@@ -381,6 +393,45 @@ export class AppComponent {
       .sort((left, right) => left.area.localeCompare(right.area));
   });
 
+  readonly problemTypeSummaries = computed(() => {
+    const current = this.report();
+    if (!current) {
+      return [];
+    }
+    const groups = new Map<string, FindingGroup[]>();
+    for (const finding of current.findings.filter((item) => !this.isSpringAdvisorFinding(item))) {
+      const type = this.findingType(finding);
+      groups.set(type, [...(groups.get(type) ?? []), finding]);
+    }
+    return Array.from(groups.entries())
+      .map(([type, findings]) => ({
+        type,
+        label: this.findingTypeLabel(type),
+        findings: findings.length,
+        occurrences: findings.reduce((total, finding) => total + finding.occurrences, 0)
+      }))
+      .sort((left, right) => right.occurrences - left.occurrences);
+  });
+
+  readonly problemGroups = computed(() => {
+    const groups = new Map<string, FindingGroup[]>();
+    for (const finding of this.filteredFindings()) {
+      if (this.isSpringAdvisorFinding(finding)) {
+        continue;
+      }
+      const type = this.findingType(finding);
+      groups.set(type, [...(groups.get(type) ?? []), finding]);
+    }
+    return Array.from(groups.entries())
+      .map(([type, findings]) => ({
+        type,
+        label: this.findingTypeLabel(type),
+        occurrences: findings.reduce((total, finding) => total + finding.occurrences, 0),
+        findings
+      }))
+      .sort((left, right) => this.problemTypeRank(left.type) - this.problemTypeRank(right.type) || left.label.localeCompare(right.label));
+  });
+
 
   readonly decisionLanes = computed(() => {
     const current = this.report();
@@ -406,6 +457,11 @@ export class AppComponent {
 
     return current.findings.filter((finding) => {
       const activeLane = this.activeDecisionLane();
+      const advisor = this.isSpringAdvisorFinding(finding);
+      const includeAdvisor = activeLane === 'ADVISOR' || this.activeTab() === 'advisor';
+      if (advisor && !includeAdvisor) {
+        return false;
+      }
       const matchesLane = activeLane === null || this.inDecisionLane(finding, activeLane);
       const matchesSeverity = this.severityFilter === 'ALL' || finding.severity === this.severityFilter;
       const matchesCategory = this.categoryFilter === 'ALL' || finding.category === this.categoryFilter;
@@ -554,6 +610,38 @@ export class AppComponent {
       return finding.severity === 'MINOR';
     }
     return finding.severity === 'INFO';
+  }
+
+  setTypeFilter(type: string): void {
+    this.typeFilter = type;
+    this.activeTab.set('findings');
+  }
+
+  visibleComponents(finding: FindingGroup): AffectedComponent[] {
+    return finding.affectedComponents.slice(0, 12);
+  }
+
+  remainingComponents(finding: FindingGroup): number {
+    return Math.max(0, finding.affectedComponents.length - 12);
+  }
+
+  private problemTypeRank(type: string): number {
+    return ({
+      SECURITY: 1,
+      WEB_LAYER: 2,
+      ARCHITECTURE: 3,
+      JPA: 4,
+      SPRING_BATCH: 5,
+      CLOUD_READINESS: 6,
+      OBSERVABILITY: 7,
+      POM: 8,
+      DEPENDENCIES: 9,
+      DEPENDENCY_INJECTION: 10,
+      RUNTIME_CODE: 11,
+      CONFIGURATION: 12,
+      TEST: 13,
+      CODE: 14
+    } as Record<string, number>)[type] ?? 99;
   }
 
   severityCount(severity: Severity): number {

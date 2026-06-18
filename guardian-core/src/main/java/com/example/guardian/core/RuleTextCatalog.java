@@ -715,7 +715,14 @@ final class RuleTextCatalog {
                 .replace("baseline legacy", "baseline legacy")
                 .replace("Cloud readiness", "prontezza cloud")
                 .replace("Dependency injection", "iniezione delle dipendenze")
-                .replace("production-ready", "pronto per la produzione");
+                .replace("production-ready", "pronto per la produzione")
+                .replace("ConfigurazioneProperties", "ConfigurationProperties")
+                .replace("configurazioneProperties", "ConfigurationProperties")
+                .replace("mancante mapper", "mapper mancante")
+                .replace("esposto directly", "esposto direttamente")
+                .replace("hardcodiced", "hardcoded")
+                .replace("precorrezione", "versione")
+                .replace("to client", "al client");
     }
 
     private enum TextPart {

@@ -71,7 +71,26 @@ Possible impact
 Recommended solution
 Detected class/file/line
 Source evidence
+Before/after or expected implementation example
+Official documentation link when useful
 ```
+
+The **Findings** tab is grouped by technical area so the report does not feel mixed or noisy:
+
+```text
+Spring Security
+Web/API contracts
+Architecture and boundaries
+JPA and persistence
+Spring Batch
+Cloud / 12-factor readiness
+Observability
+POM / dependency governance
+Tests
+Runtime correctness
+```
+
+Spring Batch findings are profile-aware: they are shown only when the scan profile is `BATCH` or when Spring Batch is actually detected in the target project. A Web/API project should not receive Batch findings only because it contains classes named Processor or loops over collections.
 
 Spring Alternative Advisor cards have an additional structure:
 

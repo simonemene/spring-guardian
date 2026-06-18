@@ -272,48 +272,90 @@
         <button type="button" class="ghost" (click)="resetFilters()">{{ t('clearFilters') }}</button>
       </div>
 
-      <div class="finding-list">
-        <article class="finding" *ngFor="let finding of filteredFindings(); trackBy: trackFinding">
-          <div class="finding-header">
+      <div class="problem-area-strip" *ngIf="problemTypeSummaries().length > 0">
+        <div class="strip-title">{{ t('problemAreasTitle') }}</div>
+        <button
+          type="button"
+          class="type-pill"
+          *ngFor="let type of problemTypeSummaries()"
+          [class.active]="typeFilter === type.type"
+          (click)="setTypeFilter(type.type)">
+          <span>{{ type.label }}</span>
+          <strong>{{ type.occurrences }}</strong>
+        </button>
+      </div>
+
+      <div class="active-filter" *ngIf="activeDecisionLane()">
+        {{ t('focusedLane') }}: <strong>{{ severityFilter === 'ALL' ? activeDecisionLane() : severityLabel(severityFilter) }}</strong>
+      </div>
+
+      <div class="finding-list grouped">
+        <section class="problem-group" *ngFor="let group of problemGroups()">
+          <div class="problem-group-head">
             <div>
-              <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
-              <span class="category">{{ finding.category }}</span>
-              <span class="rule-code type-code">{{ findingTypeLabel(findingType(finding)) }}</span>
-              <span class="rule-code">{{ t('technicalCode') }} {{ ruleCode(finding.ruleId) }}</span>
-            </div>
-            <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
-          </div>
-
-          <h3>{{ finding.title }}</h3>
-
-          <div class="finding-guidance">
-            <div class="guidance-item detected">
-              <span>{{ t('detectedProblem') }}</span>
-              <p>{{ finding.guidance.detectedProblem }}</p>
-            </div>
-            <div class="guidance-item risk">
-              <span>{{ t('riskImpact') }}</span>
-              <p>{{ finding.guidance.riskImpact }}</p>
-            </div>
-            <div class="guidance-item solution">
-              <span>{{ t('recommendedFix') }}</span>
-              <p>{{ finding.guidance.recommendedApproach }}</p>
+              <span>{{ group.label }}</span>
+              <h3>{{ group.occurrences }} {{ t('findings') }}</h3>
             </div>
           </div>
 
-          <details>
-            <summary>{{ t('involvedComponents') }} ({{ finding.affectedComponents.length }})</summary>
-            <div class="component-list">
-              <div class="component" *ngFor="let component of finding.affectedComponents">
-                <strong>{{ componentTitle(component) }}</strong>
-                <span>{{ componentTypeLabel(component.type) }}</span>
-                <span>{{ component.filePath }}<ng-container *ngIf="component.line">:{{ component.line }}</ng-container></span>
-                <p *ngIf="component.evidence"><b>{{ t('technicalEvidence') }}:</b> {{ component.evidence }}</p>
-                <pre *ngIf="component.codeSnippet" class="code-evidence"><code>{{ component.codeSnippet }}</code></pre>
+          <article class="finding" *ngFor="let finding of group.findings; trackBy: trackFinding">
+            <div class="finding-header">
+              <div>
+                <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
+                <span class="category">{{ finding.category }}</span>
+                <span class="rule-code">{{ t('technicalCode') }} {{ ruleCode(finding.ruleId) }}</span>
+              </div>
+              <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
+            </div>
+
+            <h3>{{ finding.title }}</h3>
+
+            <div class="finding-guidance action-oriented">
+              <div class="guidance-item detected">
+                <span>{{ t('detectedProblem') }}</span>
+                <p>{{ finding.guidance.detectedProblem }}</p>
+              </div>
+              <div class="guidance-item risk">
+                <span>{{ t('riskImpact') }}</span>
+                <p>{{ finding.guidance.riskImpact }}</p>
+              </div>
+              <div class="guidance-item solution">
+                <span>{{ t('recommendedFix') }}</span>
+                <p>{{ finding.guidance.recommendedApproach }}</p>
               </div>
             </div>
-          </details>
-        </article>
+
+            <a *ngIf="finding.guidance.documentationUrl" class="doc-link" [href]="finding.guidance.documentationUrl" target="_blank" rel="noopener">
+              {{ t('officialDocs') }}
+            </a>
+
+            <div class="before-after compact" *ngIf="finding.guidance.beforeExample || finding.guidance.afterExample">
+              <div *ngIf="finding.guidance.beforeExample">
+                <h4>{{ t('currentFinding') }}</h4>
+                <pre class="code-evidence"><code>{{ finding.guidance.beforeExample }}</code></pre>
+              </div>
+              <div *ngIf="finding.guidance.afterExample">
+                <h4>{{ t('expectedImplementation') }}</h4>
+                <pre class="code-evidence"><code>{{ finding.guidance.afterExample }}</code></pre>
+              </div>
+            </div>
+
+            <details>
+              <summary>{{ t('involvedComponents') }} ({{ finding.affectedComponents.length }})</summary>
+              <p class="json-note" *ngIf="finding.affectedComponents.length > 12">{{ t('showingFirstComponents') }}</p>
+              <div class="component-list">
+                <div class="component" *ngFor="let component of visibleComponents(finding)">
+                  <strong>{{ componentTitle(component) }}</strong>
+                  <span>{{ componentTypeLabel(component.type) }}</span>
+                  <span>{{ component.filePath }}<ng-container *ngIf="component.line">:{{ component.line }}</ng-container></span>
+                  <p *ngIf="component.evidence"><b>{{ t('technicalEvidence') }}:</b> {{ component.evidence }}</p>
+                  <pre *ngIf="component.codeSnippet" class="code-evidence"><code>{{ component.codeSnippet }}</code></pre>
+                </div>
+              </div>
+              <p class="json-note" *ngIf="remainingComponents(finding) > 0">+{{ remainingComponents(finding) }} {{ t('moreComponents') }}</p>
+            </details>
+          </article>
+        </section>
       </div>
     </section>
 

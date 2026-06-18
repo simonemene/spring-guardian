@@ -134,124 +134,117 @@ final class RuleGuidanceCatalog {
 
     private static RuleGuidance byArea(Finding finding, String title, String why, String fix, ReportLanguage language) {
         String code = shortCode(finding.ruleId());
-        if (language == ReportLanguage.ENGLISH) {
-            return englishAreaGuidance(code, title, why, fix);
+        String evidence = compactEvidence(finding.evidence(), language);
+        RuleGuidance specific = language == ReportLanguage.ENGLISH
+                ? specificEnglishGuidance(code, title, evidence)
+                : specificItalianGuidance(code, title, evidence);
+        if (specific != null) {
+            return specific;
         }
-        return italianAreaGuidance(code, title, why, fix);
+        return language == ReportLanguage.ENGLISH
+                ? englishAreaGuidance(code, title, why, fix, evidence)
+                : italianAreaGuidance(code, title, why, fix, evidence);
     }
 
-    private static RuleGuidance italianAreaGuidance(String code, String title, String why, String fix) {
-        if (code.startsWith("SEC")) {
-            return new RuleGuidance(
-                    "Ho rilevato una configurazione Spring Security rischiosa: " + title + ".",
-                    why,
-                    fix + " Mantieni le regole di sicurezza esplicite, ordinate e verificabili; evita matcher troppo ampi e profili di produzione permissivi.",
-                    "SecurityFilterChain, AuthorizationManager, @EnableMethodSecurity, configurazione OAuth2 Resource Server/JWT dove applicabile",
-                    "https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html",
-                    "http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());",
-                    "http.authorizeHttpRequests(auth -> auth\n    .requestMatchers(\"/actuator/health\").permitAll()\n    .requestMatchers(HttpMethod.GET, \"/api/v1/public/**\").permitAll()\n    .anyRequest().authenticated());"
-            );
-        }
-        if (code.startsWith("WEB")) {
-            return new RuleGuidance(
-                    "Ho rilevato un problema nel layer Web/API: " + title + ".",
-                    why,
-                    fix + " Il controller dovrebbe restare sottile: validazione DTO, delega al service, gestione errori centralizzata e contratto HTTP documentato.",
-                    "@RestController, DTO con Bean Validation, @RestControllerAdvice, ProblemDetail, OpenAPI @Operation",
-                    "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller.html",
-                    "@PostMapping(\"/customers\")\npublic Object create(@RequestBody Customer entity) { ... }",
-                    "@Operation(summary = ...)\n@PostMapping(/api/v1/customers)\npublic ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerRequest request) { ... }"
-            );
-        }
-        if (code.startsWith("BAT")) {
-            return new RuleGuidance(
-                    "Ho rilevato un rischio operativo Spring Batch: " + title + ".",
-                    why,
-                    fix + " Un batch production-ready deve dichiarare chiaramente parametri, restartability, chunk, retry/skip, listener, metriche e idempotenza.",
-                    "JobParametersValidator, JobExecutionListener, StepExecutionListener, faultTolerant(), JdbcPagingItemReader con sort key stabile",
-                    "https://docs.spring.io/spring-batch/reference/",
-                    "return new StepBuilder(...).tasklet(tasklet, tx).build();",
-                    "StepBuilder(...).chunk(properties.chunkSize(), transactionManager).reader(reader()).processor(processor()).writer(writer()).faultTolerant().retryLimit(3).listener(stepListener).build();"
-            );
-        }
-        if (code.startsWith("ARCH")) {
-            return new RuleGuidance(
-                    "Ho rilevato un confine architetturale poco chiaro: " + title + ".",
-                    why,
-                    fix + " Definisci la direzione delle dipendenze e separa controller, casi d'uso, dominio e infrastruttura. Il package common/util non deve diventare un contenitore di logica applicativa.",
-                    "Struttura per layer o feature, package domain/application/infrastructure, porte e adapter nei profili DDD/esagonali",
-                    "https://docs.spring.io/spring-modulith/reference/verification.html",
-                    "utils/GvLog contiene costanti, logica applicativa o dipendenze di più layer.",
-                    "Sposta la logica nel layer corretto: logging tecnico in infrastructure/logging, policy di business in domain/application, mapping in mapper dedicati. Mantieni utils solo per funzioni pure e realmente trasversali."
-            );
-        }
-        if (code.startsWith("POM")) {
-            return new RuleGuidance(
-                    "Ho rilevato un problema di governance Maven/Spring Boot: " + title + ".",
-                    why,
-                    fix + " Lascia al parent/BOM Spring Boot la gestione delle versioni quando possibile e mantieni scope, plugin e dependencyManagement coerenti tra i moduli.",
-                    "spring-boot-starter-parent, spring-boot-dependencies BOM, dependencyManagement, pluginManagement",
-                    "https://docs.spring.io/spring-boot/maven-plugin/using.html",
-                    "<dependency>\n  <groupId>org.springframework.boot</groupId>\n  <artifactId>spring-boot-starter-web</artifactId>\n  <version>...</version>\n</dependency>",
-                    "<parent>\n  <groupId>org.springframework.boot</groupId>\n  <artifactId>spring-boot-starter-parent</artifactId>\n  <version>${spring-boot.version}</version>\n</parent>"
-            );
-        }
-        if (code.startsWith("CLD")) {
-            return new RuleGuidance(
-                    "Ho rilevato un problema di configurazione cloud/12-factor: " + title + ".",
-                    why,
-                    fix + " L'artefatto dovrebbe restare neutro rispetto all'ambiente: valori runtime, endpoint, segreti, path e cron devono arrivare dalla piattaforma di deploy.",
-                    "Externalized Configuration, Environment, @ConfigurationProperties, ConfigMap/Secret/Vault o secret manager",
-                    "https://docs.spring.io/spring-boot/reference/features/external-config.html",
-                    "external.api.url=https://server-prod/api",
-                    "external.api.url=${EXTERNAL_API_URL}\n\n@ConfigurationProperties(\"external.api\")\npublic record ExternalApiProperties(String url) {}"
-            );
-        }
-        if (code.startsWith("OBS")) {
-            return new RuleGuidance(
-                    "Ho rilevato una carenza di osservabilità: " + title + ".",
-                    why,
-                    fix + " In produzione servono log strutturati, health check, metriche, correlation id e indicatori dedicati per dipendenze critiche.",
-                    "Spring Boot Actuator, Micrometer, ObservationRegistry, HealthIndicator, logging strutturato",
-                    "https://docs.spring.io/spring-boot/reference/actuator/observability.html",
-                    "System.out.println(\"processed=\" + count);",
-                    "Counter processed = meterRegistry.counter(...);\nprocessed.increment(count);"
-            );
-        }
-        return new RuleGuidance(
-                "Ho rilevato questo problema: " + title + ".",
-                why,
-                fix,
-                "Pattern Spring coerente con il tipo di componente rilevato",
-                "https://docs.spring.io/spring-framework/reference/",
-                "// Codice rilevato mostrato nella sezione evidenza",
-                "// Applica la correzione indicata mantenendo responsabilità e layer separati"
-        );
+    private static RuleGuidance specificItalianGuidance(String code, String title, String evidence) {
+        return switch (code) {
+            case "WEB004" -> problemIt("Request DTO senza Bean Validation" + evidence, "Il controller accetta input senza vincoli dichiarati. Dati incompleti o non validi possono raggiungere il service layer e generare errori più avanti nel flusso.", "Aggiungi annotazioni Bean Validation sul DTO e usa @Valid nel controller.", "Bean Validation + @Valid", "https://docs.spring.io/spring-framework/reference/core/validation/beanvalidation.html", "public ResponseEntity<?> create(@RequestBody CustomerRequest request) { ... }", "public record CustomerRequest(@NotBlank String name) {}\n\n@PostMapping\npublic ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerRequest request) { ... }");
+            case "WEB006", "SPR006" -> problemIt("Entity JPA usata come contratto REST" + evidence, "Il contratto HTTP viene legato al modello di persistenza. Cambiando tabella, relazioni o fetch plan rischi di rompere l'API o esporre campi interni.", "Usa DTO separati per request/response e mapper espliciti tra API e dominio/persistenza.", "DTO REST + mapper dedicato", "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller.html", "public ResponseEntity<Customer> create(@RequestBody Customer entity) { ... }", "public ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerRequest request) {\n    CustomerResponse response = service.create(request);\n    return ResponseEntity.status(HttpStatus.CREATED).body(response);\n}");
+            case "WEB010" -> problemIt("Endpoint GET che sembra modificare stato" + evidence, "GET dovrebbe essere sicuro e idempotente. Usarlo per avviare modifiche può creare problemi con cache, proxy, retry automatici e client HTTP.", "Usa POST, PUT o PATCH per operazioni che modificano stato e documenta l'effetto nell'OpenAPI.", "Semantica HTTP corretta", "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller.html", "@GetMapping(\"/orders/save\")\npublic void save() { service.save(); }", "@PostMapping(\"/orders\")\npublic ResponseEntity<OrderResponse> create(@Valid @RequestBody OrderRequest request) { ... }");
+            case "WEB013", "SPR010" -> problemIt("Gestione errori REST non centralizzata" + evidence, "Senza un punto unico di gestione, gli endpoint possono restituire formati diversi, messaggi tecnici o status code incoerenti.", "Introduci @RestControllerAdvice e usa ProblemDetail o un modello errore standard.", "@RestControllerAdvice + ProblemDetail", "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html", "catch (Exception ex) { return ResponseEntity.badRequest().body(ex.getMessage()); }", "@RestControllerAdvice\nclass ApiExceptionHandler {\n  @ExceptionHandler(BusinessException.class)\n  ProblemDetail handle(BusinessException ex) { ... }\n}");
+            case "WEB016" -> problemIt("Try/catch tecnico dentro controller" + evidence, "Il controller mescola protocollo HTTP e gestione tecnica degli errori. Il risultato è un contratto API meno uniforme e più difficile da testare.", "Lascia propagare eccezioni applicative controllate e mappale in @RestControllerAdvice.", "@RestControllerAdvice", "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html", "try { return ResponseEntity.ok(service.run()); } catch (Exception ex) { ... }", "@PostMapping\nResponseEntity<ResponseDto> run(@Valid @RequestBody RequestDto request) {\n  return ResponseEntity.ok(service.run(request));\n}");
+            case "WEB029" -> problemIt("Messaggio tecnico dell'eccezione esposto al client" + evidence, "exception.getMessage() può rivelare dettagli interni, SQL, path, host, stack tecnici o dati non adatti al client.", "Restituisci un errore applicativo standard con codice funzionale, messaggio controllato e status HTTP coerente.", "ProblemDetail / ErrorResponse", "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html", "return ResponseEntity.badRequest().body(ex.getMessage());", "ProblemDetail detail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);\ndetail.setTitle(\"Richiesta non valida\");\ndetail.setDetail(\"Controlla i dati inviati.\");");
+            case "WEB036" -> problemIt("Page<Entity> esposto direttamente" + evidence, "La paginazione espone il modello JPA e dettagli di serializzazione non sempre stabili. Il contratto API diventa dipendente dal database.", "Mappa Page<Entity> in Page<ResponseDto> o in un wrapper API esplicito.", "DTO paginato", "https://docs.spring.io/spring-data/commons/reference/repositories/core-extensions.html#core.web", "public Page<Customer> list(Pageable pageable) { ... }", "public Page<CustomerResponse> list(Pageable pageable) {\n  return service.list(pageable).map(mapper::toResponse);\n}");
+            case "ARCH016" -> problemIt("Package common/util con possibile logica applicativa" + evidence, "Un package utilitario condiviso può diventare un contenitore indistinto di logging, costanti, helper e regole business. Questo aumenta accoppiamento e rende poco chiaro il proprietario della logica.", "Lascia in utils solo funzioni pure e trasversali. Sposta logging tecnico in infrastructure, regole applicative nei service/use case e regole di dominio nel domain layer.", "Layering esplicito / Spring Modulith boundaries", "https://docs.spring.io/spring-modulith/reference/verification.html", "utils/GvLog o CommonUtils contiene logica usata da più layer.", "infrastructure/logging/GvLogger\napplication/<feature>/<UseCaseService>\ndomain/<feature>/<BusinessPolicy>");
+            case "ARCH018" -> problemIt("Mapper mancante tra API e modello interno" + evidence, "Quando controller e service passano direttamente entity o modelli interni, il contratto API si accoppia alla struttura interna dell'applicazione.", "Introduci mapper dedicati, ad esempio componenti Spring o MapStruct, e mantieni separati request/response, dominio ed entity.", "Mapper dedicato / MapStruct", "https://mapstruct.org/documentation/stable/reference/html/", "return ResponseEntity.ok(entity);", "return ResponseEntity.ok(customerMapper.toResponse(entity));");
+            case "CLD001", "CLD020" -> problemIt("Valore di ambiente incluso nell'artefatto" + evidence, "URL, host o endpoint dentro application.properties/yml legano il pacchetto a un ambiente specifico e rendono meno ripetibile il rilascio.", "Sostituisci il valore con placeholder e inietta il valore tramite variabile ambiente, ConfigMap, Secret, Vault o piattaforma di deploy.", "Externalized Configuration", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "external.api.url=https://server-prod/api", "external.api.url=${EXTERNAL_API_URL}");
+            case "CLD003", "SPR037" -> problemIt("Segreto presente in configurazione o repository" + evidence, "Password, token o chiavi nel repository possono essere copiati, loggati o riusati; inoltre la rotazione diventa più difficile.", "Rimuovi il segreto dal repository, ruotalo e usa secret manager, Vault, variabili ambiente o configurazione montata.", "Secret management / externalized config", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "api.password=mySecret", "api.password=${API_PASSWORD}");
+            case "CLD013", "SPR082" -> problemIt("Configurazione non modellata con proprietà tipizzate" + evidence, "Valori sparsi rendono più difficile validare, documentare e testare la configurazione. Gli errori emergono tardi, spesso a runtime.", "Raggruppa le proprietà in @ConfigurationProperties e aggiungi validazione con @Validated.", "@ConfigurationProperties validato", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "@Value(\"${api.url}\") String url;", "@ConfigurationProperties(\"api\")\n@Validated\npublic record ApiProperties(@NotBlank String url) {}");
+            case "CLD014" -> problemIt("@ConfigurationProperties senza validazione" + evidence, "La configurazione viene caricata, ma valori mancanti o malformati possono emergere solo quando il codice li usa.", "Aggiungi @Validated e vincoli Bean Validation sui campi obbligatori.", "@Validated + Bean Validation", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "@ConfigurationProperties(\"api\")\npublic record ApiProperties(String url) {}", "@ConfigurationProperties(\"api\")\n@Validated\npublic record ApiProperties(@NotBlank String url) {}");
+            case "OBS006", "SPR021" -> problemIt("Uso di System.out o printStackTrace" + evidence, "I log non passano da livelli, formati, MDC/correlation id e raccolta centralizzata; in produzione la diagnosi diventa più difficile.", "Usa SLF4J Logger, includi contesto utile e passa il throwable quando logghi errori.", "SLF4J Logger / structured logging", "https://docs.spring.io/spring-boot/reference/features/logging.html", "System.out.println(\"Errore\");\nex.printStackTrace();", "private static final Logger log = LoggerFactory.getLogger(MyClass.class);\nlog.error(\"Errore durante l'elaborazione id={}\", id, ex);");
+            case "OBS009" -> problemIt("Blocco catch vuoto" + evidence, "L'errore viene perso: non resta traccia nei log, non viene generata metrica e il chiamante può ricevere un risultato apparentemente valido.", "Gestisci l'eccezione in modo esplicito: log con throwable, rilancio di eccezione applicativa o compensazione controllata.", "Logging strutturato + gestione errori esplicita", "https://docs.spring.io/spring-boot/reference/features/logging.html", "catch (Exception ex) { }", "catch (ExternalServiceException ex) {\n  log.warn(\"Servizio esterno non disponibile\", ex);\n  throw new IntegrationUnavailableException();\n}");
+            case "OBS011" -> problemIt("Errore loggato senza throwable" + evidence, "Senza passare l'eccezione al logger perdi stack trace e causa radice. Il troubleshooting diventa molto più lento.", "Passa sempre l'eccezione come ultimo argomento del log di errore.", "SLF4J Logger", "https://docs.spring.io/spring-boot/reference/features/logging.html", "log.error(\"Errore: {}\", ex.getMessage());", "log.error(\"Errore durante l'elaborazione dell'ordine {}\", orderId, ex);");
+            case "OBS014" -> problemIt("Possibile dato sensibile nei log" + evidence, "Loggare password, token, autorizzazioni o dati personali espone informazioni che spesso finiscono in sistemi centralizzati e retention lunga.", "Maschera i valori sensibili e logga solo identificativi tecnici sicuri.", "Logging sicuro / redaction", "https://docs.spring.io/spring-boot/reference/features/logging.html", "log.info(\"password={}\", password);", "log.info(\"Credenziali ricevute per userId={}\", userId);");
+            case "POM017" -> problemIt("Versione Java non governata nel POM" + evidence, "Senza una versione Java esplicita, build locale, CI e runtime possono usare livelli diversi del linguaggio o del bytecode.", "Definisci java.version nel parent e usa maven-compiler-plugin/release coerente con la versione Spring Boot adottata.", "java.version + maven-compiler-plugin", "https://docs.spring.io/spring-boot/maven-plugin/using.html", "<!-- java.version assente -->", "<properties>\n  <java.version>17</java.version>\n</properties>");
+            case "SEC021" -> problemIt("Più SecurityFilterChain senza ordine esplicito" + evidence, "Con più catene di sicurezza, l'ordine determina quale configurazione intercetta la richiesta. Senza @Order puoi ottenere comportamenti inattesi.", "Aggiungi @Order e matcher specifici per ogni chain, dalla più specifica alla più generale.", "SecurityFilterChain + @Order", "https://docs.spring.io/spring-security/reference/servlet/configuration/java.html", "@Bean SecurityFilterChain api(HttpSecurity http) { ... }\n@Bean SecurityFilterChain actuator(HttpSecurity http) { ... }", "@Bean @Order(1) SecurityFilterChain actuator(HttpSecurity http) { ... }\n@Bean @Order(2) SecurityFilterChain api(HttpSecurity http) { ... }");
+            case "SEC028", "SEC038" -> problemIt("Autorizzazione troppo ampia o poco granulare" + evidence, "Un path pubblico o una regola solo autenticata può esporre operazioni di modifica a utenti non autorizzati al caso d'uso.", "Definisci matcher precisi e ruoli/scope per endpoint mutanti o amministrativi.", "AuthorizationManager / requestMatchers / method security", "https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html", ".requestMatchers(\"/**\").permitAll()", ".requestMatchers(HttpMethod.POST, \"/api/v1/admin/**\").hasRole(\"ADMIN\")\n.anyRequest().authenticated()");
+            case "SPR011" -> problemIt("Catch troppo generico" + evidence, "Catturare Exception o Throwable nasconde casi diversi dietro lo stesso comportamento e può impedire rollback, diagnosi e gestione corretta dell'errore.", "Cattura solo eccezioni che sai gestire; per le altre lascia propagare e mappa la risposta con @RestControllerAdvice.", "Eccezioni specifiche + @RestControllerAdvice", "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html", "catch (Exception ex) { return ResponseEntity.badRequest().body(ex.getMessage()); }", "catch (ExternalServiceException ex) { throw new IntegrationException(ex); }");
+            default -> null;
+        };
     }
 
-    private static RuleGuidance englishAreaGuidance(String code, String title, String why, String fix) {
+    private static RuleGuidance specificEnglishGuidance(String code, String title, String evidence) {
+        // English keeps the same concise structure; when no dedicated case exists the area guidance is used.
+        return null;
+    }
+
+    private static RuleGuidance italianAreaGuidance(String code, String title, String why, String fix, String evidence) {
         if (code.startsWith("SEC")) {
-            return new RuleGuidance("Detected risky Spring Security configuration: " + title + ".", why, fix + " Keep security rules explicit, ordered and verifiable.", "SecurityFilterChain, AuthorizationManager, @EnableMethodSecurity, OAuth2 Resource Server/JWT when applicable", "https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html", "http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());", "http.authorizeHttpRequests(auth -> auth\n    .requestMatchers(healthEndpoint).permitAll()\n    .anyRequest().authenticated());");
+            return problemIt("Configurazione Spring Security da rivedere: " + title + evidence, why, fix, "SecurityFilterChain / AuthorizationManager / Method Security", "https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html", "http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());", "http.authorizeHttpRequests(auth -> auth\n    .requestMatchers(\"/actuator/health\").permitAll()\n    .anyRequest().authenticated());");
         }
         if (code.startsWith("WEB")) {
-            return new RuleGuidance("Detected Web/API layer issue: " + title + ".", why, fix + " Keep controllers thin: DTO validation, service delegation, centralized error handling and documented HTTP contracts.", "@RestController, validated DTOs, @RestControllerAdvice, ProblemDetail, OpenAPI @Operation", "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller.html", "@PostMapping(\"/customers\")\npublic Object create(@RequestBody Customer entity) { ... }", "@Operation(summary = \"Create customer\")\n@PostMapping(\"/api/v1/customers\")\npublic ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerRequest request) { ... }");
+            return problemIt("Contratto Web/API da rivedere: " + title + evidence, why, fix, "DTO validati, controller sottili, @RestControllerAdvice, OpenAPI", "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller.html", "@PostMapping\npublic Object create(@RequestBody Entity entity) { ... }", "@PostMapping(\"/api/v1/resources\")\npublic ResponseEntity<ResponseDto> create(@Valid @RequestBody RequestDto request) {\n    return ResponseEntity.ok(service.create(request));\n}");
         }
         if (code.startsWith("BAT")) {
-            return new RuleGuidance("Detected Spring Batch operational risk: " + title + ".", why, fix + " Production batch jobs should make parameters, restartability, chunking, retry/skip, listeners, metrics and idempotency explicit.", "JobParametersValidator, JobExecutionListener, StepExecutionListener, faultTolerant(), stable JdbcPagingItemReader", "https://docs.spring.io/spring-batch/reference/", "tasklet(tasklet, tx).build();", "chunk(properties.chunkSize(), tx).reader(reader()).processor(processor()).writer(writer()).faultTolerant().retryLimit(3).build();");
+            return problemIt("Rischio operativo Spring Batch: " + title + evidence, why, fix, "JobParametersValidator, listener, chunk, retry/skip, metriche", "https://docs.spring.io/spring-batch/reference/", "new StepBuilder(\"step\", jobRepository).tasklet(tasklet, tx).build();", "new StepBuilder(\"importCustomers\", jobRepository)\n  .<Input, Output>chunk(properties.chunkSize(), tx)\n  .reader(reader())\n  .processor(processor())\n  .writer(writer())\n  .faultTolerant()\n  .retryLimit(3)\n  .listener(stepListener)\n  .build();");
         }
         if (code.startsWith("ARCH")) {
-            return new RuleGuidance("Detected unclear architecture boundary: " + title + ".", why, fix + " Define dependency direction and separate controllers, use cases, domain and infrastructure.", "Layered or feature-based structure, domain/application/infrastructure, ports and adapters", "https://docs.spring.io/spring-modulith/reference/verification.html", "utils package contains business or framework-coupled logic.", "Move technical logging to infrastructure, business policies to domain/application and mapping to dedicated mappers.");
+            return problemIt("Confine architetturale da chiarire: " + title + evidence, why, fix, "Layering esplicito, DDD/Hexagonal boundaries, Spring Modulith verification", "https://docs.spring.io/spring-modulith/reference/verification.html", "controller -> repository / common util con logica applicativa", "controller -> application service -> domain port -> infrastructure adapter");
         }
         if (code.startsWith("POM")) {
-            return new RuleGuidance("Detected Maven/Spring Boot governance issue: " + title + ".", why, fix + " Let the Spring Boot parent/BOM manage versions when possible and keep scopes/plugins consistent.", "spring-boot-starter-parent, spring-boot-dependencies BOM, dependencyManagement, pluginManagement", "https://docs.spring.io/spring-boot/maven-plugin/using.html", "<dependency>...<version>...</version></dependency>", "Use Spring Boot parent/BOM and central dependencyManagement.");
+            return problemIt("Governance Maven/Spring Boot da rivedere: " + title + evidence, why, fix, "Spring Boot BOM, dependencyManagement, pluginManagement", "https://docs.spring.io/spring-boot/maven-plugin/using.html", "<dependency>...<version>gestita a mano</version></dependency>", "Usa spring-boot-starter-parent o spring-boot-dependencies BOM e centralizza versioni/plugin nel parent.");
         }
         if (code.startsWith("CLD")) {
-            return new RuleGuidance("Detected cloud/12-factor configuration issue: " + title + ".", why, fix + " Keep the artifact environment-neutral and inject runtime values from the deployment platform.", "Externalized Configuration, Environment, @ConfigurationProperties, ConfigMap/Secret/Vault", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "external.api.url=https://server-prod/api", "external.api.url=${EXTERNAL_API_URL}");
+            return problemIt("Violazione 12-factor/cloud readiness: " + title + evidence, why, fix, "Externalized Configuration / @ConfigurationProperties / Secret management", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "api.url=https://server-prod/api", "api.url=${API_URL}");
         }
         if (code.startsWith("OBS")) {
-            return new RuleGuidance("Detected observability gap: " + title + ".", why, fix + " Production systems need structured logs, health, metrics, correlation IDs and dependency indicators.", "Spring Boot Actuator, Micrometer, ObservationRegistry, HealthIndicator", "https://docs.spring.io/spring-boot/reference/actuator/observability.html", "System.out.println(\"processed=\" + count);", "meterRegistry.counter(\"items.processed\").increment(count);");
+            return problemIt("Osservabilità da migliorare: " + title + evidence, why, fix, "Actuator, Micrometer, HealthIndicator, logging strutturato", "https://docs.spring.io/spring-boot/reference/actuator/observability.html", "System.out.println(value);", "log.info(\"Operazione completata id={}\", id);\nmeterRegistry.counter(\"operation.completed\").increment();");
         }
-        return new RuleGuidance("Detected issue: " + title + ".", why, fix, "Spring pattern matching the detected component", "https://docs.spring.io/spring-framework/reference/", "// Detected code shown in evidence", "// Apply the recommended Spring-oriented fix");
+        return problemIt("Problema rilevato: " + title + evidence, why, fix, "Pattern Spring coerente con il componente rilevato", "https://docs.spring.io/spring-framework/reference/", "// Vedi codice rilevato nella sezione evidenza", "// Applica la soluzione consigliata mantenendo responsabilità e layer separati");
+    }
+
+    private static RuleGuidance englishAreaGuidance(String code, String title, String why, String fix, String evidence) {
+        if (code.startsWith("SEC")) {
+            return problemEn("Spring Security configuration to review: " + title + evidence, why, fix, "SecurityFilterChain / AuthorizationManager / Method Security", "https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html", "http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());", "http.authorizeHttpRequests(auth -> auth\n    .requestMatchers(\"/actuator/health\").permitAll()\n    .anyRequest().authenticated());");
+        }
+        if (code.startsWith("WEB")) {
+            return problemEn("Web/API contract to review: " + title + evidence, why, fix, "Validated DTOs, thin controllers, @RestControllerAdvice, OpenAPI", "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller.html", "@PostMapping\npublic Object create(@RequestBody Entity entity) { ... }", "@PostMapping(\"/api/v1/resources\")\npublic ResponseEntity<ResponseDto> create(@Valid @RequestBody RequestDto request) {\n    return ResponseEntity.ok(service.create(request));\n}");
+        }
+        if (code.startsWith("BAT")) {
+            return problemEn("Spring Batch operational risk: " + title + evidence, why, fix, "JobParametersValidator, listeners, chunk, retry/skip, metrics", "https://docs.spring.io/spring-batch/reference/", "new StepBuilder(\"step\", jobRepository).tasklet(tasklet, tx).build();", "new StepBuilder(\"importCustomers\", jobRepository)\n  .<Input, Output>chunk(properties.chunkSize(), tx)\n  .reader(reader())\n  .processor(processor())\n  .writer(writer())\n  .faultTolerant()\n  .retryLimit(3)\n  .listener(stepListener)\n  .build();");
+        }
+        if (code.startsWith("ARCH")) {
+            return problemEn("Architecture boundary to clarify: " + title + evidence, why, fix, "Explicit layering, DDD/Hexagonal boundaries, Spring Modulith verification", "https://docs.spring.io/spring-modulith/reference/verification.html", "controller -> repository / common util with application logic", "controller -> application service -> domain port -> infrastructure adapter");
+        }
+        if (code.startsWith("POM")) {
+            return problemEn("Maven/Spring Boot governance issue: " + title + evidence, why, fix, "Spring Boot BOM, dependencyManagement, pluginManagement", "https://docs.spring.io/spring-boot/maven-plugin/using.html", "<dependency>...<version>manual</version></dependency>", "Use spring-boot-starter-parent or spring-boot-dependencies BOM and centralize versions/plugins in the parent.");
+        }
+        if (code.startsWith("CLD")) {
+            return problemEn("12-factor/cloud readiness issue: " + title + evidence, why, fix, "Externalized Configuration / @ConfigurationProperties / Secret management", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "api.url=https://server-prod/api", "api.url=${API_URL}");
+        }
+        if (code.startsWith("OBS")) {
+            return problemEn("Observability issue: " + title + evidence, why, fix, "Actuator, Micrometer, HealthIndicator, structured logging", "https://docs.spring.io/spring-boot/reference/actuator/observability.html", "System.out.println(value);", "log.info(\"Operation completed id={}\", id);\nmeterRegistry.counter(\"operation.completed\").increment();");
+        }
+        return problemEn("Detected issue: " + title + evidence, why, fix, "Spring pattern matching the detected component", "https://docs.spring.io/spring-framework/reference/", "// See detected code in evidence", "// Apply the recommended fix while keeping responsibilities and layers separated");
+    }
+
+    private static RuleGuidance problemIt(String detected, String impact, String solution, String alternative, String docs, String before, String after) {
+        return new RuleGuidance(detected, impact, solution, alternative, docs, before, after);
+    }
+
+    private static RuleGuidance problemEn(String detected, String impact, String solution, String alternative, String docs, String before, String after) {
+        return new RuleGuidance(detected, impact, solution, alternative, docs, before, after);
+    }
+
+    private static String compactEvidence(String evidence, ReportLanguage language) {
+        if (evidence == null || evidence.isBlank()) {
+            return "";
+        }
+        String clean = evidence.strip().replaceAll("\\s+", " ");
+        if (clean.length() > 140) {
+            clean = clean.substring(0, 137) + "...";
+        }
+        return language == ReportLanguage.ENGLISH ? " Evidence: `" + clean + "`." : " Evidenza: `" + clean + "`.";
     }
 
     private static RuleGuidance advisor(ReportLanguage language, String detected, String alternative, String documentationUrl, String beforeExample, String afterExample) {
