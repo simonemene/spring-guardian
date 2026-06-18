@@ -137,4 +137,5 @@ export interface AffectedComponent {
   filePath: string;
   line: number | null;
   evidence: string;
+  codeSnippet?: string;
 }

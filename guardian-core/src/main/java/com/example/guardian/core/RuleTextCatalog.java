@@ -14,17 +14,20 @@ final class RuleTextCatalog {
 
     static String title(String ruleId, String fallback, ReportLanguage language) {
         RuleText text = textFor(ruleId, language);
-        return text == null ? fallback : text.title();
+        String value = text == null ? fallbackText(ruleId, fallback, language, TextPart.TITLE) : text.title();
+        return normalizeItalian(value, language);
     }
 
     static String why(String ruleId, String fallback, ReportLanguage language) {
         RuleText text = textFor(ruleId, language);
-        return text == null ? fallback : text.why();
+        String value = text == null ? fallbackText(ruleId, fallback, language, TextPart.WHY) : text.why();
+        return normalizeItalian(value, language);
     }
 
     static String fix(String ruleId, String fallback, ReportLanguage language) {
         RuleText text = textFor(ruleId, language);
-        return text == null ? fallback : text.fix();
+        String value = text == null ? fallbackText(ruleId, fallback, language, TextPart.FIX) : text.fix();
+        return normalizeItalian(value, language);
     }
 
     private static RuleText textFor(String ruleId, ReportLanguage language) {
@@ -491,7 +494,7 @@ final class RuleTextCatalog {
                     "Mantieni solo lo stack necessario oppure documenta la scelta e isola la configurazione del caso speciale."
             );
             case "SPR095_MAVEN_DEPENDENCY_HYGIENE" -> new RuleText(
-                    "Igiene dipendenze Maven migliorabile",
+                    "Qualità dipendenze Maven migliorabile",
                     "Versioni SNAPSHOT, range, RELEASE/LATEST, systemPath o scope mancanti rendono meno governabile il rilascio e più fragile la pipeline.",
                     "Usa versioni rilasciate e fisse, dependencyManagement, repository Maven governati e scope espliciti per strumenti come Lombok."
             );
@@ -596,6 +599,129 @@ final class RuleTextCatalog {
             case "SPR095_MAVEN_DEPENDENCY_HYGIENE" -> new RuleText("Maven dependency hygiene can be improved", "SNAPSHOT versions, ranges, RELEASE/LATEST, systemPath or missing scopes make releases less governed and pipelines more fragile.", "Use fixed released versions, dependencyManagement, governed Maven repositories and explicit scopes for tools such as Lombok.");
             default -> null;
         };
+    }
+
+
+    private static String fallbackText(String ruleId, String fallback, ReportLanguage language, TextPart part) {
+        if (language == ReportLanguage.ENGLISH) {
+            return fallback;
+        }
+        String id = ruleId == null ? "" : ruleId;
+        String title = italianTitleFromFallback(fallback == null ? id : fallback);
+        if (part == TextPart.TITLE) {
+            return title;
+        }
+        if (id.startsWith("ARCH")) {
+            return part == TextPart.WHY
+                    ? "La regola evidenzia un possibile accoppiamento tra layer, moduli o bounded context. Questo riduce la chiarezza dei confini architetturali e rende più rischiosi refactoring, test e manutenzione."
+                    : "Rivedi le dipendenze tra package e layer. Mantieni dominio e casi d'uso separati da web, infrastruttura e dettagli di persistenza; introduci porte, adapter, mapper o servizi applicativi dove necessario.";
+        }
+        if (id.startsWith("SEC")) {
+            return part == TextPart.WHY
+                    ? "La configurazione di sicurezza rilevata può rendere l'applicazione troppo permissiva, incoerente con il profilo di rilascio o difficile da governare in produzione."
+                    : "Rendi esplicite autenticazione, autorizzazione, gestione sessione, CSRF, CORS e protezione degli endpoint sensibili. Limita le eccezioni ai soli casi documentati e coprile con test di sicurezza.";
+        }
+        if (id.startsWith("WEB")) {
+            return part == TextPart.WHY
+                    ? "Il contratto web/API risulta meno chiaro o meno robusto. Controller troppo accoppiati, DTO non validati o risposte non standardizzate aumentano il rischio di regressioni e comportamenti incoerenti per i client."
+                    : "Mantieni i controller sottili, usa DTO validati, centralizza la gestione degli errori, documenta gli endpoint pubblici e separa il contratto REST dal modello di persistenza.";
+        }
+        if (id.startsWith("BAT")) {
+            return part == TextPart.WHY
+                    ? "La configurazione Batch rilevata può compromettere riavvio, idempotenza, osservabilità o gestione degli errori. In produzione questi aspetti sono essenziali per esecuzioni ripetibili e governabili."
+                    : "Rendi espliciti parametri, chunk size, reader, writer, retry, skip, listener, metriche e semantica di restart. Evita stato mutabile non controllato e operazioni non idempotenti.";
+        }
+        if (id.startsWith("CLD")) {
+            return part == TextPart.WHY
+                    ? "Il progetto contiene elementi che riducono la neutralità dell'artefatto rispetto all'ambiente. Questo ostacola deploy ripetibili, configurazione esterna e scalabilità operativa."
+                    : "Sposta valori runtime e dipendenze ambientali fuori dall'artefatto. Usa proprietà tipizzate, variabili ambiente, configurazione montata, secret manager e impostazioni esplicite per readiness, logging e shutdown.";
+        }
+        if (id.startsWith("OBS")) {
+            return part == TextPart.WHY
+                    ? "L'osservabilità rilevata è insufficiente o non centralizzata. Senza log, metriche, health check e correlazione affidabili, diagnosi e gestione operativa diventano più lente."
+                    : "Usa Actuator, Micrometer, logging strutturato, correlation ID e HealthIndicator dedicati. Evita log manuali o non governati e centralizza la raccolta delle informazioni operative.";
+        }
+        if (id.startsWith("POM")) {
+            return part == TextPart.WHY
+                    ? "Il POM Maven mostra una configurazione che può rendere build, versioni, plugin o dipendenze meno governabili. Nei progetti Spring Boot il dependency management è parte dell'architettura applicativa."
+                    : "Centralizza versioni e plugin nel parent o nel dependencyManagement, usa il BOM di Spring Boot, evita scope impropri e mantieni coerenti starter, driver, librerie di test e packaging.";
+        }
+        if (id.startsWith("ADV")) {
+            return part == TextPart.WHY
+                    ? "Il codice usa una soluzione Java manuale o un'API di basso livello che può funzionare, ma non sfrutta pienamente configurazione, lifecycle, testabilità e osservabilità offerte da Spring."
+                    : "Valuta l'alternativa Spring indicata dalla regola. Centralizza la configurazione come bean, usa astrazioni Spring idiomatiche e mantieni il codice applicativo più semplice e governabile.";
+        }
+        return fallback;
+    }
+
+    private static String italianTitleFromFallback(String fallback) {
+        String value = fallback == null ? "Problema rilevato" : fallback;
+        return value
+                .replace("Domain layer", "Layer di dominio")
+                .replace("Application layer", "Layer applicativo")
+                .replace("Infrastructure adapter", "Adapter infrastrutturale")
+                .replace("Controller", "Controller")
+                .replace("Service", "Service")
+                .replace("Repository", "Repository")
+                .replace("depends on", "dipende da")
+                .replace("must not depend on", "non deve dipendere da")
+                .replace("missing", "mancante")
+                .replace("Missing", "Mancante")
+                .replace("without", "senza")
+                .replace("Without", "Senza")
+                .replace("detected", "rilevato")
+                .replace("Detected", "Rilevato")
+                .replace("created manually", "creato manualmente")
+                .replace("Created manually", "Creato manualmente")
+                .replace("manual", "manuale")
+                .replace("Manual", "Manuale")
+                .replace("hardcoded", "hardcoded")
+                .replace("Hardcoded", "Hardcoded")
+                .replace("exposed", "esposto")
+                .replace("Exposed", "Esposto")
+                .replace("configuration", "configurazione")
+                .replace("Configuration", "Configurazione")
+                .replace("health endpoint", "endpoint health")
+                .replace("endpoint", "endpoint")
+                .replace("Actuator", "Actuator")
+                .replace("Security", "Security")
+                .replace("Spring", "Spring")
+                .replace("Maven", "Maven")
+                .replace("Batch", "Batch")
+                .replace("API", "API")
+                .replace("REST", "REST")
+                .replace("Web", "Web")
+                .replace("code", "codice")
+                .replace("Code", "Codice");
+    }
+
+    private static String normalizeItalian(String value, ReportLanguage language) {
+        if (language == ReportLanguage.ENGLISH || value == null) {
+            return value;
+        }
+        return value
+                .replace("direttamenete", "direttamente")
+                .replace("perchè", "perché")
+                .replace("RunTimeException", "RuntimeException")
+                .replace("massive", "estese")
+                .replace("fix", "correzione")
+                .replace("passa carte", "semplice delega")
+                .replace("massimo un riga", "al massimo una riga")
+                .replace("database", "al database")
+                .replace("JPA sono di natura transactional", "JPA sono già transazionali per le operazioni principali")
+                .replace("non controllare mai le eccezioni", "non intercettare eccezioni generiche")
+                .replace("deve rompersi", "deve fallire in modo esplicito")
+                .replace("Leggi questo articolo https://medium.com/me/stats/post/6aa8bfe43239", "")
+                .replace("baseline legacy", "baseline legacy")
+                .replace("Cloud readiness", "prontezza cloud")
+                .replace("Dependency injection", "iniezione delle dipendenze")
+                .replace("production-ready", "pronto per la produzione");
+    }
+
+    private enum TextPart {
+        TITLE,
+        WHY,
+        FIX
     }
 
     private record RuleText(String title, String why, String fix) {

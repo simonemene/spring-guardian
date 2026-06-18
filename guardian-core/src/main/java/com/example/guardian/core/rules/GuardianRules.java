@@ -88,9 +88,17 @@ public final class GuardianRules {
                 new HardcodedActiveSpringProfileRule(),
                 new MavenDependencyVersionConflictRule(),
                 new MavenMixedStackDependencyRule(),
-                new MavenDependencyHygieneRule()
+                new MavenDependencyHygieneRule(),
+                new PomGovernanceRules()
         ));
+        baseRules.addAll(ExtendedRuleCatalogs.architectureRules());
+        baseRules.addAll(ExtendedRuleCatalogs.securityRules());
+        baseRules.addAll(ExtendedRuleCatalogs.webApiRules());
+        baseRules.addAll(ExtendedRuleCatalogs.batchRules());
+        baseRules.addAll(ExtendedRuleCatalogs.cloudRules());
+        baseRules.addAll(ExtendedRuleCatalogs.observabilityRules());
         baseRules.addAll(SpringAlternativeAdvisorCatalog.rules());
+        baseRules.addAll(ExtendedRuleCatalogs.advisorRules());
         return List.copyOf(baseRules);
     }
 }

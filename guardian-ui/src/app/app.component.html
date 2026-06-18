@@ -288,6 +288,7 @@
                 <span>{{ componentTypeLabel(component.type) }}</span>
                 <span>{{ component.filePath }}<ng-container *ngIf="component.line">:{{ component.line }}</ng-container></span>
                 <p *ngIf="component.evidence"><b>{{ t('technicalEvidence') }}:</b> {{ component.evidence }}</p>
+                <pre *ngIf="component.codeSnippet" class="code-evidence"><code>{{ component.codeSnippet }}</code></pre>
               </div>
             </div>
           </details>
@@ -339,6 +340,7 @@
                 <span>{{ componentTypeLabel(component.type) }}</span>
                 <span>{{ component.filePath }}<ng-container *ngIf="component.line">:{{ component.line }}</ng-container></span>
                 <p *ngIf="component.evidence"><b>{{ t('technicalEvidence') }}:</b> {{ component.evidence }}</p>
+                <pre *ngIf="component.codeSnippet" class="code-evidence"><code>{{ component.codeSnippet }}</code></pre>
               </div>
             </div>
           </details>

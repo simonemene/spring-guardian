@@ -13,7 +13,7 @@ type TranslationKey = keyof typeof TRANSLATIONS.it;
 const TRANSLATIONS = {
   it: {
     eyebrow: 'Scanner architetturale Spring',
-    heroText: 'Analizza progetti Spring Boot, raggruppa i problemi per area tecnica e mostra in modo leggibile cosa correggere. Conta quali classi o file sono coinvolti.',
+    heroText: 'Analizza progetti Spring Boot, raggruppa i problemi per area tecnica e mostra in modo chiaro cosa correggere, perché conta e quali classi o file sono coinvolti.',
     language: 'Lingua report',
     italian: 'Italiano',
     english: 'Inglese',
@@ -29,10 +29,10 @@ const TRANSLATIONS = {
     backendFolderPath: 'Percorso cartella sul backend',
     backendPathHelp: 'Serve quando backend e progetto sono sulla stessa macchina o quando Docker monta una cartella sotto /scan.',
     scanSettings: 'Profilo scansione',
-    projectType: 'Tipo progetto',
-    releaseTarget: 'Obiettivo rilascio',
+    projectType: 'Tipo di progetto',
+    releaseTarget: 'Obiettivo di rilascio',
     knownIssues: 'È un progetto legacy con problemi noti',
-    profileHelp: 'Il profilo calibra solo questa scansione. L’architettura viene rilevata automaticamente. Non viene salvato nulla e non vengono fatte chiamate a database o AI.',
+    profileHelp: 'Il profilo calibra solo la scansione corrente. L’architettura viene rilevata automaticamente. Non viene salvato nulla e non vengono effettuate chiamate a database o servizi AI.',
     webApi: 'API Web / REST',
     batch: 'Batch',
     library: 'Libreria / starter',
@@ -40,7 +40,7 @@ const TRANSLATIONS = {
     production: 'Produzione',
     internal: 'Test / QA',
     legacyBaseline: 'Baseline legacy',
-    scanRunning: 'Scansione in corso...',
+    scanRunning: 'Scansione in corso…',
     startScan: 'Avvia scansione',
     selectZipError: 'Seleziona un file ZIP da analizzare.',
     selectFolderError: 'Seleziona la cartella root del progetto da analizzare.',
@@ -52,26 +52,26 @@ const TRANSLATIONS = {
     javaFiles: 'file Java',
     pomFiles: 'POM',
     overview: 'Riepilogo',
-    gates: 'Quality gate',
+    gates: 'Controlli qualità',
     problems: 'Problemi',
     springAdvisor: 'Alternative Spring',
-    advisorSubtitle: 'Oggetti Java manuali, API di basso livello e alternative Spring moderne da valutare.',
+    advisorSubtitle: 'Uso manuale di API Java, componenti di basso livello e alternative Spring più integrate da valutare.',
     advisorOpportunities: 'suggerimenti',
     advisorEmptyTitle: 'Nessuna alternativa Spring rilevata',
-    advisorEmptyText: 'In questa scansione non sono stati trovati oggetti Java manuali o API sostituibili con alternative Spring più integrate.',
+    advisorEmptyText: 'Questa scansione non ha rilevato API Java manuali o componenti sostituibili con alternative Spring più integrate.',
     actions: 'Azioni',
     technicalJson: 'JSON tecnico',
     executiveSummary: 'Riepilogo esecutivo',
-    releaseReadiness: 'Prontezza rilascio',
+    releaseReadiness: 'Prontezza al rilascio',
     blockers: 'Blocchi',
-    warnings: 'Avvertenze',
+    warnings: 'Avvisi',
     noBlockers: 'Nessun blocco rilevato per il profilo selezionato.',
     noWarnings: 'Nessuna avvertenza rilevata.',
     project: 'Progetto',
     scan: 'Scansione',
     detectedStack: 'Stack rilevato',
     detectedStyles: 'Stile rilevato',
-    selectedProfile: 'Profilo selezionato',
+    selectedProfile: 'Profilo della scansione',
     impactedAreas: 'Aree architetturali',
     howToRead: 'Come leggere il report',
     gateStatus: 'Stato gate',
@@ -80,7 +80,7 @@ const TRANSLATIONS = {
     allSeverities: 'Tutte le severità',
     allAreas: 'Tutte le aree',
     allTypes: 'Tutti i tipi',
-    clearFilters: 'Pulisci filtri',
+    clearFilters: 'Rimuovi filtri',
     findingType: 'Tipo problema',
     typeCode: 'Codice Java',
     typePom: 'POM Maven',
@@ -90,18 +90,22 @@ const TRANSLATIONS = {
     typeSecurity: 'Sicurezza',
     typeJpa: 'JPA e persistenza',
     typeWebLayer: 'Layer web/API',
-    typeDependencyInjection: 'Dependency injection',
+    typeDependencyInjection: 'Iniezione delle dipendenze',
     typeRuntimeCode: 'Codice runtime',
     typeSpringAlternative: 'Spring Alternative Advisor',
+    typeSpringBatch: 'Spring Batch',
+    typeArchitecture: 'Architettura e confini',
+    typeCloudReadiness: 'Prontezza cloud',
+    typeObservability: 'Osservabilità',
     technicalCode: 'Codice tecnico',
     whyItMatters: 'Perché conta',
     recommendedFix: 'Correzione consigliata',
     involvedComponents: 'Classi e file coinvolti',
-    technicalEvidence: 'Evidenza tecnica',
+    technicalEvidence: 'Evidenza rilevata',
     recommendedActions: 'Azioni consigliate',
     priorities: 'priorità',
     exportJson: 'Esporta JSON',
-    jsonNote: 'Questa sezione serve a sviluppatori e pipeline CI. La lettura funzionale è nelle sezioni Riepilogo, Quality gate, Problemi e Azioni.',
+    jsonNote: 'Questa sezione è pensata per sviluppatori e pipeline CI. Per una lettura funzionale usa Riepilogo, Controlli qualità, Problemi e Azioni.',
     emptyTitle: 'Nessuna scansione eseguita',
     emptyText: 'Carica uno ZIP, seleziona la cartella root del progetto oppure indica un percorso leggibile dal backend.',
     critical: 'Critico',
@@ -214,9 +218,13 @@ const TRANSLATIONS = {
     typeSecurity: 'Security',
     typeJpa: 'JPA and persistence',
     typeWebLayer: 'Web/API layer',
-    typeDependencyInjection: 'Dependency injection',
+    typeDependencyInjection: 'Iniezione delle dipendenze',
     typeRuntimeCode: 'Runtime code',
     typeSpringAlternative: 'Spring Alternative Advisor',
+    typeSpringBatch: 'Spring Batch',
+    typeArchitecture: 'Architecture and boundaries',
+    typeCloudReadiness: 'Prontezza cloud',
+    typeObservability: 'Observability',
     technicalCode: 'Technical code',
     whyItMatters: 'Why it matters',
     recommendedFix: 'Recommended fix',
@@ -338,7 +346,8 @@ export class AppComponent {
         ...finding.affectedComponents.flatMap((component) => [
           component.name,
           component.filePath,
-          component.evidence
+          component.evidence,
+          component.codeSnippet
         ])
       ].join(' ').toLowerCase();
 
@@ -492,12 +501,16 @@ export class AppComponent {
       WEB_LAYER: this.t('typeWebLayer'),
       DEPENDENCY_INJECTION: this.t('typeDependencyInjection'),
       RUNTIME_CODE: this.t('typeRuntimeCode'),
-      SPRING_ALTERNATIVE: this.t('typeSpringAlternative')
+      SPRING_ALTERNATIVE: this.t('typeSpringAlternative'),
+      SPRING_BATCH: this.t('typeSpringBatch'),
+      ARCHITECTURE: this.t('typeArchitecture'),
+      CLOUD_READINESS: this.t('typeCloudReadiness'),
+      OBSERVABILITY: this.t('typeObservability')
     } as Record<string, string>)[type] ?? this.humanize(type);
   }
 
   isSpringAdvisorFinding(finding: FindingGroup): boolean {
-    return finding.findingType === 'SPRING_ALTERNATIVE' || finding.category === 'Spring Alternative Advisor' || /^SPR(06[4-9]|07[0-9]|08[0-9]|090)/.test(finding.ruleId);
+    return finding.findingType === 'SPRING_ALTERNATIVE' || finding.category === 'Spring Alternative Advisor' || finding.ruleId.startsWith('ADV') || /^SPR(06[4-9]|07[0-9]|08[0-9]|090)/.test(finding.ruleId);
   }
 
   advisorCount(current: ArchitectureReviewReport): number {
@@ -578,7 +591,7 @@ export class AppComponent {
   }
 
   ruleCode(ruleId: string): string {
-    return ruleId.match(/^SPR\d+/)?.[0] ?? ruleId;
+    return ruleId.match(/^(SPR|SEC|WEB|BAT|CLD|OBS|POM|ADV|ARCH)\d+/)?.[0] ?? ruleId;
   }
 
   occurrenceLabel(count: number): string {

@@ -22,6 +22,9 @@ import com.example.guardian.core.rules.GuardianRules;
 import com.example.guardian.core.rules.SpringRule;
 import com.example.guardian.core.scanner.ProjectSourceScanner;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -103,7 +106,7 @@ public class ProjectScanService {
 
         int score = calculateScore(findings, resolvedProfile);
         String riskLevel = calculateRiskLevel(score, bySeverity);
-        List<FindingGroup> groupedFindings = buildFindingGroups(findings, resolvedLanguage);
+        List<FindingGroup> groupedFindings = buildFindingGroups(findings, resolvedLanguage, context);
         List<ArchitectureAreaReport> architectureAreas = buildArchitectureAreas(findings, resolvedLanguage);
         List<QualityGate> qualityGates = buildQualityGates(findings, architectureAreas, context, resolvedLanguage);
         ReleaseReadiness releaseReadiness = buildReleaseReadiness(qualityGates, findings, resolvedProfile, resolvedLanguage);
@@ -268,6 +271,10 @@ public class ProjectScanService {
                 case "SECURITY" -> "Authentication, authorization, CSRF, CORS and security bean configuration.";
                 case "JPA" -> "Entity mapping, transaction boundaries, repository calls and persistence behavior.";
                 case "WEB_LAYER" -> "Controller boundaries, validation, DTOs, REST contracts and OpenAPI documentation.";
+                case "SPRING_BATCH" -> "Spring Batch restartability, chunking, reader/writer behavior, skip/retry and operational readiness.";
+                case "ARCHITECTURE" -> "Layer direction, DDD, hexagonal and modular boundaries.";
+                case "CLOUD_READINESS" -> "12-factor and cloud readiness issues around config, state, paths and runtime neutrality.";
+                case "OBSERVABILITY" -> "Actuator, metrics, logs, correlation and operational diagnostics.";
                 case "DEPENDENCY_INJECTION" -> "Constructor injection, immutable dependencies and collaborator wiring.";
                 case "RUNTIME_CODE" -> "Runtime correctness risks such as exception handling, null handling and unsafe blocking.";
                 default -> "General Java source code structure and maintainability.";
@@ -276,14 +283,18 @@ public class ProjectScanService {
         return switch (findingType) {
             case "SPRING_ALTERNATIVE" -> "API Java manuali e alternative Spring moderne rilevate dallo Spring Alternative Advisor.";
             case "DEPENDENCIES" -> "Problemi su dipendenze e versioni Maven che possono influire su build o compatibilità Spring.";
-            case "POM" -> "Qualità di struttura POM Maven, plugin e dependency management.";
+            case "POM" -> "Qualità del POM Maven, dei plugin e della gestione centralizzata delle dipendenze.";
             case "CONFIGURATION" -> "File di configurazione, profili, segreti e impostazioni dipendenti dall'ambiente.";
-            case "TEST" -> "Gap o debolezze su test unitari, slice, integration ed end-to-end.";
+            case "TEST" -> "Lacune o debolezze nei test unitari, slice, di integrazione ed end-to-end.";
             case "SECURITY" -> "Autenticazione, autorizzazione, CSRF, CORS e configurazione dei bean di sicurezza.";
-            case "JPA" -> "Mapping entity, confini transazionali, chiamate repository e comportamento di persistenza.";
+            case "JPA" -> "Mapping delle entity, confini transazionali, uso dei repository e comportamento della persistenza.";
             case "WEB_LAYER" -> "Confini controller, validazione, DTO, contratti REST e documentazione OpenAPI.";
-            case "DEPENDENCY_INJECTION" -> "Constructor injection, dipendenze immutabili e cablaggio dei collaboratori.";
-            case "RUNTIME_CODE" -> "Rischi di correttezza runtime come eccezioni, null handling e blocchi non sicuri.";
+            case "SPRING_BATCH" -> "Spring Batch: riavviabilità, chunk, reader/writer, skip/retry e prontezza operativa.";
+            case "ARCHITECTURE" -> "Direzione dei layer, DDD, architettura esagonale e confini modulari.";
+            case "CLOUD_READINESS" -> "Problemi 12-factor e di prontezza cloud relativi a configurazione, stato, percorsi e neutralità runtime.";
+            case "OBSERVABILITY" -> "Actuator, metriche, log, correlazione e diagnostica operativa.";
+            case "DEPENDENCY_INJECTION" -> "Iniezione tramite costruttore, dipendenze immutabili e cablaggio dei collaboratori.";
+            case "RUNTIME_CODE" -> "Rischi di correttezza runtime legati a eccezioni, gestione dei null e blocchi non sicuri.";
             default -> "Struttura e manutenibilità generale del codice Java.";
         };
     }
@@ -303,7 +314,7 @@ public class ProjectScanService {
         return findings.stream().filter(finding -> finding.severity() == severity).count();
     }
 
-    private List<FindingGroup> buildFindingGroups(List<Finding> findings, ReportLanguage language) {
+    private List<FindingGroup> buildFindingGroups(List<Finding> findings, ReportLanguage language, ProjectScanContext context) {
         Map<String, List<Finding>> byRule = findings.stream()
                 .collect(Collectors.groupingBy(Finding::ruleId, LinkedHashMap::new, Collectors.toList()));
 
@@ -327,7 +338,7 @@ public class ProjectScanService {
                             findingTypeLabel(findingType, language),
                             RuleTextCatalog.title(first.ruleId(), first.title(), language),
                             ruleFindings.size(),
-                            ruleFindings.stream().map(this::affectedComponentOf).toList(),
+                            ruleFindings.stream().map(finding -> affectedComponentOf(finding, context)).toList(),
                             RuleTextCatalog.why(first.ruleId(), first.whyItMatters(), language),
                             RuleTextCatalog.fix(first.ruleId(), first.suggestedFix(), language),
                             groupExplanation(first, ruleFindings.size(), language)
@@ -346,19 +357,87 @@ public class ProjectScanService {
         };
     }
 
-    private AffectedComponent affectedComponentOf(Finding finding) {
+    private AffectedComponent affectedComponentOf(Finding finding, ProjectScanContext context) {
         return new AffectedComponent(
                 componentTypeOf(finding),
                 componentNameOf(finding),
                 finding.filePath(),
                 finding.line(),
-                finding.evidence()
+                finding.evidence(),
+                codeSnippetOf(finding, context)
         );
+    }
+
+    private String codeSnippetOf(Finding finding, ProjectScanContext context) {
+        if (finding.filePath() == null || finding.filePath().isBlank() || finding.line() == null || finding.line() <= 0) {
+            return finding.evidence();
+        }
+        String content = sourceContentFor(finding, context);
+        if (content == null || content.isBlank()) {
+            return finding.evidence();
+        }
+        String[] lines = content.split("\\R", -1);
+        int index = finding.line() - 1;
+        if (index < 0 || index >= lines.length) {
+            return finding.evidence();
+        }
+        int from = Math.max(0, index - 1);
+        int to = Math.min(lines.length - 1, index + 1);
+        StringBuilder snippet = new StringBuilder();
+        for (int i = from; i <= to; i++) {
+            if (snippet.length() > 0) {
+                snippet.append(System.lineSeparator());
+            }
+            snippet.append(String.format("%4d | %s", i + 1, lines[i]));
+        }
+        return snippet.toString();
+    }
+
+    private String sourceContentFor(Finding finding, ProjectScanContext context) {
+        String normalizedFindingPath = finding.filePath().replace("\\", "/");
+        for (var javaFile : context.javaFiles()) {
+            if (javaFile.relativePath().replace("\\", "/").equals(normalizedFindingPath)) {
+                return javaFile.content();
+            }
+        }
+        try {
+            Path path = context.root().resolve(finding.filePath()).normalize();
+            if (Files.isRegularFile(path) && path.startsWith(context.root().normalize())) {
+                return Files.readString(path, StandardCharsets.UTF_8);
+            }
+        } catch (IOException | RuntimeException ignored) {
+            return null;
+        }
+        return null;
     }
 
     private String findingTypeFor(Finding finding) {
         String ruleId = finding.ruleId();
         String componentType = componentTypeOf(finding);
+        if (matches(ruleId, "ADV")) {
+            return "SPRING_ALTERNATIVE";
+        }
+        if (matches(ruleId, "SEC")) {
+            return "SECURITY";
+        }
+        if (matches(ruleId, "WEB")) {
+            return "WEB_LAYER";
+        }
+        if (matches(ruleId, "BAT")) {
+            return "SPRING_BATCH";
+        }
+        if (matches(ruleId, "ARCH")) {
+            return "ARCHITECTURE";
+        }
+        if (matches(ruleId, "CLD")) {
+            return "CLOUD_READINESS";
+        }
+        if (matches(ruleId, "OBS")) {
+            return "OBSERVABILITY";
+        }
+        if (matches(ruleId, "POM")) {
+            return "DEPENDENCIES";
+        }
         if (springAlternativeAdvisorRule(ruleId)) {
             return "SPRING_ALTERNATIVE";
         }
@@ -403,7 +482,11 @@ public class ProjectScanService {
                 case "SECURITY" -> "Security";
                 case "JPA" -> "JPA and persistence";
                 case "WEB_LAYER" -> "Web/API layer";
-                case "DEPENDENCY_INJECTION" -> "Dependency injection";
+                case "SPRING_BATCH" -> "Spring Batch";
+                case "ARCHITECTURE" -> "Architecture and boundaries";
+                case "CLOUD_READINESS" -> "Prontezza cloud";
+                case "OBSERVABILITY" -> "Observability";
+                case "DEPENDENCY_INJECTION" -> "Iniezione delle dipendenze";
                 case "RUNTIME_CODE" -> "Runtime code";
                 default -> "Java code";
             };
@@ -417,7 +500,11 @@ public class ProjectScanService {
             case "SECURITY" -> "Sicurezza";
             case "JPA" -> "JPA e persistenza";
             case "WEB_LAYER" -> "Layer web/API";
-            case "DEPENDENCY_INJECTION" -> "Dependency injection";
+            case "SPRING_BATCH" -> "Spring Batch";
+            case "ARCHITECTURE" -> "Architettura e confini";
+            case "CLOUD_READINESS" -> "Prontezza cloud";
+            case "OBSERVABILITY" -> "Osservabilità";
+            case "DEPENDENCY_INJECTION" -> "Iniezione delle dipendenze";
             case "RUNTIME_CODE" -> "Codice runtime";
             default -> "Codice Java";
         };
@@ -466,7 +553,7 @@ public class ProjectScanService {
         }
 
         String target = occurrences == 1 ? "1 componente coinvolto" : occurrences + " componenti coinvolti";
-        return target + " per questa regola. "
+        return target + " rilevato da questa regola. "
                 + RuleTextCatalog.why(first.ruleId(), first.whyItMatters(), language)
                 + " Intervento consigliato: "
                 + RuleTextCatalog.fix(first.ruleId(), first.suggestedFix(), language);
@@ -531,12 +618,12 @@ public class ProjectScanService {
         return new ReportExplanation(
                 "Il punteggio parte da 100 e applica penalità pesate in base alla severità. I problemi critici hanno il peso maggiore. La modalità baseline legacy riduce il peso dei problemi alti non di sicurezza, ma non li nasconde.",
                 "Critico indica un possibile blocco per produzione, sicurezza o architettura. Alto indica un rischio concreto di manutenzione o correttezza. Medio indica un miglioramento consigliato. Info è un suggerimento a basso impatto.",
-                "Parti dalla prontezza al rilascio, poi dai quality gate e infine dalle azioni consigliate. I problemi sono raggruppati per regola deterministica per mantenere leggibile il report anche su progetti grandi.",
+                "Parti dalla prontezza al rilascio, poi dai controlli qualità e infine dalle azioni consigliate. I problemi sono raggruppati per regola deterministica, così il report resta leggibile anche su progetti di grandi dimensioni.",
                 List.of(
                         "Correggi tutti i problemi critici prima di considerare verde la scansione in CI.",
-                        "Usa il profilo progetto solo per calibrare la scansione corrente stateless: Spring Guardian non salva baseline.",
+                        "Usa il profilo del progetto solo per calibrare la scansione corrente: Spring Guardian non salva baseline e non mantiene stato applicativo.",
                         "Rivedi i problemi per area: dependency injection, web layer, sicurezza, JPA, architettura, test, build e Spring Alternative Advisor.",
-                        "Mantieni le regole deterministiche come fonte di verità. Non servono chiamate AI, database o stato nascosto."
+                        "Mantieni le regole deterministiche come fonte di verità: non servono chiamate a servizi AI, accessi al database o stato nascosto."
                 )
         );
     }
@@ -567,6 +654,10 @@ public class ProjectScanService {
         gates.add(gate("GATE_SECURITY", language, area(areas, "SECURITY"), true));
         gates.add(gate("GATE_WEB_LAYER", language, area(areas, "WEB_LAYER"), context.capabilities().usesSpringWeb()));
         gates.add(gate("GATE_JPA", language, area(areas, "JPA_PERSISTENCE"), context.capabilities().usesJpa()));
+        gates.add(gate("GATE_BATCH", language, area(areas, "SPRING_BATCH"), context.capabilities().usesSpringBatch()));
+        gates.add(gate("GATE_DEPENDENCY_GOVERNANCE", language, area(areas, "DEPENDENCY_GOVERNANCE"), true));
+        gates.add(gate("GATE_CLOUD_READINESS", language, area(areas, "CLOUD_READINESS"), true));
+        gates.add(gate("GATE_OBSERVABILITY", language, area(areas, "OBSERVABILITY"), false));
         gates.add(gate("GATE_DEPENDENCY_INJECTION", language, area(areas, "DEPENDENCY_INJECTION"), true));
         gates.add(gate("GATE_ARCHITECTURE_BOUNDARIES", language, area(areas, "ARCHITECTURE_BOUNDARIES"), true));
         gates.add(gate("GATE_TESTS", language, area(areas, "TESTS"), true));
@@ -686,6 +777,10 @@ public class ProjectScanService {
                 case "GATE_SECURITY" -> "Security";
                 case "GATE_WEB_LAYER" -> "Web layer and API contracts";
                 case "GATE_JPA" -> "JPA and persistence";
+                case "GATE_BATCH" -> "Spring Batch";
+                case "GATE_DEPENDENCY_GOVERNANCE" -> "Dependency governance";
+                case "GATE_CLOUD_READINESS" -> "Cloud readiness";
+                case "GATE_OBSERVABILITY" -> "Observability";
                 case "GATE_DEPENDENCY_INJECTION" -> "Dependency injection";
                 case "GATE_ARCHITECTURE_BOUNDARIES" -> "Architecture boundaries";
                 case "GATE_TESTS" -> "Tests";
@@ -699,6 +794,10 @@ public class ProjectScanService {
             case "GATE_SECURITY" -> "Sicurezza";
             case "GATE_WEB_LAYER" -> "Layer web e contratti API";
             case "GATE_JPA" -> "JPA e persistenza";
+            case "GATE_BATCH" -> "Spring Batch";
+            case "GATE_DEPENDENCY_GOVERNANCE" -> "Governo dipendenze";
+            case "GATE_CLOUD_READINESS" -> "Cloud readiness";
+            case "GATE_OBSERVABILITY" -> "Osservabilità";
             case "GATE_DEPENDENCY_INJECTION" -> "Dependency injection";
             case "GATE_ARCHITECTURE_BOUNDARIES" -> "Confini architetturali";
             case "GATE_TESTS" -> "Test";
@@ -721,31 +820,63 @@ public class ProjectScanService {
         if (language == ReportLanguage.ENGLISH) {
             return List.of(
                     new AreaDefinition("DEPENDENCY_INJECTION", "Dependency injection", "Constructor injection, field injection, immutable dependencies and Spring component wiring.", List.of("SPR002", "SPR029", "SPR061", "SPR062")),
-                    new AreaDefinition("WEB_LAYER", "Web layer and API contracts", "Controller boundaries, DTOs, validation, versioning, HTTP semantics and OpenAPI documentation.", List.of("SPR003", "SPR004", "SPR006", "SPR010", "SPR013", "SPR014", "SPR019", "SPR023", "SPR024", "SPR050", "SPR051", "SPR056", "SPR060", "SPR063")),
-                    new AreaDefinition("SECURITY", "Spring Security", "Spring Security, secrets, actuator exposure, CSRF, CORS and password handling.", List.of("SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059")),
+                    new AreaDefinition("WEB_LAYER", "Web layer and API contracts", "Controller boundaries, DTOs, validation, versioning, HTTP semantics and OpenAPI documentation.", List.of("SPR003", "SPR004", "SPR006", "SPR010", "SPR013", "SPR014", "SPR019", "SPR023", "SPR024", "SPR050", "SPR051", "SPR056", "SPR060", "SPR063", "WEB")),
+                    new AreaDefinition("SECURITY", "Spring Security", "Spring Security, secrets, actuator exposure, CSRF, CORS, authorization and password handling.", List.of("SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059", "SEC")),
                     new AreaDefinition("JPA_PERSISTENCE", "JPA and persistence", "Entity mapping, transactions, repository calls, fetch plans, schema safety and persistence boundaries.", List.of("SPR009", "SPR017", "SPR038", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057")),
-                    new AreaDefinition("ARCHITECTURE_BOUNDARIES", "Architecture and boundaries", "Layer direction, DDD or hexagonal boundaries, package structure and class responsibilities.", List.of("SPR005", "SPR007", "SPR008", "SPR018", "SPR027", "SPR028", "SPR030", "SPR031", "SPR055")),
+                    new AreaDefinition("SPRING_BATCH", "Spring Batch", "Batch restartability, chunk behavior, readers, writers, skip/retry and operational safety.", List.of("BAT")),
+                    new AreaDefinition("ARCHITECTURE_BOUNDARIES", "Architecture and boundaries", "Layer direction, DDD or hexagonal boundaries, package structure and class responsibilities.", List.of("SPR005", "SPR007", "SPR008", "SPR018", "SPR027", "SPR028", "SPR030", "SPR031", "SPR055", "ARCH")),
                     new AreaDefinition("RUNTIME_CORRECTNESS", "Runtime correctness", "Exception handling, null-safety, optional handling, hidden proxy effects and unsafe state changes.", List.of("SPR011", "SPR020", "SPR025", "SPR047")),
                     new AreaDefinition("TESTS", "Tests", "Test presence, assertions, test slicing, heavy context usage and time-based flakiness.", List.of("SPR012", "SPR043", "SPR044", "SPR045", "SPR052")),
-                    new AreaDefinition("BUILD_CONFIG", "Build and configuration", "Maven quality, Spring BOM alignment, profiles, hardcoded values, logging and maintainability.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036", "SPR091", "SPR092", "SPR093", "SPR094", "SPR095")),
-                    new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Spring Alternative Advisor", "Manual Java objects, low-level APIs and modern Spring alternatives worth evaluating.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090"))
+                    new AreaDefinition("DEPENDENCY_GOVERNANCE", "Dependency governance", "Maven dependency management, Spring Boot BOM alignment, scopes, plugins and build reproducibility.", List.of("POM", "SPR093", "SPR094", "SPR095")),
+                    new AreaDefinition("BUILD_CONFIG", "Build and configuration", "Configuration externalization, profiles, hardcoded values and build maintainability.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036", "SPR091", "SPR092")),
+                    new AreaDefinition("CLOUD_READINESS", "Cloud readiness", "12-factor runtime neutrality, externalized configuration, local state, graceful runtime behavior and deployability.", List.of("CLD")),
+                    new AreaDefinition("OBSERVABILITY", "Observability", "Actuator, Micrometer, logs, correlation, health and operational diagnostics.", List.of("OBS")),
+                    new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Spring Alternative Advisor", "Manual Java objects, low-level APIs and modern Spring alternatives worth evaluating.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090", "ADV"))
             );
         }
         return List.of(
                 new AreaDefinition("DEPENDENCY_INJECTION", "Dependency injection", "Constructor injection, field injection, dipendenze immutabili e cablaggio dei componenti Spring.", List.of("SPR002", "SPR029", "SPR061", "SPR062")),
-                new AreaDefinition("WEB_LAYER", "Layer web e contratti API", "Confini dei controller, DTO, validazione, versionamento, semantica HTTP e documentazione OpenAPI.", List.of("SPR003", "SPR004", "SPR006", "SPR010", "SPR013", "SPR014", "SPR019", "SPR023", "SPR024", "SPR050", "SPR051", "SPR056", "SPR060", "SPR063")),
-                new AreaDefinition("SECURITY", "Spring Security", "Spring Security, segreti, esposizione actuator, CSRF, CORS e gestione password.", List.of("SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059")),
+                new AreaDefinition("WEB_LAYER", "Layer web e contratti API", "Confini dei controller, DTO, validazione, versionamento, semantica HTTP e documentazione OpenAPI.", List.of("SPR003", "SPR004", "SPR006", "SPR010", "SPR013", "SPR014", "SPR019", "SPR023", "SPR024", "SPR050", "SPR051", "SPR056", "SPR060", "SPR063", "WEB")),
+                new AreaDefinition("SECURITY", "Spring Security", "Spring Security, segreti, esposizione actuator, CSRF, CORS, autorizzazione e gestione password.", List.of("SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059", "SEC")),
                 new AreaDefinition("JPA_PERSISTENCE", "JPA e persistenza", "Mapping entity, transazioni, chiamate repository, fetch plan, sicurezza schema e confini di persistenza.", List.of("SPR009", "SPR017", "SPR038", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057")),
-                new AreaDefinition("ARCHITECTURE_BOUNDARIES", "Architettura e confini", "Direzione dei layer, confini DDD o esagonali, struttura package e responsabilità delle classi.", List.of("SPR005", "SPR007", "SPR008", "SPR018", "SPR027", "SPR028", "SPR030", "SPR031", "SPR055")),
+                new AreaDefinition("SPRING_BATCH", "Spring Batch", "Restartability, chunk, reader, writer, skip/retry e sicurezza operativa dei batch.", List.of("BAT")),
+                new AreaDefinition("ARCHITECTURE_BOUNDARIES", "Architettura e confini", "Direzione dei layer, confini DDD o esagonali, struttura package e responsabilità delle classi.", List.of("SPR005", "SPR007", "SPR008", "SPR018", "SPR027", "SPR028", "SPR030", "SPR031", "SPR055", "ARCH")),
                 new AreaDefinition("RUNTIME_CORRECTNESS", "Correttezza runtime", "Gestione eccezioni, null-safety, Optional, effetti nascosti dei proxy e modifiche stato non sicure.", List.of("SPR011", "SPR020", "SPR025", "SPR047")),
                 new AreaDefinition("TESTS", "Test", "Presenza test, assert, slice test, uso del contesto Spring e fragilità temporale.", List.of("SPR012", "SPR043", "SPR044", "SPR045", "SPR052")),
-                new AreaDefinition("BUILD_CONFIG", "Build e configurazione", "Qualità Maven, allineamento BOM Spring, profili, valori hardcoded, logging e manutenibilità.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036", "SPR091", "SPR092", "SPR093", "SPR094", "SPR095")),
-                new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Spring Alternative Advisor", "Oggetti Java manuali, API di basso livello e alternative Spring moderne da valutare.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090"))
+                new AreaDefinition("DEPENDENCY_GOVERNANCE", "Governo dipendenze", "Dependency management Maven, allineamento BOM Spring Boot, scope, plugin e build riproducibili.", List.of("POM", "SPR093", "SPR094", "SPR095")),
+                new AreaDefinition("BUILD_CONFIG", "Build e configurazione", "Esternalizzazione configurazione, profili, valori hardcoded e manutenibilità build.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036", "SPR091", "SPR092")),
+                new AreaDefinition("CLOUD_READINESS", "Cloud readiness", "Neutralità runtime 12-factor, configurazione esterna, stato locale, comportamento runtime e deployability.", List.of("CLD")),
+                new AreaDefinition("OBSERVABILITY", "Osservabilità", "Actuator, Micrometer, log, correlazione, health e diagnostica operativa.", List.of("OBS")),
+                new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Spring Alternative Advisor", "Oggetti Java manuali, API di basso livello e alternative Spring moderne da valutare.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090", "ADV"))
         );
     }
 
     private String categoryFor(Finding finding, ReportLanguage language) {
         String ruleId = finding.ruleId();
+        if (matches(ruleId, "SEC")) {
+            return "Spring Security";
+        }
+        if (matches(ruleId, "WEB")) {
+            return language == ReportLanguage.ENGLISH ? "Web layer and REST contracts" : "Layer web e contratti REST";
+        }
+        if (matches(ruleId, "BAT")) {
+            return "Spring Batch";
+        }
+        if (matches(ruleId, "ARCH")) {
+            return language == ReportLanguage.ENGLISH ? "Architecture and boundaries" : "Architettura e confini";
+        }
+        if (matches(ruleId, "POM")) {
+            return language == ReportLanguage.ENGLISH ? "Dependency governance" : "Governo dipendenze";
+        }
+        if (matches(ruleId, "CLD")) {
+            return "Cloud readiness";
+        }
+        if (matches(ruleId, "OBS")) {
+            return language == ReportLanguage.ENGLISH ? "Observability" : "Osservabilità";
+        }
+        if (matches(ruleId, "ADV")) {
+            return "Spring Alternative Advisor";
+        }
         if (matches(ruleId, "SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059")) {
             return language == ReportLanguage.ENGLISH ? "Spring Security" : "Spring Security";
         }
@@ -786,17 +917,21 @@ public class ProjectScanService {
     }
 
     private boolean springAlternativeAdvisorRule(String ruleId) {
-        return matches(ruleId, "SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090");
+        return matches(ruleId, "ADV", "SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090");
     }
 
     private boolean securityRule(String ruleId) {
-        return matches(ruleId, "SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059");
+        return matches(ruleId, "SEC", "SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059");
     }
 
     private String categoryExplanation(String category, ReportLanguage language) {
         if (language == ReportLanguage.ENGLISH) {
             return switch (category) {
-                case "Spring Security" -> "Checks on Spring Security, sensitive configuration, actuator endpoints, CSRF, CORS and password handling.";
+                case "Spring Security" -> "Checks on Spring Security, sensitive configuration, actuator endpoints, CSRF, CORS, authorization and password handling.";
+                case "Spring Batch" -> "Checks on Spring Batch restartability, chunk processing, reader/writer behavior, skip/retry and operational readiness.";
+                case "Dependency governance" -> "Maven dependency management, Spring Boot BOM alignment, scopes, plugins and build reproducibility.";
+                case "Cloud readiness" -> "12-factor and cloud-readiness checks on configuration, local state, paths, deployability and runtime neutrality.";
+                case "Observability" -> "Checks on Actuator, Micrometer, logs, correlation, health exposure and operational diagnostics.";
                 case "Web layer and REST contracts" -> "Quality of the REST boundary: DTOs, validation, versioning, HTTP semantics, OpenAPI and stable response contracts.";
                 case "Runtime correctness" -> "Patterns that may generate wrong behavior, hidden errors or ineffective Spring proxies.";
                 case "JPA, persistence and integrations" -> "Risks on databases and external integrations: transactions, entity design, fetch plans, repeated calls and manually created clients.";
@@ -810,14 +945,18 @@ public class ProjectScanService {
         }
 
         return switch (category) {
-            case "Spring Security" -> "Controlli su Spring Security, configurazioni sensibili, endpoint actuator, CSRF, CORS e gestione password.";
+            case "Spring Security" -> "Controlli su Spring Security, configurazioni sensibili, endpoint actuator, CSRF, CORS, autorizzazione e gestione password.";
+            case "Spring Batch" -> "Controlli su restartability, chunk processing, reader/writer, skip/retry e prontezza operativa Spring Batch.";
+            case "Governo dipendenze" -> "Dependency management Maven, allineamento BOM Spring Boot, scope, plugin e build riproducibili.";
+            case "Cloud readiness" -> "Controlli 12-factor e cloud readiness su configurazione, stato locale, path, deployability e neutralità runtime.";
+            case "Osservabilità" -> "Controlli su Actuator, Micrometer, log, correlazione, health e diagnostica operativa.";
             case "Layer web e contratti REST" -> "Qualità del bordo REST: DTO, validazione, versionamento, semantica HTTP, OpenAPI e contratti di risposta stabili.";
             case "Correttezza runtime" -> "Pattern che possono generare comportamenti errati, errori nascosti o proxy Spring inefficaci.";
             case "JPA, persistenza e integrazioni" -> "Rischi su database e integrazioni esterne: transazioni, entity design, fetch plan, chiamate ripetute e client creati a mano.";
             case "Dependency injection" -> "Constructor injection, field injection, dipendenze immutabili e cablaggio dei componenti Spring.";
             case "Architettura e confini" -> "Layering, direzione delle dipendenze, confini DDD o esagonali, dimensione classi e struttura package.";
             case "Test" -> "Presenza dei test, qualità degli assert, uso eccessivo di test Spring pesanti e fragilità temporale.";
-            case "Configurazione e manutenibilità" -> "Build, logging, naming, valori hardcoded e igiene generale di manutenzione.";
+            case "Configurazione e manutenibilità" -> "Build, logging, naming, valori hardcoded e qualità generale di manutenzione.";
             case "Spring Alternative Advisor" -> "Oggetti Java manuali, API di basso livello e alternative Spring moderne da valutare.";
             default -> "Problemi deterministici generali rilevati da Spring Guardian.";
         };

@@ -8,6 +8,7 @@ package com.example.guardian.core.model;
  * @param filePath relative file path
  * @param line source line when available
  * @param evidence technical evidence collected by the rule
+ * @param codeSnippet source excerpt that triggered the finding, when available
  * @author Simone Meneghetti
  */
 public record AffectedComponent(
@@ -15,6 +16,7 @@ public record AffectedComponent(
         String name,
         String filePath,
         Integer line,
-        String evidence
+        String evidence,
+        String codeSnippet
 ) {
 }
