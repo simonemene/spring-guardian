@@ -35,6 +35,32 @@ Camel-specific route analysis is intentionally disabled for now. Camel classes a
 The rule engine favors high-confidence evidence. Import statements, comments and generic Java constructs are not used as the main proof for architectural or Advisor findings.
 
 
+
+## Spring-centric automatic workflow
+
+The UI no longer asks the user to choose a project type before scanning. The user only provides the project source: ZIP, browser folder or backend path. Spring Guardian then detects Spring capabilities from `pom.xml`, source code and configuration files.
+
+The report is organized around Spring usage rather than generic Java warnings:
+
+```text
+1. Spring Modules
+   Detected Spring Web, Security, Batch, JPA/JDBC, Actuator, Validation and OpenAPI capabilities.
+
+2. Spring Architecture
+   Problems connected to the Spring modules actually present in the project.
+
+3. Spring Alternatives
+   Concrete Spring-native alternatives to manual Java code, shown only when evidence is strong.
+
+4. Production Rules
+   Release-readiness checks for Spring Boot configuration, Maven governance, secrets, profiles, Actuator and observability.
+
+5. Suggestions to Verify
+   Lower-confidence review notes separated from blocking findings and with lighter scoring impact.
+```
+
+This keeps the product Spring-focused: it does not try to be a generic Java analyzer; it checks whether a Spring project is using Spring modules, patterns and production conventions well.
+
 ## Brand identity
 
 The application now includes a simple Spring Guardian brand system:
@@ -158,6 +184,30 @@ public MyProcessor(ObjectMapper mapper) {
 ```
 
 This keeps the Advisor useful: it must say exactly what was detected, which Spring abstraction should replace it and why that alternative is safer for configuration, lifecycle, testing and observability.
+
+
+## Spring-centric report structure
+
+The report is now organized around Spring capabilities rather than generic Java warnings:
+
+```text
+1. Spring Modules
+   Detects which Spring modules and capabilities are present: Web, Security, Batch, JPA, Actuator, Validation and OpenAPI.
+
+2. Spring Architecture
+   Shows framework-specific problems such as controller boundaries, validation gaps, SecurityFilterChain issues, Batch restartability and dependency injection risks.
+
+3. Spring Alternatives
+   Highlights Java/manual code that has a concrete Spring-native alternative: ObjectMapper bean, @ConfigurationProperties, Clock, TaskExecutor, Spring Cache, ResourceLoader, RestClient/WebClient and related patterns.
+
+4. Production Rules
+   Separates release-readiness issues: secrets, environment-bound configuration, Actuator exposure, Maven governance, profiles, observability and 12-factor risks.
+
+5. Suggestions to Verify
+   Keeps low-confidence or low-impact notes out of the main blocking flow. These findings are useful for review but should not be treated as release blockers without context.
+```
+
+This keeps the product focused: Spring Guardian finds Spring architecture problems, missing Spring patterns, Spring-native alternatives and production-readiness gaps. It is not a generic Java smell scanner.
 
 ## Modules
 
@@ -538,11 +588,7 @@ POST /api/v1/scans/local?language=en
 Content-Type: application/json
 
 {
-  "path": "/scan/my-project",
-  "projectType": "WEB_API",
-  "architectureStyle": "AUTO_DETECTED",
-  "releaseTarget": "PRODUCTION",
-  "knownIssuesAccepted": false
+  "path": "/scan/my-project"
 }
 ```
 
@@ -557,7 +603,7 @@ mvn -pl guardian-cli -am package
 Run:
 
 ```bash
-java -jar guardian-cli/target/spring-guardian-cli.jar scan /path/to/project --format json --language en --project-type WEB_API --architecture-style AUTO_DETECTED --release-target PRODUCTION
+java -jar guardian-cli/target/spring-guardian-cli.jar scan /path/to/project --format json --language en
 ```
 
 ## Tests
@@ -570,8 +616,9 @@ guardian-core/src/test/java/com/example/guardian/core/rules/AdvancedArchitecture
 guardian-core/src/test/java/com/example/guardian/core/rules/SpringAlternativeAdvisorRulesTest.java
 guardian-core/src/test/java/com/example/guardian/core/rules/ExtendedSpringArchitectureRulesTest.java
 guardian-server/src/test/java/com/example/guardian/server/controller/ScanControllerWebMvcTest.java
-guardian-server/src/test/java/com/example/guardian/server/ScanControllerIT.java
-guardian-server/src/test/java/com/example/guardian/server/e2e/ScanControllerE2EIT.java
+guardian-server/src/test/java/com/example/guardian/server/ScanControllerIntegrationTest.java
+guardian-server/src/test/java/com/example/guardian/server/e2e/ScanControllerE2ETest.java
+guardian-server/src/test/java/com/example/guardian/server/service/ZipWorkspaceServiceTest.java
 ```
 
 Commands:
@@ -1018,11 +1065,7 @@ POST /api/v1/scans/local?language=it
 Content-Type: application/json
 
 {
-  "path": "/scan/my-project",
-  "projectType": "WEB_API",
-  "architectureStyle": "AUTO_DETECTED",
-  "releaseTarget": "PRODUCTION",
-  "knownIssuesAccepted": false
+  "path": "/scan/my-project"
 }
 ```
 

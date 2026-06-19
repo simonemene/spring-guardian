@@ -8,7 +8,7 @@ import java.util.List;
  * @param status stable release readiness status
  * @param label localized release readiness label
  * @param explanation localized release readiness explanation
- * @param releasable true when the project can be considered releasable by the selected profile
+ * @param releasable true when the project can be considered releasable by the resolved scan profile
  * @param blockers localized blocking reasons
  * @param warnings localized non-blocking warnings
  * @author Simone Meneghetti

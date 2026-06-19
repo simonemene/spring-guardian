@@ -1,7 +1,7 @@
 package com.example.guardian.core.model;
 
 /**
- * Stateless scan profile selected by the user for the current analysis.
+ * Stateless scan profile resolved for the scan for the current analysis.
  *
  * @param projectType functional project type
  * @param architectureStyle expected architecture style
@@ -21,7 +21,7 @@ public record ProjectProfile(
      * @return default project profile
      */
     public static ProjectProfile defaults() {
-        return new ProjectProfile(ProjectType.WEB_API, ArchitectureStyle.AUTO_DETECTED, ReleaseTarget.PRODUCTION, false);
+        return new ProjectProfile(ProjectType.UNKNOWN, ArchitectureStyle.AUTO_DETECTED, ReleaseTarget.PRODUCTION, false);
     }
 
     /**

@@ -18,6 +18,18 @@ final class RuleGuidanceCatalog {
 
     static RuleGuidance guidance(Finding finding, String localizedTitle, String localizedWhy, String localizedFix, ReportLanguage language) {
         String code = shortCode(finding.ruleId());
+        if (code.startsWith("CAP001")) {
+            return advisor(language, "Spring Web without Bean Validation", "spring-boot-starter-validation + @Valid", "https://docs.spring.io/spring-framework/reference/core/validation/beanvalidation.html", "public ResponseEntity<?> create(@RequestBody Request request)", "public ResponseEntity<?> create(@Valid @RequestBody Request request)");
+        }
+        if (code.startsWith("CAP002")) {
+            return advisor(language, "Spring Web without OpenAPI metadata", "springdoc-openapi with @Operation and @ApiResponse", "https://springdoc.org/", "@GetMapping(\"/orders\")", "@Operation(summary = \"List orders\")\n@ApiResponse(responseCode = \"200\")\n@GetMapping(\"/orders\")");
+        }
+        if (code.startsWith("CAP003")) {
+            return advisor(language, "Spring application without Actuator", "spring-boot-starter-actuator", "https://docs.spring.io/spring-boot/reference/actuator/index.html", "No actuator dependency detected", "Add spring-boot-starter-actuator and expose health/info/metrics intentionally");
+        }
+        if (code.startsWith("CAP004")) {
+            return advisor(language, "Spring Batch without operational observability", "Actuator, Micrometer and Batch metrics", "https://docs.spring.io/spring-boot/reference/actuator/metrics.html", "Batch project without Actuator/Micrometer detected", "Expose job, step, read, write, skip and failure metrics");
+        }
         if (code.startsWith("SPR064")) {
             return advisor(language, "new ObjectMapper()", "ObjectMapper gestito da Spring Boot", "https://docs.spring.io/spring-boot/reference/features/json.html", "private final ObjectMapper mapper = new ObjectMapper();", "private final ObjectMapper mapper;\n\npublic MyComponent(ObjectMapper mapper) {\n    this.mapper = mapper;\n}");
         }
@@ -469,7 +481,7 @@ final class RuleGuidanceCatalog {
         if (ruleId == null) {
             return "";
         }
-        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("^(SPR|SEC|WEB|BAT|CLD|OBS|POM|ADV|ARCH)\\d+").matcher(ruleId);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("^(SPR|SEC|WEB|BAT|CLD|OBS|POM|ADV|ARCH|CAP)\\d+").matcher(ruleId);
         return matcher.find() ? matcher.group() : ruleId;
     }
 }

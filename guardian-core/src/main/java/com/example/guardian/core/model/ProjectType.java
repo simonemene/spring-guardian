@@ -21,7 +21,7 @@ public enum ProjectType {
      */
     public static ProjectType from(String value) {
         if (value == null || value.isBlank()) {
-            return WEB_API;
+            return UNKNOWN;
         }
 
         String normalized = value.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
