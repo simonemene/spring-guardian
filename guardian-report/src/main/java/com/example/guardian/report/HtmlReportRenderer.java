@@ -222,9 +222,98 @@ public class HtmlReportRenderer implements ReportRenderer {
             html.append("</div>");
         }
 
-        html.append("<details><summary>Mermaid module graph</summary><pre><code>")
+        appendModuleGraph(html, modules, dependencies, cycles);
+        html.append("<div class=\"code-panel\"><div class=\"code-panel-head\"><strong>Mermaid module graph</strong><span>Technical export</span></div><pre><code>")
                 .append(escape(mermaid))
-                .append("</code></pre></details></section>");
+                .append("</code></pre></div>");
+        appendArchitectureDialog(html, modules, dependencies, cycles);
+        html.append("</section>");
+    }
+
+
+    private void appendModuleGraph(
+            StringBuilder html,
+            java.util.List<SpringModuleSummary> modules,
+            java.util.List<SpringModuleDependency> dependencies,
+            java.util.List<SpringArchitectureCycle> cycles
+    ) {
+        long riskCount = modules.stream().mapToLong(module -> module.risks().size()).sum() + cycles.size();
+        html.append("<div class=\"graph-board visual-architecture\">")
+                .append("<div class=\"layer-flow\"><span class=\"graph-node web\">Controller</span><span class=\"graph-edge\">→</span>")
+                .append("<span class=\"graph-node service\">Service</span><span class=\"graph-edge\">→</span>")
+                .append("<span class=\"graph-node repository\">Repository</span><span class=\"graph-edge\">→</span>")
+                .append("<span class=\"graph-node entity\">Entity</span></div>");
+        if (riskCount > 0) {
+            html.append("<div class=\"risk-pill\"><strong>").append(riskCount).append("</strong><span>detected architecture violation(s)</span></div>");
+        } else {
+            html.append("<div class=\"risk-pill clean\"><strong>0</strong><span>no structural violation detected in the current map</span></div>");
+        }
+        html.append("<button type=\"button\" class=\"dialog-button\" onclick=\"document.getElementById('architectureMapDialog').showModal()\">Open architecture graph</button>");
+        if (!dependencies.isEmpty()) {
+            html.append("<div class=\"graph-dependencies\">");
+            dependencies.stream().limit(12).forEach(dependency -> html.append("<div class=\"graph-row\"><span class=\"graph-node\">")
+                    .append(escape(dependency.fromModule()))
+                    .append("</span><span class=\"graph-edge\">→ ")
+                    .append(dependency.weight())
+                    .append(" import(s)</span><span class=\"graph-node\">")
+                    .append(escape(dependency.toModule()))
+                    .append("</span></div>"));
+            html.append("</div>");
+        }
+        html.append("</div>");
+    }
+
+    private void appendArchitectureDialog(
+            StringBuilder html,
+            java.util.List<SpringModuleSummary> modules,
+            java.util.List<SpringModuleDependency> dependencies,
+            java.util.List<SpringArchitectureCycle> cycles
+    ) {
+        html.append("<dialog id=\"architectureMapDialog\" class=\"architecture-dialog\"><div class=\"dialog-head\"><div><p class=\"eyebrow\">Architecture graph</p><h2>Spring layer flow and module risks</h2>")
+                .append("<p>Recommended Spring flow: Controller → Service → Repository → Entity. Violations highlight places where the code should move toward service/application boundaries.</p></div>")
+                .append("<button type=\"button\" class=\"dialog-button\" onclick=\"document.getElementById('architectureMapDialog').close()\">Close</button></div>")
+                .append("<div class=\"dialog-layer-flow\"><article><span>01</span><strong>Controller</strong><small>HTTP adapters, DTO, validation</small></article><b>→</b>")
+                .append("<article><span>02</span><strong>Service</strong><small>Use cases and transactions</small></article><b>→</b>")
+                .append("<article><span>03</span><strong>Repository</strong><small>Persistence adapter</small></article><b>→</b>")
+                .append("<article><span>04</span><strong>Entity</strong><small>Database model, not API contract</small></article></div>")
+                .append("<div class=\"dialog-module-grid\">");
+        for (SpringModuleSummary module : modules) {
+            html.append("<article><h3>").append(escape(module.name())).append("</h3><small>")
+                    .append(escape(module.basePackage())).append("</small><div class=\"chips\"><b>")
+                    .append(module.controllers()).append(" ctrl</b><b>")
+                    .append(module.services()).append(" svc</b><b>")
+                    .append(module.repositories()).append(" repo</b><b>")
+                    .append(module.entities()).append(" entity</b><b>")
+                    .append(module.clients()).append(" client</b></div>");
+            if (module.risks().isEmpty()) {
+                html.append("<p class=\"empty\">No local module risk detected.</p>");
+            } else {
+                html.append("<ul>");
+                module.risks().forEach(risk -> html.append("<li>").append(escape(risk)).append("</li>"));
+                html.append("</ul>");
+            }
+            html.append("</article>");
+        }
+        html.append("</div>");
+        if (!dependencies.isEmpty()) {
+            html.append("<h3>Package/module dependencies</h3><div class=\"dependency-list\">");
+            for (SpringModuleDependency dependency : dependencies) {
+                html.append("<div><b>").append(escape(dependency.fromModule())).append(" → ")
+                        .append(escape(dependency.toModule())).append("</b><span>")
+                        .append(dependency.weight()).append(" import(s)</span><small>")
+                        .append(escape(String.join(" · ", dependency.examples()))).append("</small></div>");
+            }
+            html.append("</div>");
+        }
+        if (!cycles.isEmpty()) {
+            html.append("<h3>Cycles</h3><div class=\"cycle-list\">");
+            for (SpringArchitectureCycle cycle : cycles) {
+                html.append("<article><strong>").append(escape(String.join(" → ", cycle.modules()))).append("</strong><p>")
+                        .append(escape(cycle.remediation())).append("</p></article>");
+            }
+            html.append("</div>");
+        }
+        html.append("</dialog>");
     }
 
     private void appendRoadmap(StringBuilder html, java.util.List<ModernizationChecklistItem> checklist, java.util.List<UpgradeStep> upgradeSteps, String openRewriteYaml) {
@@ -253,14 +342,29 @@ public class HtmlReportRenderer implements ReportRenderer {
         }
         html.append("</div>");
 
-        html.append("<h3>Spring Upgrade Path</h3><div class=\"upgrade-list\">");
+        html.append("<h3>Spring Upgrade Path</h3><p class=\"muted\">This roadmap explains why each step is proposed, which findings triggered it and what concrete Spring changes should be planned.</p><div class=\"upgrade-list\">");
         for (UpgradeStep step : upgradeSteps) {
-            html.append("<article><strong>").append(step.order()).append(". ").append(escape(step.title())).append("</strong>")
-                    .append("<span>").append(escape(step.risk())).append("</span><p>").append(escape(step.description())).append("</p></article>");
+            html.append("<article><header><strong>").append(step.order()).append(". ").append(escape(step.title())).append("</strong>")
+                    .append("<span>").append(escape(step.risk())).append(" · effort ").append(escape(step.effort())).append("</span></header>")
+                    .append("<p>").append(escape(step.description())).append("</p>")
+                    .append("<div class=\"upgrade-detail-grid\"><div><b>Why</b><p>").append(escape(step.whyRecommended())).append("</p></div>")
+                    .append("<div><b>Actions</b><ul>");
+            for (String action : step.actions()) {
+                html.append("<li>").append(escape(action)).append("</li>");
+            }
+            html.append("</ul></div>");
+            if (!step.evidence().isEmpty()) {
+                html.append("<div><b>Evidence</b><code>").append(escape(String.join(", ", step.evidence()))).append("</code></div>");
+            }
+            html.append("</div>");
+            if (step.springAlternative() != null && !step.springAlternative().isBlank()) {
+                html.append("<small>").append(escape(step.springAlternative())).append("</small>");
+            }
+            html.append("</article>");
         }
-        html.append("</div><details><summary>OpenRewrite suggestions YAML</summary><pre><code>")
+        html.append("</div><div class=\"code-panel\"><div class=\"code-panel-head\"><strong>OpenRewrite suggestions YAML</strong><span>suggestions only</span></div><pre><code>")
                 .append(escape(openRewriteYaml))
-                .append("</code></pre></details></section>");
+                .append("</code></pre></div></section>");
     }
 
 
@@ -418,7 +522,8 @@ public class HtmlReportRenderer implements ReportRenderer {
                 .actions,.finding-list,.components{display:grid;gap:14px}.action{display:grid;grid-template-columns:54px 1fr;gap:16px}.action>strong{display:grid;place-items:center;width:54px;height:54px;border-radius:18px;background:rgba(52,211,153,.14);color:#bbf7d0;font-size:22px}
                 .finding{border:1px solid var(--border);border-radius:26px;padding:20px;background:rgba(0,0,0,.18)}.finding header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.finding h3{font-size:24px;margin:8px 0 0}code{color:#bbf7d0}.guidance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}.guidance div{border:1px solid var(--border);border-radius:18px;padding:14px;background:rgba(255,255,255,.04)}.guidance span{color:#bbf7d0;text-transform:uppercase;font-size:12px;font-weight:900;letter-spacing:.08em}.guidance p,.finding p,.gate p,.area p{color:var(--muted);line-height:1.58}.alternative{border-left:4px solid var(--brand);padding-left:12px}.doc{display:inline-flex;margin:4px 0 14px;color:#bbf7d0;text-decoration:none;font-weight:900}.component b,.component span{display:block}.component p{margin-bottom:0}pre{white-space:pre-wrap;overflow:auto;border-radius:16px;padding:14px;background:#020617;border:1px solid rgba(148,163,184,.22);color:#dbeafe}.empty{color:var(--muted);border:1px dashed var(--border);border-radius:18px;padding:18px;background:rgba(255,255,255,.03)}
                 .architect-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}.architect-grid article{border:1px solid var(--border);border-radius:20px;padding:16px;background:rgba(52,211,153,.06)}.architect-grid span,.architect-grid small{display:block;color:var(--muted)}.architect-grid strong{display:block;font-size:30px;margin:6px 0}.maturity-list,.dependency-list,.cycle-list,.checklist,.upgrade-list{display:grid;gap:12px}.maturity-row{display:grid;grid-template-columns:230px 1fr 58px;gap:14px;align-items:center;border:1px solid var(--border);border-radius:18px;padding:14px;background:rgba(0,0,0,.13)}.maturity-row small{display:block;color:var(--muted);margin-top:5px}.maturity-meter{height:10px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}.maturity-meter span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--brand),var(--brand2))}.module-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.module-card{border:1px solid var(--border);border-radius:22px;padding:18px;background:rgba(0,0,0,.16)}.module-card ul{color:var(--warning);line-height:1.5}.dependency-list>div,.cycle-list article,.upgrade-list article{border:1px solid var(--border);border-radius:18px;padding:14px;background:rgba(255,255,255,.04)}.dependency-list span,.dependency-list small,.upgrade-list span{display:block;color:var(--muted);margin-top:5px}.check-item{display:grid;grid-template-columns:26px 1fr;gap:12px;align-items:start;border:1px solid var(--border);border-radius:18px;padding:14px;background:rgba(255,255,255,.045)}.check-item input{width:18px;height:18px;accent-color:var(--brand)}.check-item b,.check-item small,.check-item em,.check-item code{display:block}.check-item small{color:var(--muted);margin:5px 0}.check-item em{font-style:normal;color:#d1fae5}.check-item code{margin-top:8px}
-                @media(max-width:1180px){.sidebar{position:static;width:auto}.content{margin:0;width:100%;padding:18px}.hero,.metrics,.two,.gate-grid,.area-grid,.guidance{grid-template-columns:1fr}}
+                .code-panel{margin-top:16px;border:1px solid rgba(187,247,208,.14);border-radius:20px;padding:14px;background:rgba(2,6,23,.58)}.code-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.code-panel-head strong{color:var(--brand);font-weight:950;text-transform:uppercase;font-size:12px;letter-spacing:.08em}.code-panel-head span{color:var(--muted);font-size:12px;font-weight:800}.graph-board{display:grid;gap:12px;margin:16px 0;padding:16px;border:1px solid rgba(187,247,208,.14);border-radius:20px;background:rgba(0,0,0,.16)}.visual-architecture{grid-template-columns:1fr auto auto;align-items:center}.layer-flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.graph-dependencies{grid-column:1/-1;display:grid;gap:10px}.risk-pill{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:16px;color:#fde68a;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.24);font-weight:900}.risk-pill.clean{color:#bbf7d0;background:rgba(52,211,153,.08);border-color:rgba(187,247,208,.18)}.risk-pill strong{font-size:24px}.dialog-button{border:1px solid rgba(187,247,208,.18);border-radius:14px;padding:10px 12px;background:rgba(52,211,153,.12);color:#d1fae5;font-weight:950;cursor:pointer}.graph-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.graph-node{display:inline-flex;align-items:center;min-height:32px;padding:7px 11px;border-radius:999px;color:#bbf7d0;background:rgba(52,211,153,.10);border:1px solid rgba(187,247,208,.18);font-weight:900}.graph-edge{color:var(--muted);font-size:12px;font-weight:900;letter-spacing:.05em;text-transform:uppercase}.architecture-dialog{width:min(1240px,92vw);max-height:88vh;overflow:auto;border:1px solid rgba(187,247,208,.25);border-radius:28px;padding:24px;color:var(--text);background:linear-gradient(145deg,#10231d,#07130f);box-shadow:0 42px 130px rgba(0,0,0,.58)}.architecture-dialog::backdrop{background:rgba(2,6,23,.74);backdrop-filter:blur(14px)}.dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}.dialog-layer-flow{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:16px;border:1px solid var(--border);border-radius:22px;background:rgba(0,0,0,.18)}.dialog-layer-flow article{display:grid;gap:5px;min-width:180px;border:1px solid rgba(187,247,208,.16);border-radius:18px;padding:14px;background:rgba(52,211,153,.08)}.dialog-layer-flow span{display:grid;place-items:center;width:32px;height:32px;border-radius:11px;color:#052e24;background:linear-gradient(135deg,var(--brand),#86efac);font-weight:950}.dialog-layer-flow b{color:var(--brand);font-size:22px}.dialog-layer-flow small{color:var(--muted)}.dialog-module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0}.dialog-module-grid article{border:1px solid var(--border);border-radius:22px;padding:16px;background:rgba(255,255,255,.045)}.dialog-module-grid li{color:#fde68a}.upgrade-list article header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px}.upgrade-list article span{display:inline-flex;padding:5px 9px;border-radius:999px;background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.20);color:#fde68a;font-size:12px;font-weight:950}.upgrade-list article small{display:block;color:#bbf7d0;margin-top:8px}.upgrade-detail-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:12px;margin-top:12px}.upgrade-detail-grid>div{border:1px solid rgba(187,247,208,.12);border-radius:16px;padding:12px;background:rgba(0,0,0,.14)}.upgrade-detail-grid b{display:block;margin-bottom:6px;color:var(--brand);font-size:12px;text-transform:uppercase;letter-spacing:.08em}.upgrade-detail-grid ul{margin:0;padding-left:18px}.upgrade-detail-grid code{display:block;white-space:normal;overflow-wrap:anywhere}.muted{color:var(--muted)}
+                @media(max-width:1180px){.sidebar{position:static;width:auto}.content{margin:0;width:100%;padding:18px}.hero,.metrics,.two,.gate-grid,.area-grid,.guidance,.visual-architecture,.upgrade-detail-grid,.dialog-module-grid{grid-template-columns:1fr}}
                 """;
     }
 }

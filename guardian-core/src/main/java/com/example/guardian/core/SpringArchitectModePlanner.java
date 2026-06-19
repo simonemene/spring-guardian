@@ -302,26 +302,127 @@ public class SpringArchitectModePlanner {
 
     private SpringMaturityScore buildMaturityScore(ProjectScanContext context, List<FindingGroup> findings, SpringArchitectureMap map) {
         List<SpringMaturityAreaScore> areas = new ArrayList<>();
-        areas.add(area("ARCHITECTURE", "Architecture", 100 - penalty(findings, 10, "ARCH", "SPR005", "SPR007", "SPR027", "SPR028", "SPR055", "SPR056", "SPR057") - (map.cycles().isEmpty() ? 0 : 18) - (map.globalRisks().isEmpty() ? 0 : 10),
-                map.globalRisks(), List.of("Introduce clear service/application boundaries.", "Use Spring Modulith-style package ownership for modules.")));
-        areas.add(area("WEB_API", "Web/API", 100 - penalty(findings, 8, "WEB", "SPR006", "SPR010", "SPR014", "SPR023", "SPR060", "SPR063", "SPR_ALT006", "SPR_ALT007", "SPR_ALT008", "SPR_ALT009"),
-                findTitles(findings, "WEB", "SPR006", "SPR010", "SPR023"), List.of("Use DTOs, Bean Validation, @RestControllerAdvice and ProblemDetail.")));
-        areas.add(area("SECURITY", "Security", 100 - penalty(findings, 9, "SEC", "SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR058", "SPR059", "SPR_ALT002", "SPR_ALT003", "SPR_ALT004", "SPR_ALT005"),
-                findTitles(findings, "SEC", "SPR039", "SPR040", "SPR041"), List.of("Keep SecurityFilterChain explicit and protect actuator endpoints.")));
-        areas.add(area("PERSISTENCE", "Persistence", 100 - penalty(findings, 8, "SPR009", "SPR017", "SPR018", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057", "SPR096", "SPR_ALT010", "SPR_ALT011", "SPR_ALT012", "SPR_ALT013", "SPR_ALT014"),
-                findTitles(findings, "SPR017", "SPR096", "SPR_ALT010"), List.of("Keep transactions in service layer, disable OSIV and use DTO/projection fetch plans.")));
-        areas.add(area("CONFIGURATION", "Configuration", 100 - penalty(findings, 7, "SPR001", "SPR015", "SPR036", "SPR037", "SPR091", "SPR_ALT018", "SPR_ALT019", "CLD003"),
-                findTitles(findings, "SPR037", "SPR091", "SPR_ALT019"), List.of("Externalize secrets and validate @ConfigurationProperties.")));
-        areas.add(area("OBSERVABILITY", "Observability", 100 - penalty(findings, 8, "OBS", "CAP003", "SPR074", "SPR_ALT020") - (context.capabilities().usesActuator() ? 0 : 22),
-                findTitles(findings, "OBS", "CAP003", "SPR074"), List.of("Add Actuator, Micrometer metrics and structured logging.")));
-        areas.add(area("TESTING", "Testing", 100 - penalty(findings, 8, "SPR012", "SPR043", "SPR044", "SPR045", "SPR052") - (context.hasTests() ? 0 : 20),
-                findTitles(findings, "SPR012", "SPR043", "SPR044"), List.of("Use focused Spring slice tests and keep a smoke context test.")));
-        areas.add(area("PRODUCTION_READINESS", "Production Readiness", 100 - penalty(findings, 7, "CLD", "OBS", "SPR038", "SPR039", "SPR040", "SPR091", "POM037", "POM038") - (context.capabilities().usesActuator() ? 0 : 16),
-                findTitles(findings, "CLD", "OBS", "SPR039", "SPR038"), List.of("Lock down management endpoints, externalize runtime config and add production diagnostics.")));
-        areas.add(area("SPRING_MODERNITY", "Spring Modernity", 100 - penalty(findings, 4, "ADV", "SPR_ALT", "CAP", "SPR073", "SPR074", "SPR075"),
-                findTitles(findings, "ADV", "SPR_ALT", "CAP"), List.of("Adopt Spring-native APIs where they reduce custom infrastructure.")));
+        int architectureRiskCount = map.modules().stream().mapToInt(module -> module.risks().size()).sum();
 
-        int overall = (int) Math.round(areas.stream().mapToInt(SpringMaturityAreaScore::score).average().orElse(100));
+        List<String> architectureDrivers = combineDrivers(6,
+                map.globalRisks(),
+                map.modules().stream()
+                        .flatMap(module -> module.risks().stream().map(risk -> module.name() + ": " + risk))
+                        .toList(),
+                findTitles(findings, "ARCH", "SPR005", "SPR007", "SPR027", "SPR028", "SPR055", "SPR056", "SPR057", "SPR_ALT016")
+        );
+        areas.add(area(
+                "ARCHITECTURE",
+                "Architecture",
+                100
+                        - weightedPenalty(findings, 9, 2, "ARCH", "SPR005", "SPR007", "SPR027", "SPR028", "SPR055", "SPR056", "SPR057", "SPR_ALT016")
+                        - (map.cycles().isEmpty() ? 0 : Math.min(30, 16 + map.cycles().size() * 4))
+                        - Math.min(28, architectureRiskCount * 6),
+                architectureDrivers,
+                List.of("Introduce clear service/application boundaries.", "Use Spring Modulith-style package ownership for modules.", "Remove cross-layer repository and web dependencies.")
+        ));
+
+        List<String> webDrivers = combineDrivers(6,
+                findTitles(findings, "WEB", "SPR006", "SPR010", "SPR014", "SPR023", "SPR060", "SPR063", "SPR_ALT006", "SPR_ALT007", "SPR_ALT008", "SPR_ALT009"),
+                context.capabilities().usesSpringWeb() && !context.capabilities().usesValidation()
+                        ? List.of("Bean Validation is not detected in a Spring Web/API project.") : List.of(),
+                context.capabilities().usesSpringWeb() && !context.capabilities().usesOpenApi()
+                        ? List.of("OpenAPI metadata is not detected for the API surface.") : List.of()
+        );
+        areas.add(area(
+                "WEB_API",
+                "Web/API",
+                100
+                        - weightedPenalty(findings, 8, 2, "WEB", "SPR006", "SPR010", "SPR014", "SPR023", "SPR060", "SPR063", "SPR_ALT006", "SPR_ALT007", "SPR_ALT008", "SPR_ALT009")
+                        - (context.capabilities().usesSpringWeb() && !context.capabilities().usesValidation() ? 14 : 0)
+                        - (context.capabilities().usesSpringWeb() && !context.capabilities().usesOpenApi() ? 8 : 0),
+                webDrivers,
+                List.of("Use DTOs, Bean Validation, @RestControllerAdvice and ProblemDetail.", "Keep entity and repository details out of REST contracts.")
+        ));
+
+        List<String> securityDrivers = combineDrivers(7,
+                findTitles(findings, "SEC", "SPR039", "SPR040", "SPR041", "SPR042", "SPR058", "SPR059", "SPR_ALT002", "SPR_ALT003", "SPR_ALT004", "SPR_ALT005", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023"),
+                context.capabilities().usesSpringWeb() && !context.capabilities().usesSpringSecurity()
+                        ? List.of("Spring Security is not detected for a Spring Web/API application.") : List.of(),
+                hasFinding(findings, "SPR_ALT021", "SPR_ALT022", "SPR_ALT023")
+                        ? List.of("Manual Principal/SecurityContext/ROLE checks were detected and reduce the Spring Security maturity score.") : List.of()
+        );
+        areas.add(area(
+                "SECURITY",
+                "Security",
+                100
+                        - weightedPenalty(findings, 9, 3, "SEC", "SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR058", "SPR059", "SPR_ALT002", "SPR_ALT003", "SPR_ALT004", "SPR_ALT005", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023")
+                        - (context.capabilities().usesSpringWeb() && !context.capabilities().usesSpringSecurity() ? 30 : 0),
+                securityDrivers,
+                List.of("Keep SecurityFilterChain explicit and protected by default.", "Prefer @PreAuthorize, AuthorizationManager and @AuthenticationPrincipal over manual null/role checks.", "Protect Actuator and admin endpoints.")
+        ));
+
+        areas.add(area(
+                "PERSISTENCE",
+                "Persistence",
+                100
+                        - weightedPenalty(findings, 8, 2, "SPR009", "SPR017", "SPR018", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057", "SPR096", "SPR_ALT010", "SPR_ALT011", "SPR_ALT012", "SPR_ALT013", "SPR_ALT014")
+                        - (context.capabilities().usesJpa() && hasFinding(findings, "SPR006", "SPR_ALT006") ? 8 : 0),
+                findTitles(findings, "SPR009", "SPR017", "SPR018", "SPR048", "SPR049", "SPR053", "SPR054", "SPR096", "SPR_ALT010", "SPR_ALT011", "SPR_ALT012", "SPR_ALT013", "SPR_ALT014"),
+                List.of("Keep transactions in service layer, disable OSIV and use DTO/projection fetch plans.", "Avoid concatenated queries and repository business logic.")
+        ));
+
+        areas.add(area(
+                "CONFIGURATION",
+                "Configuration",
+                100 - weightedPenalty(findings, 7, 2, "SPR001", "SPR015", "SPR036", "SPR037", "SPR091", "SPR092", "SPR_ALT018", "SPR_ALT019", "CLD003", "CLD013", "CLD014", "CLD018", "CLD023", "CLD024"),
+                findTitles(findings, "SPR001", "SPR036", "SPR037", "SPR091", "SPR092", "SPR_ALT018", "SPR_ALT019", "CLD003", "CLD013", "CLD014", "CLD023", "CLD024"),
+                List.of("Externalize secrets and validate @ConfigurationProperties.", "Keep runtime environment choices outside versioned application files.")
+        ));
+
+        areas.add(area(
+                "OBSERVABILITY",
+                "Observability",
+                100
+                        - weightedPenalty(findings, 8, 2, "OBS", "CAP003", "SPR074", "SPR_ALT020", "CLD016", "CLD017")
+                        - (context.capabilities().usesActuator() ? 0 : 22),
+                combineDrivers(6,
+                        findTitles(findings, "OBS", "CAP003", "SPR074", "SPR_ALT020", "CLD016", "CLD017"),
+                        context.capabilities().usesActuator() ? List.of() : List.of("Actuator is not detected; runtime health, metrics and diagnostics are weak.")
+                ),
+                List.of("Add Actuator, Micrometer metrics and structured logging.", "Expose health/readiness/liveness intentionally and protect detailed diagnostics.")
+        ));
+
+        areas.add(area(
+                "TESTING",
+                "Testing",
+                100
+                        - weightedPenalty(findings, 8, 2, "SPR012", "SPR043", "SPR044", "SPR045", "SPR052", "SPR073", "SPR075")
+                        - (context.hasTests() ? 0 : 24),
+                combineDrivers(6,
+                        findTitles(findings, "SPR012", "SPR043", "SPR044", "SPR045", "SPR052", "SPR073", "SPR075"),
+                        context.hasTests() ? List.of() : List.of("No test sources were detected.")
+                ),
+                List.of("Use focused Spring slice tests and keep a smoke context test.", "Modernize legacy test annotations when upgrading Spring Boot.")
+        ));
+
+        areas.add(area(
+                "PRODUCTION_READINESS",
+                "Production Readiness",
+                100
+                        - weightedPenalty(findings, 7, 2, "CLD", "OBS", "SPR038", "SPR039", "SPR040", "SPR091", "POM037", "POM038", "SPR_ALT004", "SPR_ALT005", "SPR_ALT019", "SPR_ALT020", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023")
+                        - (context.capabilities().usesActuator() ? 0 : 16),
+                combineDrivers(6,
+                        findTitles(findings, "CLD", "OBS", "SPR039", "SPR038", "POM037", "POM038", "SPR_ALT004", "SPR_ALT005", "SPR_ALT019", "SPR_ALT020", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023"),
+                        context.capabilities().usesActuator() ? List.of() : List.of("Actuator is missing or not evident for production operations.")
+                ),
+                List.of("Lock down management endpoints, externalize runtime config and add production diagnostics.", "Remove manual security and logging shortcuts before release.")
+        ));
+
+        areas.add(area(
+                "SPRING_MODERNITY",
+                "Spring Modernity",
+                100 - weightedPenalty(findings, 4, 1, "ADV", "SPR_ALT", "CAP", "SPR073", "SPR074", "SPR075"),
+                findTitles(findings, "ADV", "SPR_ALT", "CAP", "SPR073", "SPR074", "SPR075"),
+                List.of("Adopt Spring-native APIs where they reduce custom infrastructure.", "Prefer managed builders/beans, typed configuration and modern test/logging/client APIs.")
+        ));
+
+        int overall = weightedOverall(areas);
         List<String> weakAreas = areas.stream()
                 .filter(area -> area.score() < 70)
                 .map(SpringMaturityAreaScore::name)
@@ -375,12 +476,16 @@ public class SpringArchitectModePlanner {
             score -= 8;
             risks.add("Build governance or dependency security checks are not evident.");
         }
+        if (hasFinding(findings, "SPR_ALT021", "SPR_ALT022", "SPR_ALT023")) {
+            score -= 12;
+            risks.add("Manual Spring Security checks detected; authorization ownership is not fully governed by Spring Security.");
+        }
         if (risks.isEmpty()) {
             strengths.add("No major production readiness gap detected by the enabled deterministic rules.");
         }
 
         List<ModernizationChecklistItem> actions = findings.stream()
-                .filter(group -> startsWithAny(group.ruleId(), "SPR039", "SPR040", "SPR037", "CLD", "OBS", "POM037", "POM038", "SPR_ALT004", "SPR_ALT005", "SPR_ALT019", "SPR_ALT020"))
+                .filter(group -> startsWithAny(group.ruleId(), "SPR039", "SPR040", "SPR037", "CLD", "OBS", "POM037", "POM038", "SPR_ALT004", "SPR_ALT005", "SPR_ALT019", "SPR_ALT020", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023"))
                 .limit(12)
                 .map(group -> toChecklistItem(group, 20, "Production readiness"))
                 .toList();
@@ -399,38 +504,227 @@ public class SpringArchitectModePlanner {
         String javaVersion = fingerprint.javaVersion();
         String bootVersion = fingerprint.springBootVersion();
 
+        if (hasFinding(findings, "SPR039", "SPR_ALT004", "OBS025", "CLD015", "SPR037", "CLD003", "SPR_ALT019", "SPR091")) {
+            steps.add(upgradeStep(
+                    steps.size() + 1,
+                    "Stabilize production configuration before framework upgrades",
+                    "Fix management endpoint exposure, health details, secrets and externalized configuration first. A safer runtime baseline reduces risk before dependency or framework changes.",
+                    "LOW",
+                    "Actuator protected exposure + externalized configuration",
+                    matchingRuleIds(findings, "SPR039", "SPR_ALT004", "OBS025", "CLD015", "SPR037", "CLD003", "SPR_ALT019", "SPR091"),
+                    "The scan found production-readiness findings that should be handled before a larger Spring upgrade.",
+                    List.of(
+                            "Restrict management.endpoints.web.exposure.include to the endpoints really needed.",
+                            "Use management.endpoint.health.show-details=when_authorized for detailed health.",
+                            "Move secret-like values to environment variables, config tree, Vault or a secret manager.",
+                            "Validate grouped runtime settings with @ConfigurationProperties."
+                    ),
+                    "SMALL",
+                    List.of("org.openrewrite.java.spring.boot2.SpringBootProperties_2_7")
+            ));
+        }
+
+        if (hasFinding(findings, "SPR006", "SPR_ALT006", "SPR_ALT007", "SPR023", "SPR_ALT008", "SPR010", "SPR_ALT009", "SPR060", "CAP001", "CAP002")) {
+            steps.add(upgradeStep(
+                    steps.size() + 1,
+                    "Modernize the API boundary",
+                    "Stabilize REST contracts before deeper refactoring: DTOs, Bean Validation and centralized errors make later service and persistence changes safer.",
+                    "MEDIUM",
+                    "DTO + Bean Validation + @RestControllerAdvice + ProblemDetail",
+                    matchingRuleIds(findings, "SPR006", "SPR_ALT006", "SPR_ALT007", "SPR023", "SPR_ALT008", "SPR010", "SPR_ALT009", "SPR060", "CAP001", "CAP002"),
+                    "The scan found REST/API findings such as entity exposure, missing validation, missing OpenAPI metadata or missing controller advice.",
+                    List.of(
+                            "Introduce request/response DTOs for controllers that expose or accept entities.",
+                            "Add @Valid and Bean Validation constraints to request DTOs.",
+                            "Add @RestControllerAdvice with ProblemDetail or a stable error contract.",
+                            "Document public or governed endpoints with OpenAPI metadata."
+                    ),
+                    "MEDIUM",
+                    List.of()
+            ));
+        }
+
+        if (hasFinding(findings, "SPR003", "SPR005", "SPR017", "SPR_ALT011", "SPR_ALT013", "SPR_ALT016", "SPR_ALT017", "SPR096", "SPR_ALT010")) {
+            steps.add(upgradeStep(
+                    steps.size() + 1,
+                    "Rebuild service and transaction boundaries",
+                    "Move business use cases and transactions to service/application boundaries before large persistence or module changes.",
+                    "MEDIUM",
+                    "Application service layer + @Transactional boundaries + DTO/projection loading",
+                    matchingRuleIds(findings, "SPR003", "SPR005", "SPR017", "SPR_ALT011", "SPR_ALT013", "SPR_ALT016", "SPR_ALT017", "SPR096", "SPR_ALT010"),
+                    "The scan found controller/repository coupling, transactional boundary issues, repository business logic or Open Session in View.",
+                    List.of(
+                            "Create service/application methods for each use case currently implemented in controllers or repositories.",
+                            "Move @Transactional to public service methods invoked through Spring proxies.",
+                            "Disable Open EntityManager in View and load DTO/projection data in service transactions.",
+                            "Keep repositories as persistence adapters only."
+                    ),
+                    "MEDIUM",
+                    List.of()
+            ));
+        }
+
+        if (hasFinding(findings, "SPR040", "SPR041", "SPR058", "SPR059", "SPR_ALT002", "SPR_ALT003", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023")) {
+            steps.add(upgradeStep(
+                    steps.size() + 1,
+                    "Modernize authorization ownership",
+                    "Replace scattered manual checks with explicit Spring Security policies so authorization is audit-ready and testable.",
+                    "MEDIUM",
+                    "SecurityFilterChain + method security + AuthorizationManager",
+                    matchingRuleIds(findings, "SPR040", "SPR041", "SPR058", "SPR059", "SPR_ALT002", "SPR_ALT003", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023"),
+                    "The scan found broad security rules, CSRF/stateless ambiguity or manual Principal/SecurityContext/ROLE checks.",
+                    List.of(
+                            "Make SecurityFilterChain explicit and default to authenticated access.",
+                            "Use @PreAuthorize or AuthorizationManager for use-case authorization.",
+                            "Replace principal != null and ROLE_* string checks with Spring Security policies.",
+                            "Keep SecurityContextHolder access inside security/web adapters."
+                    ),
+                    "MEDIUM",
+                    List.of("org.openrewrite.java.spring.boot3.UpgradeSpringSecurity_6_0")
+            ));
+        }
+
+        if (hasFinding(findings, "CAP003", "SPR074", "SPR_ALT020", "OBS", "CLD016", "CLD017")) {
+            steps.add(upgradeStep(
+                    steps.size() + 1,
+                    "Add production observability",
+                    "Make runtime behavior visible before and after modernization. Observability gives feedback while refactoring and upgrading.",
+                    "MEDIUM",
+                    "Actuator + Micrometer + structured logging",
+                    matchingRuleIds(findings, "CAP003", "SPR074", "SPR_ALT020", "OBS", "CLD016", "CLD017"),
+                    "The scan found missing Actuator/observability signals, console logging or weak health/readiness/liveness configuration.",
+                    List.of(
+                            "Add spring-boot-starter-actuator when absent.",
+                            "Enable metrics and health endpoints intentionally.",
+                            "Use SLF4J and structured logging instead of System.out/printStackTrace.",
+                            "Define readiness/liveness and graceful shutdown for production runtimes."
+                    ),
+                    "SMALL",
+                    List.of("org.openrewrite.java.spring.boot3.UpgradeSpringBoot_3_5")
+            ));
+        }
+
         if (isOldJava(javaVersion)) {
-            steps.add(new UpgradeStep(steps.size() + 1, "Move runtime and build to Java 17+",
-                    "Modern Spring Boot 3.x and 4.x baselines require a modern Java baseline. Upgrade CI, Docker image and maven-compiler-plugin first.",
-                    "HIGH", "Java 17 baseline for modern Spring Boot", List.of("Detected Java version: " + javaVersion)));
+            steps.add(upgradeStep(
+                    steps.size() + 1,
+                    "Move runtime and build to Java 17+",
+                    "Modern Spring Boot 3.x and 4.x baselines require a modern Java baseline. Upgrade CI, Docker image and compiler settings first.",
+                    "HIGH",
+                    "Java 17 baseline for modern Spring Boot",
+                    List.of("Detected Java version: " + javaVersion),
+                    "The current Java baseline blocks or weakens a governed Spring Boot 3+/4 modernization path.",
+                    List.of(
+                            "Update maven-compiler-plugin or toolchain configuration.",
+                            "Update CI and Docker runtime images.",
+                            "Run tests and static checks on Java 17 before upgrading Spring Boot."
+                    ),
+                    "LARGE",
+                    List.of()
+            ));
         }
         if (isSpringBoot2(bootVersion)) {
-            steps.add(new UpgradeStep(steps.size() + 1, "Plan Spring Boot 3 migration",
-                    "Move to Spring Boot 3.x before considering Spring Boot 4. Validate Spring Security, Actuator and Jakarta changes.",
-                    "HIGH", "Spring Boot 3 migration path", List.of("Detected Spring Boot version: " + bootVersion)));
+            steps.add(upgradeStep(
+                    steps.size() + 1,
+                    "Plan Spring Boot 3 migration",
+                    "Move to Spring Boot 3.x before considering Spring Boot 4. Validate Spring Security, Actuator, Jakarta and dependency behavior changes.",
+                    "HIGH",
+                    "Spring Boot 3 migration path",
+                    List.of("Detected Spring Boot version: " + bootVersion),
+                    "Spring Boot 2.x is a legacy baseline for modernization planning and requires a controlled migration path.",
+                    List.of(
+                            "Align dependencies with the Spring Boot BOM or parent.",
+                            "Run Boot 3 OpenRewrite recipes in a dedicated branch.",
+                            "Validate SecurityFilterChain, Actuator endpoints and Hibernate/JPA behavior.",
+                            "Re-run Spring Guardian after migration to verify remaining modernization work."
+                    ),
+                    "LARGE",
+                    List.of("org.openrewrite.java.spring.boot3.UpgradeSpringBoot_3_0")
+            ));
         }
         if (hasText(context, "javax.persistence", "javax.validation", "javax.servlet")) {
-            steps.add(new UpgradeStep(steps.size() + 1, "Migrate javax.* imports to jakarta.*",
-                    "Jakarta namespace migration is required for Spring Boot 3+ and should be handled before deeper framework modernization.",
-                    "HIGH", "Jakarta EE 9+ namespaces", List.of("javax.* imports detected in source or POM")));
+            steps.add(upgradeStep(
+                    steps.size() + 1,
+                    "Migrate javax.* imports to jakarta.*",
+                    "Jakarta namespace migration is required for Spring Boot 3+ and should be planned before deeper framework modernization.",
+                    "HIGH",
+                    "Jakarta EE 9+ namespaces",
+                    List.of("javax.* imports detected in source or POM"),
+                    "Source code still references Java EE javax namespaces that are incompatible with modern Spring Boot baselines.",
+                    List.of(
+                            "Replace javax.persistence/validation/servlet imports with jakarta equivalents.",
+                            "Upgrade compatible libraries and annotation processors.",
+                            "Run integration tests around persistence, validation and servlet filters."
+                    ),
+                    "LARGE",
+                    List.of("org.openrewrite.java.migrate.jakarta.JavaxMigrationToJakarta")
+            ));
         }
-        if (hasFinding(findings, "SPR040", "SPR041", "SPR058", "SPR059")) {
-            steps.add(new UpgradeStep(steps.size() + 1, "Modernize Spring Security configuration",
-                    "Move toward an explicit SecurityFilterChain, granular authorization and documented stateless API choices.",
-                    "MEDIUM", "SecurityFilterChain DSL", matchingRuleIds(findings, "SPR040", "SPR041", "SPR058", "SPR059")));
+
+        if (hasFinding(findings, "SPR073", "SPR074", "SPR075", "ADV003", "ADV004", "ADV005")) {
+            steps.add(upgradeStep(
+                    steps.size() + 1,
+                    "Adopt modern Spring Boot testing, logging and client APIs",
+                    "Use modern Spring APIs where they reduce custom infrastructure and make upgrade pull requests smaller.",
+                    "MEDIUM",
+                    "RestClient/WebClient builders + structured logging + modern test support",
+                    matchingRuleIds(findings, "SPR073", "SPR074", "SPR075", "ADV003", "ADV004", "ADV005"),
+                    "The scan found modernization candidates around HTTP clients, testing annotations or structured logging.",
+                    List.of(
+                            "Use configured RestClient.Builder or WebClient.Builder instead of scattered clients.",
+                            "Replace legacy mock/test annotations when moving to newer Spring Boot baselines.",
+                            "Add structured logging where production diagnostics need machine-readable logs."
+                    ),
+                    "MEDIUM",
+                    List.of("org.openrewrite.java.spring.boot3.UpgradeSpringBoot_3_5")
+            ));
         }
-        if (hasFinding(findings, "SPR073", "SPR074", "SPR075", "ADV003", "SPR_ALT020")) {
-            steps.add(new UpgradeStep(steps.size() + 1, "Adopt modern Spring Boot testing/logging/client APIs",
-                    "Replace deprecated test annotations, modernize HTTP clients where useful and enable structured logging for production diagnostics.",
-                    "MEDIUM", "Spring Boot modern APIs", matchingRuleIds(findings, "SPR073", "SPR074", "SPR075", "ADV003", "SPR_ALT020")));
-        }
+
         if (steps.isEmpty()) {
-            steps.add(new UpgradeStep(1, "Keep current Spring baseline governed",
+            steps.add(upgradeStep(
+                    1,
+                    "Keep current Spring baseline governed",
                     "No blocking upgrade signal was detected. Keep dependency management, Java baseline and Spring Boot version explicit.",
-                    "LOW", "Spring Boot dependency management", List.of("No major upgrade blocker detected")));
+                    "LOW",
+                    "Spring Boot dependency management",
+                    List.of("No major upgrade blocker detected"),
+                    "The project does not show a strong migration blocker, so the upgrade path is mainly governance and periodic verification.",
+                    List.of(
+                            "Keep Spring Boot BOM/parent explicit.",
+                            "Pin Java release and Maven plugin versions.",
+                            "Schedule periodic Spring Guardian scans after dependency updates."
+                    ),
+                    "SMALL",
+                    List.of()
+            ));
         }
 
         return new SpringUpgradePath(javaVersion, bootVersion, List.copyOf(steps));
+    }
+
+    private UpgradeStep upgradeStep(
+            int order,
+            String title,
+            String description,
+            String risk,
+            String springAlternative,
+            List<String> evidence,
+            String whyRecommended,
+            List<String> actions,
+            String effort,
+            List<String> openRewriteRecipes
+    ) {
+        return new UpgradeStep(
+                order,
+                title,
+                description,
+                risk,
+                springAlternative,
+                evidence,
+                whyRecommended,
+                actions,
+                effort,
+                openRewriteRecipes
+        );
     }
 
     private SpringModernizationPlan buildModernizationPlan(
@@ -515,6 +809,15 @@ public class SpringArchitectModePlanner {
 
     private OpenRewritePlan buildOpenRewritePlan(List<FindingGroup> findings, SpringProjectFingerprint fingerprint, SpringUpgradePath upgradePath) {
         List<OpenRewriteSuggestion> suggestions = new ArrayList<>();
+        for (UpgradeStep step : upgradePath.steps()) {
+            for (String recipe : step.openRewriteRecipes()) {
+                suggestions.add(new OpenRewriteSuggestion(
+                        recipe,
+                        "Suggested by upgrade step: " + step.title(),
+                        step.evidence()
+                ));
+            }
+        }
 
         if (isSpringBoot2(fingerprint.springBootVersion())) {
             suggestions.add(new OpenRewriteSuggestion(
@@ -537,11 +840,32 @@ public class SpringArchitectModePlanner {
                     matchingRuleIds(findings, "SPR073")
             ));
         }
-        if (hasFinding(findings, "SPR091", "SPR_ALT018")) {
+        if (hasFinding(findings, "SPR091", "SPR_ALT018", "ADV013")) {
             suggestions.add(new OpenRewriteSuggestion(
                     "org.openrewrite.java.spring.boot2.SpringBootProperties_2_7",
-                    "Configuration properties should be governed and modernized.",
-                    matchingRuleIds(findings, "SPR091", "SPR_ALT018")
+                    "Configuration properties should be governed, normalized and validated.",
+                    matchingRuleIds(findings, "SPR091", "SPR_ALT018", "ADV013")
+            ));
+        }
+        if (hasFinding(findings, "ADV003", "SPR_ALT020", "SPR074", "SPR075")) {
+            suggestions.add(new OpenRewriteSuggestion(
+                    "org.openrewrite.java.spring.boot3.UpgradeSpringBoot_3_5",
+                    "Modern Spring Boot API usage was suggested; use the Spring Boot upgrade recipe set as a governed modernization baseline.",
+                    matchingRuleIds(findings, "ADV003", "SPR_ALT020", "SPR074", "SPR075")
+            ));
+        }
+        if (hasFinding(findings, "POM037", "POM038", "POM017")) {
+            suggestions.add(new OpenRewriteSuggestion(
+                    "org.openrewrite.maven.AddManagedDependency",
+                    "Dependency governance findings were detected; review managed dependencies before modernization pull requests.",
+                    matchingRuleIds(findings, "POM037", "POM038", "POM017")
+            ));
+        }
+        if (hasFinding(findings, "SPR040", "SPR041", "SPR059", "SPR_ALT002", "SPR_ALT003")) {
+            suggestions.add(new OpenRewriteSuggestion(
+                    "org.openrewrite.java.spring.boot3.UpgradeSpringSecurity_6_0",
+                    "Security DSL modernization was detected as a candidate; validate generated changes manually.",
+                    matchingRuleIds(findings, "SPR040", "SPR041", "SPR059", "SPR_ALT002", "SPR_ALT003")
             ));
         }
         if (suggestions.isEmpty()) {
@@ -552,12 +876,21 @@ public class SpringArchitectModePlanner {
             ));
         }
 
+        List<OpenRewriteSuggestion> uniqueSuggestions = uniqueOpenRewriteSuggestions(suggestions);
         return new OpenRewritePlan(
                 "com.example.guardian.SpringGuardianRecommendedFixes",
                 "Spring Guardian recommended fixes",
-                List.copyOf(suggestions),
-                openRewriteYaml(suggestions)
+                uniqueSuggestions,
+                openRewriteYaml(uniqueSuggestions)
         );
+    }
+
+    private List<OpenRewriteSuggestion> uniqueOpenRewriteSuggestions(List<OpenRewriteSuggestion> suggestions) {
+        Map<String, OpenRewriteSuggestion> byRecipe = new LinkedHashMap<>();
+        for (OpenRewriteSuggestion suggestion : suggestions) {
+            byRecipe.putIfAbsent(suggestion.recipe(), suggestion);
+        }
+        return List.copyOf(byRecipe.values());
     }
 
     private SourceDescriptor describe(JavaSourceFile file) {
@@ -633,19 +966,71 @@ public class SpringArchitectModePlanner {
                 break;
             }
         }
-        if (layerIndex > 0) {
-            String candidate = parts[layerIndex - 1].toLowerCase(Locale.ROOT);
-            if (!candidate.equals("acme") && !candidate.equals("example") && !candidate.equals("company")) {
-                return candidate;
+
+        if (layerIndex >= 0) {
+            String beforeLayer = previousBusinessSegment(parts, layerIndex);
+            String afterLayer = nextBusinessSegment(parts, layerIndex);
+            if (layerIndex <= 2 && afterLayer != null) {
+                return afterLayer;
+            }
+            if (beforeLayer != null) {
+                return beforeLayer;
+            }
+            if (afterLayer != null) {
+                return afterLayer;
             }
         }
-        if (parts.length >= 4 && (parts[0].equals("com") || parts[0].equals("org") || parts[0].equals("it"))) {
+
+        if (parts.length >= 5 && isOrganizationPrefix(parts[0]) && isCompanyLike(parts[1]) && !isLayer(parts[2])) {
+            return parts[3].toLowerCase(Locale.ROOT);
+        }
+        if (parts.length >= 4 && isOrganizationPrefix(parts[0])) {
             return parts[2].equalsIgnoreCase("example") && parts.length >= 5 ? parts[3].toLowerCase(Locale.ROOT) : parts[2].toLowerCase(Locale.ROOT);
         }
         if (parts.length >= 2) {
             return parts[parts.length - 2].toLowerCase(Locale.ROOT);
         }
         return "root";
+    }
+
+    private String previousBusinessSegment(String[] parts, int layerIndex) {
+        for (int i = layerIndex - 1; i >= 0; i--) {
+            String candidate = parts[i].toLowerCase(Locale.ROOT);
+            if (!isOrganizationPrefix(candidate) && !isCompanyLike(candidate) && !isLayer(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private String nextBusinessSegment(String[] parts, int layerIndex) {
+        for (int i = layerIndex + 1; i < parts.length; i++) {
+            String candidate = parts[i].toLowerCase(Locale.ROOT);
+            if (!isOrganizationPrefix(candidate) && !isCompanyLike(candidate) && !isLayer(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private boolean isOrganizationPrefix(String value) {
+        return value != null && (value.equals("com") || value.equals("org") || value.equals("it") || value.equals("net") || value.equals("io"));
+    }
+
+    private boolean isCompanyLike(String value) {
+        if (value == null) {
+            return false;
+        }
+        return value.equals("acme")
+                || value.equals("example")
+                || value.equals("company")
+                || value.equals("gruppoveronesi")
+                || value.equals("p15518")
+                || value.equals("demo");
+    }
+
+    private boolean isLayer(String value) {
+        return value != null && LAYER_SEGMENTS.contains(value.toLowerCase(Locale.ROOT));
     }
 
     private String packageFromPath(String relativePath) {
@@ -860,8 +1245,15 @@ public class SpringArchitectModePlanner {
         }
         builder.append("\n## Upgrade Path\n\n");
         for (UpgradeStep step : upgradePath.steps()) {
-            builder.append(step.order()).append(". **").append(step.title()).append("** - ").append(step.risk()).append("\n");
+            builder.append(step.order()).append(". **").append(step.title()).append("** - ").append(step.risk()).append(" / effort ").append(step.effort()).append("\n");
             builder.append("   ").append(step.description()).append("\n");
+            builder.append("   - Why: ").append(step.whyRecommended()).append("\n");
+            if (!step.evidence().isEmpty()) {
+                builder.append("   - Evidence: ").append(String.join(", ", step.evidence())).append("\n");
+            }
+            for (String action : step.actions()) {
+                builder.append("   - Action: ").append(action).append("\n");
+            }
         }
         builder.append("\n## Checklist\n\n");
         for (ModernizationChecklistItem item : checklist) {
@@ -885,6 +1277,65 @@ public class SpringArchitectModePlanner {
             builder.append("  - ").append(suggestion.recipe()).append("\n");
         }
         return builder.toString();
+    }
+
+    private int weightedOverall(List<SpringMaturityAreaScore> areas) {
+        Map<String, Integer> weights = Map.of(
+                "ARCHITECTURE", 15,
+                "WEB_API", 12,
+                "SECURITY", 14,
+                "PERSISTENCE", 12,
+                "CONFIGURATION", 10,
+                "OBSERVABILITY", 10,
+                "TESTING", 9,
+                "PRODUCTION_READINESS", 12,
+                "SPRING_MODERNITY", 6
+        );
+        int totalWeight = 0;
+        int total = 0;
+        for (SpringMaturityAreaScore area : areas) {
+            int weight = weights.getOrDefault(area.code(), 10);
+            totalWeight += weight;
+            total += area.score() * weight;
+        }
+        return totalWeight == 0 ? 100 : Math.round((float) total / totalWeight);
+    }
+
+    @SafeVarargs
+    private final List<String> combineDrivers(int limit, List<String>... sources) {
+        List<String> drivers = new ArrayList<>();
+        for (List<String> source : sources) {
+            if (source == null) {
+                continue;
+            }
+            for (String item : source) {
+                if (item != null && !item.isBlank() && !drivers.contains(item)) {
+                    drivers.add(item);
+                    if (drivers.size() >= limit) {
+                        return List.copyOf(drivers);
+                    }
+                }
+            }
+        }
+        return List.copyOf(drivers);
+    }
+
+    private int weightedPenalty(List<FindingGroup> findings, int severityMultiplier, int occurrenceMultiplier, String... prefixes) {
+        int total = 0;
+        for (FindingGroup group : findings) {
+            if (!startsWithAny(group.ruleId(), prefixes)) {
+                continue;
+            }
+            int base = switch (group.severity()) {
+                case CRITICAL -> 4;
+                case MAJOR -> 2;
+                case MINOR -> 1;
+                case INFO -> 1;
+            };
+            int occurrencePenalty = (int) Math.min(18L, Math.max(0L, group.occurrences() - 1L) * occurrenceMultiplier);
+            total += base * severityMultiplier + occurrencePenalty;
+        }
+        return Math.min(90, total);
     }
 
     private SpringMaturityAreaScore area(String code, String name, int score, List<String> drivers, List<String> recommendations) {

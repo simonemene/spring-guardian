@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -72,6 +73,9 @@ class ScanControllerIntegrationTest {
 
         assertTrue(ruleIds.contains("SPR002_FIELD_INJECTION"));
         assertTrue(ruleIds.contains("SPR003_CONTROLLER_INJECTS_REPOSITORY"));
+        assertNotNull(response.getBody().architectMode());
+        assertTrue(response.getBody().architectMode().maturityScore().overallScore() >= 0);
+        assertFalse(response.getBody().architectMode().architectureMap().modules().isEmpty());
     }
 
     private HttpHeaders jsonHeaders() {

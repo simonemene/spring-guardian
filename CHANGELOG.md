@@ -1,3 +1,23 @@
+## 1.1.2 - Calibrated Architect Mode UX and security maturity
+
+- Replaced raw Mermaid-first architecture map with a visual Controller -> Service -> Repository -> Entity graph and an HTML/CSS architecture dialog in UI and HTML reports.
+- Calibrated Spring Maturity Score across Architecture, Web/API, Security, Persistence, Configuration, Observability, Testing, Production Readiness and Spring Modernity using capabilities, findings, occurrence counts and Spring-specific anti-patterns.
+- Added Spring Security alternative rules for manual `Principal`/`Authentication` null checks, `SecurityContextHolder` in business code and scattered `ROLE_*` string checks.
+- Reworked Spring Upgrade Path as an explainable roadmap with why, evidence, actions, effort, risk and optional OpenRewrite recipes per step.
+- Updated README and Architect Mode documentation with guidance for reading score, map, roadmap, checklist and OpenRewrite suggestions.
+- Added regression tests for calibrated maturity scoring, security alternatives, upgrade path details and HTML report dialog rendering.
+
+## 1.1.1 - Architect Mode UX and test hardening
+
+- Fixed Architect Mode UI/report rendering issues: raw browser `<details>` widgets were replaced with styled code panels, upgrade risk badges no longer collide with titles, and Mermaid/OpenRewrite sections are readable.
+- Added a visual Architecture Map board in UI/HTML alongside the Mermaid export, so users see dependencies before raw graph code.
+- Improved enterprise module inference for packages such as `com.gruppoveronesi.web.dedalo.*`, avoiding company-name-only module labels.
+- Expanded OpenRewrite suggestions export with additional guarded recipes for Spring Boot modernization, Jakarta migration, configuration properties, dependency governance and Security DSL modernization.
+- Added frontend downloads for Architect Mode artifacts: checklist JSON, modernization plan Markdown, module map Mermaid and OpenRewrite YAML.
+- Added Production Readiness Advisor detail panel to the UI.
+- Added more regression tests for architecture map precision, cycles, production readiness, upgrade path, OpenRewrite export, Architect Mode HTML UX and CLI JSON output.
+- Updated Spring server integration coverage to assert `architectMode` is returned by API scan responses.
+
 
 ## 1.1.0 - Architect Mode MVP
 
