@@ -3,7 +3,9 @@ package com.example.guardian.core.rules;
 import com.example.guardian.core.config.GuardianSettings;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Factory for the deterministic Spring Guardian rule set.
@@ -96,7 +98,15 @@ public final class GuardianRules {
         baseRules.addAll(WebBatchRuleCatalog.batchRules());
         baseRules.addAll(WebBatchRuleCatalog.sharedReadinessRules());
         baseRules.add(new MissingSpringCapabilityRule());
-        baseRules.addAll(WebBatchAdvisorCatalog.rules());
-        return List.copyOf(baseRules);
+        baseRules.addAll(SpringAlternativeRulesCatalog.rules());
+        return uniqueById(baseRules);
+    }
+
+    private static List<SpringRule> uniqueById(List<SpringRule> rules) {
+        Map<String, SpringRule> byId = new LinkedHashMap<>();
+        for (SpringRule rule : rules) {
+            byId.putIfAbsent(rule.id(), rule);
+        }
+        return List.copyOf(byId.values());
     }
 }

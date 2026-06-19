@@ -207,7 +207,7 @@ public class HtmlReportRenderer implements ReportRenderer {
     private boolean isSpringAlternative(FindingGroup group) {
         String type = group.findingType() == null ? "" : group.findingType();
         String rule = group.ruleId() == null ? "" : group.ruleId();
-        return type.equals("SPRING_ALTERNATIVE") || rule.startsWith("ADV") || rule.matches("SPR0(6[4-9]|7[0-9]|8[0-6]|8[8-9]|90).*");
+        return type.equals("SPRING_ALTERNATIVE") || rule.startsWith("SPR_ALT") || rule.startsWith("ADV") || rule.matches("SPR0(6[4-9]|7[0-9]|8[0-6]|8[8-9]|90).*");
     }
 
     private String guidanceValue(FindingGroup group, String kind) {

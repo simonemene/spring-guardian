@@ -662,6 +662,11 @@ final class RuleTextCatalog {
         if (part == TextPart.TITLE) {
             return title;
         }
+        if (id.startsWith("SPR_ALT")) {
+            return part == TextPart.WHY
+                    ? "Lo Spring Alternative Advisor ha rilevato un punto in cui una primitiva o una configurazione Spring più esplicita rende il codice più governabile, sicuro e testabile."
+                    : "Applica l'alternativa Spring indicata nel finding: usa configurazione esplicita, DTO validati, boundary transazionali nel service layer o astrazioni Spring gestite quando coerente con il caso d'uso.";
+        }
         if (id.startsWith("ARCH")) {
             return part == TextPart.WHY
                     ? "La regola evidenzia un possibile accoppiamento tra layer, moduli o bounded context. Questo riduce la chiarezza dei confini architetturali e rende più rischiosi refactoring, test e manutenzione."
@@ -709,6 +714,26 @@ final class RuleTextCatalog {
     private static String mappedItalianTitle(String ruleId) {
         String code = shortCode(ruleId);
         return switch (code) {
+            case "SPR_ALT001" -> "SecurityFilterChain mancante";
+            case "SPR_ALT002" -> "CSRF disabilitato senza API stateless";
+            case "SPR_ALT003" -> "Regola permitAll troppo ampia";
+            case "SPR_ALT004" -> "Actuator esposto con wildcard";
+            case "SPR_ALT005" -> "Dettagli health sempre pubblici";
+            case "SPR_ALT006" -> "Entity JPA restituita dal controller";
+            case "SPR_ALT007" -> "Entity JPA accettata come request body";
+            case "SPR_ALT008" -> "Request body senza validazione";
+            case "SPR_ALT009" -> "Gestione errori REST non centralizzata";
+            case "SPR_ALT010" -> "Open EntityManager in View attivo";
+            case "SPR_ALT011" -> "Repository con logica business";
+            case "SPR_ALT012" -> "Query costruita concatenando stringhe";
+            case "SPR_ALT013" -> "Transazione readOnly mancante";
+            case "SPR_ALT014" -> "Relazione JPA EAGER";
+            case "SPR_ALT015" -> "@Transactional non intercettabile";
+            case "SPR_ALT016" -> "Self-invocation di metodo proxato";
+            case "SPR_ALT017" -> "@Transactional nel controller";
+            case "SPR_ALT018" -> "@ConfigurationProperties senza validazione";
+            case "SPR_ALT019" -> "Segreto in configurazione versionabile";
+            case "SPR_ALT020" -> "Logging console diretto";
             case "BAT004" -> "Dimensione chunk da rendere configurabile";
             case "BAT008" -> "DataSource creato manualmente nel batch";
             case "BAT012" -> "Retry su eccezione troppo generica";
@@ -793,7 +818,7 @@ final class RuleTextCatalog {
         if (ruleId == null) {
             return "";
         }
-        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("^(SPR|SEC|WEB|BAT|CLD|OBS|POM|ADV|ARCH)\\d+").matcher(ruleId);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("^(SPR_ALT|SPR|SEC|WEB|BAT|CLD|OBS|POM|ADV|ARCH)\\d+").matcher(ruleId);
         return matcher.find() ? matcher.group() : ruleId;
     }
 

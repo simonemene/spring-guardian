@@ -1,5 +1,7 @@
 # Spring Guardian
 
+<img width="1666" height="944" alt="Spring Guardian dashboard" src="https://github.com/user-attachments/assets/b355b536-4b9c-4d9e-bda3-38fa36e9aceb" />
+
 ## English
 
 Spring Guardian is a deterministic **Spring Architecture Auditor** and **Release Readiness Scanner** for Spring Boot projects.
@@ -18,6 +20,24 @@ Its goal is not to produce a noisy list of generic static-analysis warnings. Its
 - What is the recommended Spring-oriented fix?
 
 Spring Guardian is complementary to tools such as SonarQube. It focuses on Spring architecture, framework usage, modernization opportunities, cloud readiness, maintainability and release-readiness patterns.
+
+
+## Backend Spring Alternatives
+
+The backend uses a unified `SpringAlternativeRulesCatalog`.
+It keeps legacy `ADV###` compatibility and adds `SPR_ALT001`-`SPR_ALT020` enterprise alternatives for Security, Actuator, Web/API contracts, JPA, transactions, configuration and observability.
+
+Examples:
+
+```text
+SPR_ALT001  explicit SecurityFilterChain
+SPR_ALT006  REST DTO instead of JPA entity response
+SPR_ALT010  disable Open EntityManager in View and load DTO/projection in service transaction
+SPR_ALT018  @ConfigurationProperties + @Validated
+SPR_ALT020  SLF4J instead of System.out / printStackTrace
+```
+
+Spring Alternative findings are visible in CLI, JSON, HTML report and UI as modernization guidance. They do not replace hard release-readiness rules; they explain the concrete Spring-native remediation.
 
 ## Current supported scope
 
