@@ -59,6 +59,26 @@ public class TextReportRenderer implements ReportRenderer {
                 .append("   Where: ").append(action.location()).append("\n")
                 .append("   Fix: ").append(action.action()).append("\n"));
 
+        if (report.architectMode() != null) {
+            builder.append("\nArchitect Mode\n");
+            builder.append("--------------\n");
+            builder.append("Fingerprint: ").append(report.architectMode().fingerprint().summary()).append("\n");
+            builder.append("Spring Maturity Score: ").append(report.architectMode().maturityScore().overallScore()).append("/100 (")
+                    .append(report.architectMode().maturityScore().status()).append(")\n");
+            builder.append("Production Readiness: ").append(report.architectMode().productionReadiness().score()).append("/100 (")
+                    .append(report.architectMode().productionReadiness().status()).append(")\n");
+            builder.append("Architecture modules: ").append(report.architectMode().architectureMap().modules().size()).append("\n");
+            builder.append("Cross-module dependencies: ").append(report.architectMode().architectureMap().dependencies().size()).append("\n");
+            builder.append("Cycles: ").append(report.architectMode().architectureMap().cycles().size()).append("\n");
+            builder.append("Modernization checklist items: ").append(report.architectMode().modernizationPlan().checklist().size()).append("\n");
+            report.architectMode().maturityScore().areas().forEach(area -> builder.append("  - ")
+                    .append(area.name()).append(": ").append(area.score()).append("/100 ").append(area.status()).append("\n"));
+            builder.append("\nTop modernization checklist\n");
+            report.architectMode().modernizationPlan().checklist().stream().limit(10).forEach(item -> builder.append("  [ ] ")
+                    .append(item.priority()).append(". ").append(item.title()).append("\n")
+                    .append("      ").append(item.suggestedChange()).append("\n"));
+        }
+
         builder.append("\nGrouped findings\n");
         builder.append("----------------\n");
 

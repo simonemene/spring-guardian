@@ -1,4 +1,17 @@
 
+## 1.1.0 - Architect Mode MVP
+
+- Added Spring Guardian Architect Mode as deterministic roadmap engine: Spring Maturity Score, Spring Architecture Map, Modernization Plan, Production Readiness Advisor, Spring Upgrade Path and OpenRewrite suggestions export.
+- Added `spring-guardian architect` CLI with `--format text|json|html|markdown`, `--export-checklist`, `--export-mermaid` and `--export-openrewrite`.
+- Extended `ArchitectureReviewReport` with `architectMode` while preserving backward-compatible constructors.
+- Added Mermaid architecture graph export and basic package/module cycle detection.
+- Added exportable modernization checklist items with files, suggested change, effort, impact and related findings.
+- Updated HTML report with Architect Mode dashboard, maturity area scores, module map, cycles, checklist, upgrade path and OpenRewrite YAML section.
+- Updated UI navigation: workflow pages remain numbered, Mission and Contacts are now separated as product information.
+- Added Architect Mode UI page with maturity score, module map, checklist, Mermaid graph, upgrade path and OpenRewrite suggestions.
+- Added tests for Architect Mode core, CLI exports and HTML report rendering.
+
+
 ## 2026-06-19 - Test stability fix
 
 - Fixed `SPR_ALT018_CONFIGURATION_PROPERTIES_WITHOUT_VALIDATION` detection for `@ConfigurationProperties` records/classes by running a deterministic source fallback in addition to JavaParser AST detection.

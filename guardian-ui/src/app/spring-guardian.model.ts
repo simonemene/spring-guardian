@@ -32,6 +32,7 @@ export interface ArchitectureReviewReport {
   recommendedActions: RecommendedAction[];
   explanation: ReportExplanation;
   findings: FindingGroup[];
+  architectMode?: ArchitectModeReport | null;
 }
 
 export interface ProjectCapabilities {
@@ -150,4 +151,139 @@ export interface AffectedComponent {
   line: number | null;
   evidence: string;
   codeSnippet?: string;
+}
+
+
+export interface ArchitectModeReport {
+  fingerprint: SpringProjectFingerprint;
+  maturityScore: SpringMaturityScore;
+  architectureMap: SpringArchitectureMap;
+  modernizationPlan: SpringModernizationPlan;
+  productionReadiness: ProductionReadinessReport;
+  upgradePath: SpringUpgradePath;
+  openRewritePlan: OpenRewritePlan;
+}
+
+export interface SpringProjectFingerprint {
+  buildTool: string;
+  javaVersion: string;
+  springBootVersion: string;
+  multiModule: boolean;
+  capabilities: ProjectCapabilities;
+  springCapabilities: string[];
+  detectedStarters: string[];
+  detectedAnnotations: string[];
+  detectedArchitecturalStyles: string[];
+  summary: string;
+}
+
+export interface SpringMaturityScore {
+  overallScore: number;
+  status: string;
+  areas: SpringMaturityAreaScore[];
+  strengths: string[];
+  weakAreas: string[];
+}
+
+export interface SpringMaturityAreaScore {
+  code: string;
+  name: string;
+  score: number;
+  status: string;
+  drivers: string[];
+  recommendations: string[];
+}
+
+export interface SpringArchitectureMap {
+  modules: SpringModuleSummary[];
+  dependencies: SpringModuleDependency[];
+  cycles: SpringArchitectureCycle[];
+  mermaidDiagram: string;
+  globalRisks: string[];
+}
+
+export interface SpringModuleSummary {
+  name: string;
+  basePackage: string;
+  controllers: number;
+  services: number;
+  repositories: number;
+  entities: number;
+  configurations: number;
+  clients: number;
+  events: number;
+  batchComponents: number;
+  risks: string[];
+}
+
+export interface SpringModuleDependency {
+  fromModule: string;
+  toModule: string;
+  weight: number;
+  examples: string[];
+}
+
+export interface SpringArchitectureCycle {
+  modules: string[];
+  remediation: string;
+}
+
+export interface SpringModernizationPlan {
+  quickWins: ModernizationChecklistItem[];
+  architecturalRefactorings: ModernizationChecklistItem[];
+  productionReadinessFixes: ModernizationChecklistItem[];
+  upgradePath: ModernizationChecklistItem[];
+  checklist: ModernizationChecklistItem[];
+  markdown: string;
+}
+
+export interface ModernizationChecklistItem {
+  id: string;
+  title: string;
+  completed: boolean;
+  severity: Severity;
+  files: string[];
+  whyItMatters: string;
+  springAlternative: string;
+  suggestedChange: string;
+  effort: 'LOW' | 'MEDIUM' | 'HIGH';
+  businessImpact: 'LOW' | 'MEDIUM' | 'HIGH';
+  priority: number;
+  relatedFindings: string[];
+}
+
+export interface ProductionReadinessReport {
+  score: number;
+  status: string;
+  strengths: string[];
+  risks: string[];
+  requiredActions: ModernizationChecklistItem[];
+}
+
+export interface SpringUpgradePath {
+  currentJavaVersion: string;
+  currentSpringBootVersion: string;
+  steps: UpgradeStep[];
+}
+
+export interface UpgradeStep {
+  order: number;
+  title: string;
+  description: string;
+  risk: string;
+  springAlternative: string;
+  evidence: string[];
+}
+
+export interface OpenRewritePlan {
+  recipeName: string;
+  displayName: string;
+  suggestions: OpenRewriteSuggestion[];
+  yaml: string;
+}
+
+export interface OpenRewriteSuggestion {
+  recipe: string;
+  reason: string;
+  relatedFindings: string[];
 }

@@ -9,30 +9,37 @@
     </div>
 
     <div class="sidebar-label">{{ t('sidebarHint') }}</div>
-    <nav class="side-nav" aria-label="Spring Guardian navigation">
+    <nav class="side-nav workflow-nav" aria-label="Spring Guardian workflow navigation">
       <button type="button" [class.active]="activePage() === 'scan'" (click)="selectPage('scan')">
         <span>01</span>{{ t('navScan') }}
       </button>
       <button type="button" [class.active]="activePage() === 'overview'" [disabled]="!report()" (click)="selectPage('overview')">
         <span>02</span>{{ t('navOverview') }}
       </button>
+      <button type="button" [class.active]="activePage() === 'architect'" [disabled]="!report()" (click)="selectPage('architect')">
+        <span>03</span>{{ t('navArchitect') }}
+      </button>
       <button type="button" [class.active]="activePage() === 'findings'" [disabled]="!report()" (click)="selectPage('findings')">
-        <span>03</span>{{ t('navFindings') }}
+        <span>04</span>{{ t('navFindings') }}
       </button>
       <button type="button" [class.active]="activePage() === 'alternatives'" [disabled]="!report()" (click)="selectPage('alternatives')">
-        <span>04</span>{{ t('navAlternatives') }}
+        <span>05</span>{{ t('navAlternatives') }}
       </button>
       <button type="button" [class.active]="activePage() === 'quality'" [disabled]="!report()" (click)="selectPage('quality')">
-        <span>05</span>{{ t('navQuality') }}
-      </button>
-      <button type="button" [class.active]="activePage() === 'mission'" (click)="selectPage('mission')">
-        <span>06</span>{{ t('navMission') }}
-      </button>
-      <button type="button" [class.active]="activePage() === 'contact'" (click)="selectPage('contact')">
-        <span>07</span>{{ t('navContact') }}
+        <span>06</span>{{ t('navQuality') }}
       </button>
       <button type="button" [class.active]="activePage() === 'json'" [disabled]="!report()" (click)="selectPage('json')">
-        <span>08</span>{{ t('navJson') }}
+        <span>07</span>{{ t('navJson') }}
+      </button>
+    </nav>
+
+    <div class="sidebar-label secondary-label">{{ t('productInfo') }}</div>
+    <nav class="side-nav product-nav" aria-label="Spring Guardian product information">
+      <button type="button" [class.active]="activePage() === 'mission'" (click)="selectPage('mission')">
+        <i aria-hidden="true">◆</i>{{ t('navMission') }}
+      </button>
+      <button type="button" [class.active]="activePage() === 'contact'" (click)="selectPage('contact')">
+        <i aria-hidden="true">✉</i>{{ t('navContact') }}
       </button>
     </nav>
 
@@ -295,6 +302,147 @@
               </div>
             </article>
           </section>
+        </section>
+
+
+        <section *ngIf="activePage() === 'architect'" class="report-page architect-page">
+          <ng-container *ngIf="current.architectMode as architect">
+            <section class="kpi-grid">
+              <article class="kpi-card score-kpi">
+                <span>{{ t('architectKpiMaturity') }}</span>
+                <strong [class]="scoreClass(architect.maturityScore.overallScore)">{{ architect.maturityScore.overallScore }}</strong>
+                <p>{{ architect.maturityScore.status }} · {{ architect.maturityScore.weakAreas.length }} weak areas</p>
+              </article>
+              <article class="kpi-card">
+                <span>{{ t('architectKpiProduction') }}</span>
+                <strong [class]="scoreClass(architect.productionReadiness.score)">{{ architect.productionReadiness.score }}</strong>
+                <p>{{ architect.productionReadiness.status }}</p>
+              </article>
+              <article class="kpi-card">
+                <span>{{ t('architectKpiModules') }}</span>
+                <strong>{{ architect.architectureMap.modules.length }}</strong>
+                <p>{{ architect.architectureMap.dependencies.length }} dependencies</p>
+              </article>
+              <article class="kpi-card">
+                <span>{{ t('architectKpiCycles') }}</span>
+                <strong>{{ architect.architectureMap.cycles.length }}</strong>
+                <p>package/module graph</p>
+              </article>
+            </section>
+
+            <article class="panel architect-hero">
+              <div class="panel-title">
+                <div>
+                  <span class="section-kicker">{{ t('architectFingerprint') }}</span>
+                  <h2>{{ architect.fingerprint.summary }}</h2>
+                </div>
+              </div>
+              <div class="fingerprint-chips">
+                <span>{{ architect.fingerprint.buildTool }}</span>
+                <span>Java {{ architect.fingerprint.javaVersion }}</span>
+                <span>Spring Boot {{ architect.fingerprint.springBootVersion }}</span>
+                <span *ngIf="architect.fingerprint.multiModule">Multi-module</span>
+                <span *ngFor="let capability of architect.fingerprint.springCapabilities">{{ capability }}</span>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-title">
+                <div>
+                  <span class="section-kicker">{{ t('architectKpiMaturity') }}</span>
+                  <h2>{{ t('architectKpiMaturity') }}</h2>
+                </div>
+              </div>
+              <div class="architect-score-list">
+                <div class="architect-score-row" *ngFor="let area of architect.maturityScore.areas">
+                  <div>
+                    <strong>{{ area.name }}</strong>
+                    <small>{{ area.status }} · {{ area.recommendations.join(' ') }}</small>
+                  </div>
+                  <div class="architect-score-track"><i [style.width.%]="area.score"></i></div>
+                  <b>{{ area.score }}</b>
+                </div>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-title">
+                <div>
+                  <span class="section-kicker">{{ t('architectureMapTitle') }}</span>
+                  <h2>{{ t('architectureMapTitle') }}</h2>
+                </div>
+              </div>
+              <div class="architect-module-grid">
+                <article class="architect-module-card" *ngFor="let module of architect.architectureMap.modules">
+                  <h3>{{ module.name }}</h3>
+                  <small>{{ module.basePackage }}</small>
+                  <div class="module-counters">
+                    <span>{{ module.controllers }} ctrl</span>
+                    <span>{{ module.services }} svc</span>
+                    <span>{{ module.repositories }} repo</span>
+                    <span>{{ module.entities }} entity</span>
+                    <span>{{ module.clients }} client</span>
+                  </div>
+                  <ul *ngIf="module.risks.length > 0">
+                    <li *ngFor="let risk of module.risks">{{ risk }}</li>
+                  </ul>
+                </article>
+              </div>
+
+              <div class="cycle-box" *ngIf="architect.architectureMap.cycles.length > 0">
+                <h3>{{ t('architectKpiCycles') }}</h3>
+                <article *ngFor="let cycle of architect.architectureMap.cycles">
+                  <strong>{{ cycle.modules.join(' → ') }}</strong>
+                  <p>{{ cycle.remediation }}</p>
+                </article>
+              </div>
+
+              <details class="technical-details">
+                <summary>{{ t('mermaidGraph') }}</summary>
+                <pre><code>{{ architect.architectureMap.mermaidDiagram }}</code></pre>
+              </details>
+            </article>
+
+            <article class="panel">
+              <div class="panel-title">
+                <div>
+                  <span class="section-kicker">{{ t('modernizationChecklist') }}</span>
+                  <h2>{{ t('modernizationChecklist') }}</h2>
+                </div>
+              </div>
+              <div class="architect-checklist">
+                <label *ngFor="let item of architect.modernizationPlan.checklist.slice(0, 30)">
+                  <input type="checkbox">
+                  <span>
+                    <b>{{ item.title }}</b>
+                    <small>Priority {{ item.priority }} · {{ item.severity }} · {{ item.effort }} · {{ item.businessImpact }}</small>
+                    <em>{{ item.suggestedChange }}</em>
+                    <code *ngIf="item.files.length > 0">{{ item.files.join(', ') }}</code>
+                  </span>
+                </label>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-title">
+                <div>
+                  <span class="section-kicker">{{ t('upgradePathTitle') }}</span>
+                  <h2>{{ t('upgradePathTitle') }}</h2>
+                </div>
+              </div>
+              <div class="upgrade-cards">
+                <article *ngFor="let step of architect.upgradePath.steps">
+                  <strong>{{ step.order }}. {{ step.title }}</strong>
+                  <span>{{ step.risk }}</span>
+                  <p>{{ step.description }}</p>
+                </article>
+              </div>
+              <details class="technical-details">
+                <summary>{{ t('openRewriteTitle') }}</summary>
+                <pre><code>{{ architect.openRewritePlan.yaml }}</code></pre>
+              </details>
+            </article>
+          </ng-container>
         </section>
 
         <section *ngIf="activePage() === 'findings'" class="report-page">

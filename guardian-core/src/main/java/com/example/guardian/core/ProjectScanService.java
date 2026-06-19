@@ -2,6 +2,7 @@ package com.example.guardian.core;
 
 import com.example.guardian.core.config.GuardianSettings;
 import com.example.guardian.core.model.AffectedComponent;
+import com.example.guardian.core.model.ArchitectModeReport;
 import com.example.guardian.core.model.ArchitectureAreaReport;
 import com.example.guardian.core.model.ArchitectureReviewReport;
 import com.example.guardian.core.model.CategorySummary;
@@ -111,6 +112,7 @@ public class ProjectScanService {
         List<ArchitectureAreaReport> architectureAreas = buildArchitectureAreas(findings, resolvedLanguage);
         List<QualityGate> qualityGates = buildQualityGates(findings, architectureAreas, context, resolvedLanguage);
         ReleaseReadiness releaseReadiness = buildReleaseReadiness(qualityGates, findings, resolvedProfile, resolvedLanguage);
+        ArchitectModeReport architectMode = new SpringArchitectModePlanner().plan(context, groupedFindings);
 
         return new ArchitectureReviewReport(
                 root.getFileName() == null ? root.toString() : root.getFileName().toString(),
@@ -132,7 +134,8 @@ public class ProjectScanService {
                 qualityGates,
                 buildRecommendedActions(groupedFindings, resolvedLanguage),
                 buildExplanation(resolvedLanguage),
-                groupedFindings
+                groupedFindings,
+                architectMode
         );
     }
 

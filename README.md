@@ -1127,3 +1127,36 @@ guardian-ui      Angular dashboard for interactive scans
 ### Report UX
 
 The HTML report contains overview, score, severity metrics, release readiness, quality gates, impacted architecture areas, recommended actions, findings and Spring Alternatives. It is designed to be shareable with developers, tech leads and enterprise governance stakeholders.
+
+
+## Spring Guardian Architect Mode
+
+Architect Mode evolves Spring Guardian from a findings scanner into a Spring modernization planner.
+
+```bash
+java -jar guardian-cli/target/spring-guardian-cli.jar architect ./my-app --format html --output architecture-report.html
+```
+
+Useful exports:
+
+```bash
+java -jar guardian-cli/target/spring-guardian-cli.jar architect ./my-app \
+  --format markdown --output spring-modernization-plan.md \
+  --export-checklist modernization-checklist.json \
+  --export-mermaid module-map.mmd \
+  --export-openrewrite openrewrite-suggestions.yml
+```
+
+Architect Mode adds:
+
+- Spring Maturity Score
+- Spring Architecture Map
+- package/module cycle detection
+- Modernization Plan
+- exportable Improvement Checklist
+- Production Readiness Advisor
+- Spring Upgrade Path
+- OpenRewrite recipe suggestions
+
+The core remains deterministic, local-first and CI-friendly: no AI calls and no automatic source modification.
+

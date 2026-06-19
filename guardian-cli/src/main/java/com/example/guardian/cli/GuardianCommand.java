@@ -13,13 +13,14 @@ import picocli.CommandLine.Command;
         version = "spring-guardian 1.0.0",
         description = "Local-first Spring Boot architecture validator",
         subcommands = {
-                ScanCommand.class
+                ScanCommand.class,
+                ArchitectCommand.class
         }
 )
 public class GuardianCommand implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("Use: spring-guardian scan <project-path> --format text|json|html");
+        System.out.println("Use: spring-guardian scan <project-path> --format text|json|html or spring-guardian architect <project-path> --format html --export-checklist checklist.json");
     }
 }
