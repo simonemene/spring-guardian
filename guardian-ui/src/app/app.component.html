@@ -1,636 +1,681 @@
-<div class="shell">
-  <header class="hero">
-    <div class="hero-copy">
-      <div class="brand-lockup" aria-label="Spring Guardian brand">
-        <img class="brand-logo" src="assets/spring-guardian-logo.svg" [attr.alt]="t('logoAlt')">
-        <div class="brand-text">
-          <span class="brand-name">Spring Guardian</span>
-          <span class="brand-subtitle">{{ t('brandSubtitle') }}</span>
-        </div>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand-lockup" aria-label="Spring Guardian brand">
+      <img class="brand-logo" src="assets/spring-guardian-logo.svg" [attr.alt]="t('logoAlt')">
+      <div class="brand-text">
+        <span class="brand-name">Spring Guardian</span>
+        <span class="brand-subtitle">{{ t('brandSubtitle') }}</span>
       </div>
+    </div>
 
-      <div class="hero-topline">
-        <p class="eyebrow">{{ t('eyebrow') }}</p>
+    <div class="sidebar-label">{{ t('sidebarHint') }}</div>
+    <nav class="side-nav" aria-label="Spring Guardian navigation">
+      <button type="button" [class.active]="activePage() === 'scan'" (click)="selectPage('scan')">
+        <span>01</span>{{ t('navScan') }}
+      </button>
+      <button type="button" [class.active]="activePage() === 'overview'" [disabled]="!report()" (click)="selectPage('overview')">
+        <span>02</span>{{ t('navOverview') }}
+      </button>
+      <button type="button" [class.active]="activePage() === 'findings'" [disabled]="!report()" (click)="selectPage('findings')">
+        <span>03</span>{{ t('navFindings') }}
+      </button>
+      <button type="button" [class.active]="activePage() === 'alternatives'" [disabled]="!report()" (click)="selectPage('alternatives')">
+        <span>04</span>{{ t('navAlternatives') }}
+      </button>
+      <button type="button" [class.active]="activePage() === 'quality'" [disabled]="!report()" (click)="selectPage('quality')">
+        <span>05</span>{{ t('navQuality') }}
+      </button>
+      <button type="button" [class.active]="activePage() === 'mission'" (click)="selectPage('mission')">
+        <span>06</span>{{ t('navMission') }}
+      </button>
+      <button type="button" [class.active]="activePage() === 'contact'" (click)="selectPage('contact')">
+        <span>07</span>{{ t('navContact') }}
+      </button>
+      <button type="button" [class.active]="activePage() === 'json'" [disabled]="!report()" (click)="selectPage('json')">
+        <span>08</span>{{ t('navJson') }}
+      </button>
+    </nav>
+
+    <div class="sidebar-status" *ngIf="report() as current; else noReportSidebar">
+      <span>{{ t('healthSnapshot') }}</span>
+      <strong [class]="scoreClass(current.architectureScore)">{{ current.architectureScore }}</strong>
+      <p>{{ riskLabel(current.riskLevel) }} · {{ current.releaseReadiness.label }}</p>
+      <div class="mini-status-grid">
+        <div><b>{{ severityCount('CRITICAL') }}</b><small>{{ t('critical') }}</small></div>
+        <div><b>{{ severityCount('MAJOR') }}</b><small>{{ t('major') }}</small></div>
+        <div><b>{{ advisorCount(current) }}</b><small>{{ t('navAlternatives') }}</small></div>
+        <div><b>{{ attentionGateCount() }}</b><small>{{ t('gates') }}</small></div>
+      </div>
+    </div>
+    <ng-template #noReportSidebar>
+      <div class="sidebar-status empty-sidebar">
+        <span>{{ t('noReportYet') }}</span>
+        <p>{{ t('reportLockedText') }}</p>
+        <button type="button" class="ghost full" (click)="selectPage('scan')">{{ t('scanNow') }}</button>
+      </div>
+    </ng-template>
+
+    <div class="sidebar-footer">
+      <p>{{ t('contributionHint') }}</p>
+    </div>
+  </aside>
+
+  <section class="workspace">
+    <header class="topbar">
+      <div>
+        <span class="breadcrumb">Spring Guardian / {{ pageTitle() }}</span>
+        <h1>{{ pageTitle() }}</h1>
+        <p>{{ pageSubtitle() }}</p>
+      </div>
+      <div class="topbar-actions">
         <div class="language-switch" role="group" [attr.aria-label]="t('language')">
           <span>{{ t('language') }}</span>
           <button [class.active]="selectedLanguage() === 'it'" type="button" (click)="selectLanguage('it')">{{ t('italian') }}</button>
           <button [class.active]="selectedLanguage() === 'en'" type="button" (click)="selectLanguage('en')">{{ t('english') }}</button>
         </div>
+        <button *ngIf="report()" type="button" class="ghost" (click)="selectPage('scan')">{{ t('newScan') }}</button>
       </div>
-      <h1>{{ t('heroTitle') }}</h1>
-      <p class="hero-text">{{ t('heroText') }}</p>
-    </div>
+    </header>
 
-    <section class="scan-card">
-      <div class="mode-switch" role="tablist" [attr.aria-label]="t('startScan')">
-        <button [class.active]="uploadMode() === 'zip'" type="button" (click)="selectMode('zip')">{{ t('uploadZip') }}</button>
-        <button [class.active]="uploadMode() === 'folder'" type="button" (click)="selectMode('folder')">{{ t('uploadFolder') }}</button>
-        <button [class.active]="uploadMode() === 'local'" type="button" (click)="selectMode('local')">{{ t('backendPath') }}</button>
-      </div>
+    <main class="page-content">
+      <section *ngIf="activePage() === 'scan'" class="scan-layout">
+        <article class="hero-panel">
+          <p class="eyebrow">{{ t('eyebrow') }}</p>
+          <h2>{{ t('heroTitle') }}</h2>
+          <p>{{ t('heroText') }}</p>
 
-      <div *ngIf="uploadMode() === 'zip'" class="field">
-        <label for="zipFile">{{ t('zipProjectFile') }}</label>
-        <input id="zipFile" type="file" accept=".zip" (change)="onFileSelected($event)">
-        <small *ngIf="selectedFile()">{{ t('selected') }}: {{ selectedFile()?.name }}</small>
-        <small *ngIf="!selectedFile()">{{ t('zipHelp') }}</small>
-      </div>
-
-      <div *ngIf="uploadMode() === 'folder'" class="field">
-        <label for="projectFolder">{{ t('projectRootFolder') }}</label>
-        <input id="projectFolder" type="file" webkitdirectory directory multiple (change)="onFolderSelected($event)">
-        <small *ngIf="selectedFolderFiles().length > 0">{{ t('selectedFemale') }}: {{ folderFilesLabel() }}</small>
-        <small *ngIf="selectedFolderFiles().length === 0">{{ t('folderHelp') }}</small>
-      </div>
-
-      <div *ngIf="uploadMode() === 'local'" class="field">
-        <label for="localPath">{{ t('backendFolderPath') }}</label>
-        <input id="localPath" type="text" [(ngModel)]="localPath" placeholder="C:\progetti\mio-progetto oppure /scan/mio-progetto">
-        <small>{{ t('backendPathHelp') }}</small>
-      </div>
-
-      <div class="auto-analysis-box">
-        <div class="auto-analysis-head">
-          <span>{{ t('scanSettings') }}</span>
-          <strong>{{ t('automaticProfileTitle') }}</strong>
-          <p>{{ t('automaticProfileText') }}</p>
-        </div>
-        <div class="analysis-flow" [attr.aria-label]="t('analysisStepsTitle')">
-          <div><b>01</b><span>{{ t('analysisStepModules') }}</span></div>
-          <div><b>02</b><span>{{ t('analysisStepRules') }}</span></div>
-          <div><b>03</b><span>{{ t('analysisStepAlternatives') }}</span></div>
-          <div><b>04</b><span>{{ t('analysisStepProduction') }}</span></div>
-        </div>
-        <small>{{ t('noManualProfile') }}</small>
-      </div>
-
-      <div class="scan-ready-strip">
-        <span>{{ t('projectType') }}</span>
-        <strong>{{ t('autoDetected') }}</strong>
-        <small>{{ t('profileHelp') }}</small>
-      </div>
-
-      <button class="primary" type="button" (click)="scan()" [disabled]="loading()">
-        {{ loading() ? t('scanRunning') : t('startScan') }}
-      </button>
-
-      <p *ngIf="error()" class="error">{{ error() }}</p>
-    </section>
-  </header>
-
-  <main *ngIf="report() as current; else emptyState">
-    <section class="score-grid">
-      <article class="score-card main-score">
-        <span>{{ t('architectureScore') }}</span>
-        <strong [class]="scoreClass(current.architectureScore)">{{ current.architectureScore }}</strong>
-        <p>{{ riskLabel(current.riskLevel) }} · {{ current.releaseReadiness.label }}</p>
-      </article>
-
-      <article class="score-card" *ngFor="let severity of severityOrder">
-        <span>{{ severityLabel(severity) }}</span>
-        <strong>{{ severityCount(severity) }}</strong>
-        <p>{{ t('findings') }}</p>
-      </article>
-
-      <article class="score-card advisor-score">
-        <span>{{ t('springAdvisor') }}</span>
-        <strong>{{ advisorCount(current) }}</strong>
-        <p>{{ t('advisorOpportunities') }}</p>
-      </article>
-
-      <article class="score-card">
-        <span>{{ t('typeConfiguration') }}</span>
-        <strong>{{ typeOccurrenceCount(current, 'CONFIGURATION') }}</strong>
-        <p>{{ t('findings') }}</p>
-      </article>
-
-      <article class="score-card">
-        <span>{{ t('typeDependencies') }}</span>
-        <strong>{{ typeOccurrenceCount(current, 'DEPENDENCIES') }}</strong>
-        <p>{{ t('findings') }}</p>
-      </article>
-
-      <article class="score-card">
-        <span>{{ t('rulesExecuted') }}</span>
-        <strong>{{ current.rulesExecuted }}</strong>
-        <p>{{ current.scannedJavaFiles }} {{ t('javaFiles') }} · {{ current.scannedPomFiles }} {{ t('pomFiles') }}</p>
-      </article>
-    </section>
-
-    <section class="impact-hub" aria-label="Report impact dashboard">
-      <article class="impact-card primary-impact">
-        <span>{{ t('precisionMode') }}</span>
-        <strong>{{ t('highConfidence') }}</strong>
-        <p>{{ t('precisionModeText') }}</p>
-      </article>
-
-      <article class="impact-card">
-        <span>{{ t('scopeOnly') }}</span>
-        <strong>{{ detectedScopeLabel(current) }}</strong>
-        <p>{{ t('scopeOnlyText') }}</p>
-      </article>
-
-      <article class="impact-card">
-        <span>{{ t('evidenceFirst') }}</span>
-        <strong>{{ current.findings.length }} rules · {{ totalFindingOccurrences() }} {{ t('occurrences') }}</strong>
-        <p>{{ t('evidenceFirstText') }}</p>
-      </article>
-
-      <article class="impact-card scan-identity">
-        <span>{{ t('projectIdentity') }}</span>
-        <strong>{{ current.projectName }}</strong>
-        <p *ngIf="current.projectRootPath">{{ shortPath(current.projectRootPath) }}</p>
-        <p *ngIf="!current.projectRootPath && currentScanSource()">{{ shortPath(currentScanSource()) }}</p>
-      </article>
-    </section>
-
-    <section class="severity-map" aria-label="Severity distribution">
-      <div class="severity-map-copy">
-        <h2>{{ t('impactVisualTitle') }}</h2>
-        <p>{{ t('impactVisualText') }}</p>
-      </div>
-      <div class="severity-bars">
-        <div class="severity-row" *ngFor="let severity of severityOrder" [attr.data-severity]="severity">
-          <div class="severity-row-head">
-            <span>{{ severityLabel(severity) }}</span>
-            <strong>{{ severityCount(severity) }} · {{ severityPercent(current, severity) }}%</strong>
-          </div>
-          <div class="severity-track">
-            <i [style.width.%]="severityPercent(current, severity)"></i>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="decision-board" aria-label="Priorità di intervento">
-      <div class="decision-board-title">
-        <div>
-          <h2>{{ t('decisionBoard') }}</h2>
-          <p>{{ t('decisionBoardText') }}</p>
-        </div>
-      </div>
-      <div class="decision-lanes">
-        <article class="decision-lane" *ngFor="let lane of decisionLanes()" [attr.data-lane]="lane.lane">
-          <span>{{ lane.title }}</span>
-          <strong>{{ lane.count }}</strong>
-          <p>{{ lane.text }}</p>
-          <button type="button" class="ghost" (click)="focusDecisionLane(lane.lane)">{{ t('openLane') }}</button>
-        </article>
-      </div>
-    </section>
-
-
-    <nav class="tabs" aria-label="Report sections">
-      <button type="button" [class.active]="activeTab() === 'overview'" (click)="selectTab('overview')">{{ t('overview') }}</button>
-      <button type="button" [class.active]="activeTab() === 'modules'" (click)="selectTab('modules')">{{ t('springModules') }}</button>
-      <button type="button" [class.active]="activeTab() === 'gates'" (click)="selectTab('gates')">{{ t('gates') }}</button>
-      <button type="button" [class.active]="activeTab() === 'findings'" (click)="selectTab('findings')">{{ t('springArchitecture') }}</button>
-      <button type="button" [class.active]="activeTab() === 'advisor'" (click)="selectTab('advisor')">{{ t('springAdvisor') }}</button>
-      <button type="button" [class.active]="activeTab() === 'production'" (click)="selectTab('production')">{{ t('productionRules') }}</button>
-      <button type="button" [class.active]="activeTab() === 'suggestions'" (click)="selectTab('suggestions')">{{ t('suggestionsToVerify') }}</button>
-      <button type="button" [class.active]="activeTab() === 'actions'" (click)="selectTab('actions')">{{ t('actions') }}</button>
-      <button type="button" [class.active]="activeTab() === 'json'" (click)="selectTab('json')">{{ t('technicalJson') }}</button>
-    </nav>
-
-    <section *ngIf="activeTab() === 'overview'" class="panel-grid">
-      <article class="panel wide readiness" [attr.data-status]="current.releaseReadiness.status">
-        <div class="panel-title">
-          <h2>{{ t('releaseReadiness') }}</h2>
-          <span>{{ current.releaseReadiness.label }}</span>
-        </div>
-        <p>{{ current.releaseReadiness.explanation }}</p>
-        <div class="release-grid">
-          <div>
-            <h3>{{ t('blockers') }}</h3>
-            <p *ngIf="current.releaseReadiness.blockers.length === 0">{{ t('noBlockers') }}</p>
-            <ul>
-              <li *ngFor="let blocker of current.releaseReadiness.blockers">{{ blocker }}</li>
-            </ul>
-          </div>
-          <div>
-            <h3>{{ t('warnings') }}</h3>
-            <p *ngIf="current.releaseReadiness.warnings.length === 0">{{ t('noWarnings') }}</p>
-            <ul>
-              <li *ngFor="let warning of current.releaseReadiness.warnings">{{ warning }}</li>
-            </ul>
-          </div>
-        </div>
-      </article>
-
-      <article class="panel wide">
-        <h2>{{ t('executiveSummary') }}</h2>
-        <p>{{ current.summary.executiveSummary }}</p>
-        <div class="meta-row">
-          <span>{{ t('project') }}: <strong>{{ current.projectName }}</strong></span>
-          <span *ngIf="currentScanSource()">{{ t('requestedSource') }}: <strong>{{ currentScanSource() }}</strong></span>
-          <span *ngIf="current.projectRootPath">{{ t('scannedRootPath') }}: <strong>{{ current.projectRootPath }}</strong></span>
-          <span>{{ t('scan') }}: <strong>{{ current.scannedAt | date:'medium' }}</strong></span>
-          <span>{{ t('selectedProfile') }}: <strong>{{ detectedScopeLabel(current) }} · {{ architectureStyleLabel(current.profile.architectureStyle) }}</strong></span>
-        </div>
-      </article>
-
-
-      <article class="panel wide">
-        <h2>{{ t('findingType') }}</h2>
-        <div class="area-grid">
-          <article class="area-card" *ngFor="let type of current.findingsByType">
-            <div class="category-head">
-              <strong>{{ type.category }}</strong>
-              <span>{{ type.findings }} {{ t('findings') }}</span>
+          <div class="value-grid">
+            <div>
+              <span>{{ t('precisionMode') }}</span>
+              <strong>{{ t('highConfidence') }}</strong>
+              <p>{{ t('precisionModeText') }}</p>
             </div>
-            <p>{{ type.explanation }}</p>
-            <div class="area-metrics">
-              <span>{{ type.criticalFindings }} {{ t('critical').toLowerCase() }}</span>
-              <span>{{ type.majorFindings }} {{ t('major').toLowerCase() }}</span>
-              <span>{{ type.minorFindings }} {{ t('minor').toLowerCase() }}</span>
+            <div>
+              <span>{{ t('evidenceFirst') }}</span>
+              <strong>{{ t('realEvidence') }}</strong>
+              <p>{{ t('evidenceFirstText') }}</p>
+            </div>
+            <div>
+              <span>{{ t('springAdvisor') }}</span>
+              <strong>{{ t('navAlternatives') }}</strong>
+              <p>{{ t('alternativesPageSubtitle') }}</p>
+            </div>
+          </div>
+        </article>
+
+        <section class="scan-card">
+          <div class="mode-switch" role="tablist" [attr.aria-label]="t('startScan')">
+            <button [class.active]="uploadMode() === 'zip'" type="button" (click)="selectMode('zip')">{{ t('uploadZip') }}</button>
+            <button [class.active]="uploadMode() === 'folder'" type="button" (click)="selectMode('folder')">{{ t('uploadFolder') }}</button>
+            <button [class.active]="uploadMode() === 'local'" type="button" (click)="selectMode('local')">{{ t('backendPath') }}</button>
+          </div>
+
+          <div *ngIf="uploadMode() === 'zip'" class="field">
+            <label for="zipFile">{{ t('zipProjectFile') }}</label>
+            <input id="zipFile" type="file" accept=".zip" (change)="onFileSelected($event)">
+            <small *ngIf="selectedFile()">{{ t('selected') }}: {{ selectedFile()?.name }}</small>
+            <small *ngIf="!selectedFile()">{{ t('zipHelp') }}</small>
+          </div>
+
+          <div *ngIf="uploadMode() === 'folder'" class="field">
+            <label for="projectFolder">{{ t('projectRootFolder') }}</label>
+            <input id="projectFolder" type="file" webkitdirectory directory multiple (change)="onFolderSelected($event)">
+            <small *ngIf="selectedFolderFiles().length > 0">{{ t('selectedFemale') }}: {{ folderFilesLabel() }}</small>
+            <small *ngIf="selectedFolderFiles().length === 0">{{ t('folderHelp') }}</small>
+          </div>
+
+          <div *ngIf="uploadMode() === 'local'" class="field">
+            <label for="localPath">{{ t('backendFolderPath') }}</label>
+            <input id="localPath" type="text" [(ngModel)]="localPath" placeholder="C:\progetti\mio-progetto oppure /scan/mio-progetto">
+            <small>{{ t('backendPathHelp') }}</small>
+          </div>
+
+          <div class="auto-analysis-box">
+            <div class="auto-analysis-head">
+              <span>{{ t('scanSettings') }}</span>
+              <strong>{{ t('automaticProfileTitle') }}</strong>
+              <p>{{ t('automaticProfileText') }}</p>
+            </div>
+            <div class="analysis-flow" [attr.aria-label]="t('analysisStepsTitle')">
+              <div><b>01</b><span>{{ t('analysisStepModules') }}</span></div>
+              <div><b>02</b><span>{{ t('analysisStepRules') }}</span></div>
+              <div><b>03</b><span>{{ t('analysisStepAlternatives') }}</span></div>
+              <div><b>04</b><span>{{ t('analysisStepProduction') }}</span></div>
+            </div>
+            <small>{{ t('noManualProfile') }}</small>
+          </div>
+
+          <button class="primary" type="button" (click)="scan()" [disabled]="loading()">
+            {{ loading() ? t('scanRunning') : t('startScan') }}
+          </button>
+
+          <p *ngIf="error()" class="error">{{ error() }}</p>
+        </section>
+      </section>
+
+      <ng-container *ngIf="report() as current">
+        <section *ngIf="activePage() === 'overview'" class="dashboard-page">
+          <section class="kpi-grid">
+            <article class="kpi-card score-kpi">
+              <span>{{ t('architectureScore') }}</span>
+              <strong [class]="scoreClass(current.architectureScore)">{{ current.architectureScore }}</strong>
+              <p>{{ riskLabel(current.riskLevel) }} · {{ current.releaseReadiness.label }}</p>
+            </article>
+            <article class="kpi-card" [attr.data-severity]="'CRITICAL'">
+              <span>{{ t('blockersCount') }}</span>
+              <strong>{{ severityCount('CRITICAL') }}</strong>
+              <p>{{ t('critical') }} · {{ t('attentionRequired') }}</p>
+            </article>
+            <article class="kpi-card" [attr.data-severity]="'MAJOR'">
+              <span>{{ t('highIssuesCount') }}</span>
+              <strong>{{ severityCount('MAJOR') }}</strong>
+              <p>{{ t('major') }} · {{ t('decisionBoard') }}</p>
+            </article>
+            <article class="kpi-card" [attr.data-severity]="'MINOR'">
+              <span>{{ t('technicalDebtCount') }}</span>
+              <strong>{{ severityCount('MINOR') }}</strong>
+              <p>{{ t('improvementsLane') }}</p>
+            </article>
+            <article class="kpi-card advisor-kpi">
+              <span>{{ t('navAlternatives') }}</span>
+              <strong>{{ advisorCount(current) }}</strong>
+              <p>{{ t('advisorOpportunities') }}</p>
+            </article>
+            <article class="kpi-card">
+              <span>{{ t('quickCounters') }}</span>
+              <strong>{{ current.rulesExecuted }}</strong>
+              <p>{{ current.scannedJavaFiles }} {{ t('javaFiles') }} · {{ current.scannedPomFiles }} {{ t('pomFiles') }}</p>
+            </article>
+          </section>
+
+          <section class="dashboard-grid">
+            <article class="panel readiness" [attr.data-status]="current.releaseReadiness.status">
+              <div class="panel-title">
+                <div>
+                  <span class="section-kicker">{{ t('releaseReadiness') }}</span>
+                  <h2>{{ current.releaseReadiness.label }}</h2>
+                </div>
+                <button type="button" class="ghost" (click)="selectPage('quality')">{{ t('navQuality') }}</button>
+              </div>
+              <p>{{ current.releaseReadiness.explanation }}</p>
+              <div class="release-grid">
+                <div>
+                  <h3>{{ t('blockers') }}</h3>
+                  <p *ngIf="current.releaseReadiness.blockers.length === 0">{{ t('noBlockers') }}</p>
+                  <ul>
+                    <li *ngFor="let blocker of current.releaseReadiness.blockers">{{ blocker }}</li>
+                  </ul>
+                </div>
+                <div>
+                  <h3>{{ t('warnings') }}</h3>
+                  <p *ngIf="current.releaseReadiness.warnings.length === 0">{{ t('noWarnings') }}</p>
+                  <ul>
+                    <li *ngFor="let warning of current.releaseReadiness.warnings">{{ warning }}</li>
+                  </ul>
+                </div>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-title">
+                <div>
+                  <span class="section-kicker">{{ t('impactVisualTitle') }}</span>
+                  <h2>{{ t('healthSnapshot') }}</h2>
+                </div>
+              </div>
+              <div class="severity-bars">
+                <div class="severity-row" *ngFor="let severity of severityOrder" [attr.data-severity]="severity">
+                  <div class="severity-row-head">
+                    <span>{{ severityLabel(severity) }}</span>
+                    <strong>{{ severityCount(severity) }} · {{ severityPercent(current, severity) }}%</strong>
+                  </div>
+                  <div class="severity-track">
+                    <i [style.width.%]="severityPercent(current, severity)"></i>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="panel wide">
+              <div class="panel-title">
+                <div>
+                  <span class="section-kicker">{{ t('decisionBoard') }}</span>
+                  <h2>{{ t('decisionBoard') }}</h2>
+                  <p>{{ t('decisionBoardText') }}</p>
+                </div>
+              </div>
+              <div class="decision-lanes">
+                <article class="decision-lane" *ngFor="let lane of decisionLanes()" [attr.data-lane]="lane.lane">
+                  <span>{{ lane.title }}</span>
+                  <strong>{{ lane.count }}</strong>
+                  <p>{{ lane.text }}</p>
+                  <button type="button" class="ghost" (click)="focusDecisionLane(lane.lane)">{{ t('openLane') }}</button>
+                </article>
+              </div>
+            </article>
+
+            <article class="panel wide">
+              <div class="panel-title">
+                <div>
+                  <span class="section-kicker">{{ t('executiveSummary') }}</span>
+                  <h2>{{ current.projectName }}</h2>
+                </div>
+                <span>{{ current.scannedAt | date:'medium' }}</span>
+              </div>
+              <p>{{ current.summary.executiveSummary }}</p>
+              <div class="meta-grid">
+                <div><span>{{ t('project') }}</span><strong>{{ current.projectName }}</strong></div>
+                <div *ngIf="currentScanSource()"><span>{{ t('requestedSource') }}</span><strong>{{ currentScanSource() }}</strong></div>
+                <div *ngIf="current.projectRootPath"><span>{{ t('scannedRootPath') }}</span><strong>{{ shortPath(current.projectRootPath) }}</strong></div>
+                <div><span>{{ t('detectedStack') }}</span><strong>{{ detectedScopeLabel(current) }}</strong></div>
+              </div>
+            </article>
+
+            <article class="panel wide">
+              <div class="panel-title">
+                <div>
+                  <span class="section-kicker">{{ t('impactedAreas') }}</span>
+                  <h2>{{ t('gateStatus') }}</h2>
+                </div>
+                <button type="button" class="ghost" (click)="selectPage('findings')">{{ t('navFindings') }}</button>
+              </div>
+              <div class="area-grid">
+                <article class="area-card" *ngFor="let area of current.architectureAreas" [attr.data-status]="area.readinessStatus">
+                  <div class="category-head">
+                    <strong>{{ area.name }}</strong>
+                    <span>{{ gateStatusLabel(area.readinessStatus) }}</span>
+                  </div>
+                  <p>{{ area.description }}</p>
+                  <div class="area-metrics">
+                    <span>{{ area.findings }} {{ t('findings') }}</span>
+                    <span>{{ area.criticalFindings }} {{ t('critical').toLowerCase() }}</span>
+                    <span>{{ area.majorFindings }} {{ t('major').toLowerCase() }}</span>
+                  </div>
+                </article>
+              </div>
+            </article>
+          </section>
+        </section>
+
+        <section *ngIf="activePage() === 'findings'" class="report-page">
+          <div class="sticky-tools">
+            <input type="search" [(ngModel)]="search" (ngModelChange)="touchFilters()" [placeholder]="t('searchPlaceholder')">
+            <select [(ngModel)]="severityFilter" (ngModelChange)="touchFilters()" aria-label="Severity filter">
+              <option value="ALL">{{ t('allSeverities') }}</option>
+              <option *ngFor="let severity of severityOrder" [value]="severity">{{ severityLabel(severity) }}</option>
+            </select>
+            <select [(ngModel)]="categoryFilter" (ngModelChange)="touchFilters()" aria-label="Category filter">
+              <option value="ALL">{{ t('allAreas') }}</option>
+              <option *ngFor="let category of categories()" [value]="category">{{ category }}</option>
+            </select>
+            <select [(ngModel)]="typeFilter" (ngModelChange)="touchFilters()" [attr.aria-label]="t('findingType')">
+              <option value="ALL">{{ t('allTypes') }}</option>
+              <option *ngFor="let type of findingTypes()" [value]="type">{{ findingTypeLabel(type) }}</option>
+            </select>
+            <button type="button" class="ghost" (click)="resetFilters()">{{ t('clearFilters') }}</button>
+          </div>
+
+          <div class="problem-area-strip" *ngIf="problemTypeSummaries().length > 0">
+            <div class="strip-title">{{ t('problemAreasTitle') }}</div>
+            <button
+              type="button"
+              class="type-pill"
+              *ngFor="let type of problemTypeSummaries()"
+              [class.active]="typeFilter === type.type"
+              (click)="setTypeFilter(type.type)">
+              <span>{{ type.label }}</span>
+              <strong>{{ type.occurrences }}</strong>
+            </button>
+          </div>
+
+          <div class="active-filter" *ngIf="activeDecisionLane()">
+            {{ t('focusedLane') }}: <strong>{{ severityFilter === 'ALL' ? activeDecisionLane() : severityLabel(severityFilter) }}</strong>
+          </div>
+
+          <div class="finding-list grouped">
+            <section class="problem-group" *ngFor="let group of problemGroups()">
+              <div class="problem-group-head">
+                <div>
+                  <span>{{ group.label }}</span>
+                  <h3>{{ group.occurrences }} {{ t('findings') }}</h3>
+                </div>
+              </div>
+
+              <article class="finding" *ngFor="let finding of group.findings; trackBy: trackFinding">
+                <div class="finding-header">
+                  <div>
+                    <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
+                    <span class="category">{{ finding.category }}</span>
+                    <span class="rule-code">{{ t('technicalCode') }} {{ ruleCode(finding.ruleId) }}</span>
+                  </div>
+                  <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
+                </div>
+
+                <h3>{{ finding.title }}</h3>
+
+                <div class="finding-guidance">
+                  <div class="guidance-item detected">
+                    <span>{{ t('detectedProblem') }}</span>
+                    <p>{{ finding.guidance.detectedProblem }}</p>
+                  </div>
+                  <div class="guidance-item risk">
+                    <span>{{ t('riskImpact') }}</span>
+                    <p>{{ finding.guidance.riskImpact }}</p>
+                  </div>
+                  <div class="guidance-item solution">
+                    <span>{{ t('recommendedFix') }}</span>
+                    <p>{{ finding.guidance.recommendedApproach }}</p>
+                  </div>
+                </div>
+
+                <a *ngIf="finding.guidance.documentationUrl" class="doc-link" [href]="finding.guidance.documentationUrl" target="_blank" rel="noopener">
+                  {{ t('officialDocs') }}
+                </a>
+
+                <details>
+                  <summary>{{ t('involvedComponents') }} ({{ finding.affectedComponents.length }})</summary>
+                  <p class="json-note" *ngIf="finding.affectedComponents.length > 12">{{ t('showingFirstComponents') }}</p>
+                  <div class="component-list">
+                    <div class="component" *ngFor="let component of visibleComponents(finding)">
+                      <strong>{{ componentTitle(component) }}</strong>
+                      <span>{{ componentTypeLabel(component.type) }}</span>
+                      <span>{{ component.filePath }}<ng-container *ngIf="component.line">:{{ component.line }}</ng-container></span>
+                      <p *ngIf="component.evidence"><b>{{ t('technicalEvidence') }}:</b> {{ component.evidence }}</p>
+                      <pre *ngIf="component.codeSnippet" class="code-evidence"><code>{{ component.codeSnippet }}</code></pre>
+                    </div>
+                  </div>
+                  <p class="json-note" *ngIf="remainingComponents(finding) > 0">+{{ remainingComponents(finding) }} {{ t('moreComponents') }}</p>
+                </details>
+              </article>
+            </section>
+          </div>
+        </section>
+
+        <section *ngIf="activePage() === 'alternatives'" class="report-page">
+          <article class="panel advisor-panel">
+            <div class="panel-title">
+              <div>
+                <span class="section-kicker">{{ t('springAdvisor') }}</span>
+                <h2>{{ t('alternativesTitle') }}</h2>
+                <p>{{ t('advisorSubtitle') }}</p>
+              </div>
+              <span>{{ advisorCount(current) }} {{ t('advisorOpportunities') }}</span>
+            </div>
+
+            <div *ngIf="springAdvisorFindings().length === 0" class="empty inline-empty">
+              <h2>{{ t('advisorEmptyTitle') }}</h2>
+              <p>{{ t('advisorEmptyText') }}</p>
+            </div>
+
+            <div class="advisor-group-list" *ngIf="springAdvisorFindings().length > 0">
+              <section class="advisor-group" *ngFor="let group of advisorGroups()">
+                <div class="advisor-group-title">
+                  <h3>{{ group.area }}</h3>
+                  <span>{{ group.occurrences }} {{ t('advisorOpportunities') }}</span>
+                </div>
+
+                <article class="finding advisor-finding" *ngFor="let finding of group.findings; trackBy: trackFinding">
+                  <div class="finding-header">
+                    <div>
+                      <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
+                      <span class="category">{{ advisorArea(finding) }}</span>
+                      <span class="rule-code">{{ t('technicalCode') }} {{ ruleCode(finding.ruleId) }}</span>
+                    </div>
+                    <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
+                  </div>
+                  <h3>{{ finding.title }}</h3>
+
+                  <div class="advisor-flow">
+                    <div>
+                      <span>{{ t('detectedProblem') }}</span>
+                      <p>{{ finding.guidance.detectedProblem }}</p>
+                    </div>
+                    <div>
+                      <span>{{ t('springAlternativeToUse') }}</span>
+                      <p><strong>{{ finding.guidance.springAlternative }}</strong></p>
+                    </div>
+                    <div>
+                      <span>{{ t('riskImpact') }}</span>
+                      <p>{{ finding.guidance.riskImpact }}</p>
+                    </div>
+                    <div>
+                      <span>{{ t('recommendedFix') }}</span>
+                      <p>{{ finding.guidance.recommendedApproach }}</p>
+                    </div>
+                  </div>
+
+                  <a *ngIf="finding.guidance.documentationUrl" class="doc-link" [href]="finding.guidance.documentationUrl" target="_blank" rel="noopener">
+                    {{ t('officialDocs') }}
+                  </a>
+
+                  <div class="real-evidence" *ngIf="firstComponent(finding) as component">
+                    <h4>{{ t('realEvidence') }}</h4>
+                    <p><strong>{{ componentTitle(component) }}</strong> · {{ component.filePath }}<ng-container *ngIf="component.line">:{{ component.line }}</ng-container></p>
+                    <p *ngIf="component.evidence"><b>{{ t('technicalEvidence') }}:</b> {{ component.evidence }}</p>
+                    <pre *ngIf="component.codeSnippet" class="code-evidence"><code>{{ component.codeSnippet }}</code></pre>
+                  </div>
+                </article>
+              </section>
             </div>
           </article>
-        </div>
-      </article>
+        </section>
 
-      <article class="panel">
-        <h2>{{ t('detectedStack') }}</h2>
-        <div class="chip-list">
-          <span *ngFor="let item of capabilityItems(current)">{{ item }}</span>
-        </div>
-        <p>{{ t('detectedStyles') }}: <strong>{{ current.capabilities.detectedArchitecturalStyles.join(', ') }}</strong></p>
-      </article>
+        <section *ngIf="activePage() === 'quality'" class="report-page">
+          <div class="quality-nav">
+            <button type="button" [class.active]="activeTab() === 'gates'" (click)="selectTab('gates')">{{ t('gates') }}</button>
+            <button type="button" [class.active]="activeTab() === 'modules'" (click)="selectTab('modules')">{{ t('springModules') }}</button>
+            <button type="button" [class.active]="activeTab() === 'production'" (click)="selectTab('production')">{{ t('productionRules') }}</button>
+            <button type="button" [class.active]="activeTab() === 'suggestions'" (click)="selectTab('suggestions')">{{ t('suggestionsToVerify') }}</button>
+            <button type="button" [class.active]="activeTab() === 'actions'" (click)="selectTab('actions')">{{ t('actions') }}</button>
+          </div>
 
-      <article class="panel">
-        <h2>{{ t('howToRead') }}</h2>
-        <p>{{ current.explanation.scoreMeaning }}</p>
-        <p>{{ current.explanation.severityMeaning }}</p>
-        <ul>
-          <li *ngFor="let step of current.explanation.nextSteps">{{ step }}</li>
-        </ul>
-      </article>
-    </section>
+          <section *ngIf="activeTab() === 'gates'" class="panel-grid">
+            <article class="panel wide">
+              <div class="panel-title">
+                <h2>{{ t('gateStatus') }}</h2>
+                <span>{{ current.qualityGates.length }} {{ t('gates').toLowerCase() }}</span>
+              </div>
+              <div class="gate-grid">
+                <article class="gate-card" *ngFor="let gate of current.qualityGates" [attr.data-status]="gate.status">
+                  <div class="category-head">
+                    <strong>{{ gate.name }}</strong>
+                    <span>{{ gateStatusLabel(gate.status) }}</span>
+                  </div>
+                  <p>{{ gate.explanation }}</p>
+                  <small>{{ gate.failingFindings }} {{ t('failingFindings') }}</small>
+                </article>
+              </div>
+            </article>
+          </section>
 
-    <section *ngIf="activeTab() === 'modules'" class="panel-grid">
-      <article class="panel wide">
-        <div class="panel-title">
-          <div>
-            <h2>{{ t('springModules') }}</h2>
+          <section *ngIf="activeTab() === 'modules'" class="panel-grid">
+            <article class="panel wide">
+              <div class="panel-title">
+                <div>
+                  <h2>{{ t('springModules') }}</h2>
+                  <p>{{ t('springModulesSubtitle') }}</p>
+                </div>
+                <span>{{ activeModuleCount() }} / {{ moduleCards().length }}</span>
+              </div>
+              <div class="module-grid">
+                <article class="module-card" *ngFor="let module of moduleCards()" [attr.data-active]="module.active">
+                  <div class="category-head">
+                    <strong>{{ module.name }}</strong>
+                    <span>{{ module.status }}</span>
+                  </div>
+                  <p>{{ module.description }}</p>
+                  <small>{{ module.evidence }}</small>
+                </article>
+              </div>
+            </article>
+          </section>
+
+          <section *ngIf="activeTab() === 'production'" class="panel advisor-panel">
+            <div class="panel-title">
+              <div>
+                <h2>{{ t('productionRules') }}</h2>
+                <p>{{ t('productionRulesSubtitle') }}</p>
+              </div>
+              <span>{{ productionFindings().length }} {{ t('findings') }}</span>
+            </div>
+            <div class="finding-list grouped">
+              <article class="finding" *ngFor="let finding of productionFindings(); trackBy: trackFinding">
+                <div class="finding-header">
+                  <div>
+                    <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
+                    <span class="category">{{ finding.category }}</span>
+                    <span class="rule-code">{{ t('technicalCode') }} {{ ruleCode(finding.ruleId) }}</span>
+                  </div>
+                  <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
+                </div>
+                <h3>{{ finding.title }}</h3>
+                <div class="guidance-grid">
+                  <div><span>{{ t('riskImpact') }}</span><p>{{ finding.guidance.riskImpact }}</p></div>
+                  <div><span>{{ t('recommendedFix') }}</span><p>{{ finding.guidance.recommendedApproach }}</p></div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section *ngIf="activeTab() === 'suggestions'" class="panel advisor-panel">
+            <div class="panel-title">
+              <div>
+                <h2>{{ t('suggestionsToVerify') }}</h2>
+                <p>{{ t('suggestionsSubtitle') }}</p>
+              </div>
+              <span>{{ suggestionFindings().length }} {{ t('findings') }}</span>
+            </div>
+            <div class="finding-list grouped">
+              <article class="finding" *ngFor="let finding of suggestionFindings(); trackBy: trackFinding">
+                <div class="finding-header">
+                  <div>
+                    <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
+                    <span class="category">{{ finding.category }}</span>
+                    <span class="rule-code">{{ t('confidence') }}: {{ confidenceLabel(finding) }}</span>
+                  </div>
+                  <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
+                </div>
+                <h3>{{ finding.title }}</h3>
+                <p>{{ finding.whyItMatters }}</p>
+                <strong>{{ finding.suggestedFix }}</strong>
+              </article>
+            </div>
+          </section>
+
+          <section *ngIf="activeTab() === 'actions'" class="panel">
+            <div class="panel-title">
+              <h2>{{ t('recommendedActions') }}</h2>
+              <span>{{ current.recommendedActions.length }} {{ t('priorities') }}</span>
+            </div>
+            <div class="action-list">
+              <article class="action" *ngFor="let action of current.recommendedActions">
+                <span class="priority">#{{ action.priority }}</span>
+                <div>
+                  <div class="finding-header compact">
+                    <span class="badge" [attr.data-severity]="action.severity">{{ severityLabel(action.severity) }}</span>
+                    <span class="rule-code">{{ ruleCode(action.ruleId) }}</span>
+                    <span>{{ action.location }}</span>
+                  </div>
+                  <h3>{{ action.title }}</h3>
+                  <p>{{ action.reason }}</p>
+                  <strong>{{ action.action }}</strong>
+                </div>
+              </article>
+            </div>
+          </section>
+        </section>
+
+        <section *ngIf="activePage() === 'json'" class="panel">
+          <div class="panel-title">
+            <h2>{{ t('technicalJson') }}</h2>
+            <button type="button" class="ghost" (click)="exportJson()">{{ t('exportJson') }}</button>
+          </div>
+          <p class="json-note">{{ t('jsonNote') }}</p>
+          <pre>{{ rawJson() }}</pre>
+        </section>
+      </ng-container>
+
+      <section *ngIf="activePage() !== 'scan' && activePage() !== 'mission' && activePage() !== 'contact' && !report()" class="empty locked">
+        <img class="empty-logo" src="assets/spring-guardian-logo.svg" [attr.alt]="t('logoAlt')">
+        <h2>{{ t('reportLockedTitle') }}</h2>
+        <p>{{ t('reportLockedText') }}</p>
+        <button type="button" class="primary compact-button" (click)="selectPage('scan')">{{ t('scanNow') }}</button>
+      </section>
+
+      <section *ngIf="activePage() === 'mission'" class="static-page">
+        <article class="mission-hero panel">
+          <span class="section-kicker">{{ t('missionTitle') }}</span>
+          <h2>{{ t('missionSubtitle') }}</h2>
+          <p>{{ t('missionBody') }}</p>
+        </article>
+
+        <div class="mission-grid">
+          <article class="panel mission-card">
+            <b>01</b>
+            <h3>{{ t('missionPointOne') }}</h3>
             <p>{{ t('springModulesSubtitle') }}</p>
-          </div>
-          <span>{{ moduleCards().length }} {{ t('springModules').toLowerCase() }}</span>
-        </div>
-        <div class="module-grid">
-          <article class="module-card" *ngFor="let module of moduleCards()" [attr.data-active]="module.active">
-            <div class="category-head">
-              <strong>{{ module.name }}</strong>
-              <span>{{ module.status }}</span>
-            </div>
-            <p>{{ module.description }}</p>
-            <small>{{ module.evidence }}</small>
+          </article>
+          <article class="panel mission-card">
+            <b>02</b>
+            <h3>{{ t('missionPointTwo') }}</h3>
+            <p>{{ t('evidenceFirstText') }}</p>
+          </article>
+          <article class="panel mission-card">
+            <b>03</b>
+            <h3>{{ t('missionPointThree') }}</h3>
+            <p>{{ t('alternativesPageSubtitle') }}</p>
+          </article>
+          <article class="panel mission-card">
+            <b>04</b>
+            <h3>{{ t('missionPointFour') }}</h3>
+            <p>{{ t('workspaceSubtitle') }}</p>
           </article>
         </div>
-      </article>
 
-      <article class="panel wide">
-        <h2>{{ t('springModules') }} · {{ t('springAdvisor') }}</h2>
-        <p>{{ t('advisorSubtitle') }}</p>
-        <div class="area-grid">
-          <article class="area-card" *ngFor="let finding of current.findings" [hidden]="finding.findingType !== 'SPRING_CAPABILITY_GAP'">
-            <div class="category-head">
-              <strong>{{ finding.title }}</strong>
-              <span>{{ t('confidence') }}: {{ confidenceLabel(finding) }}</span>
-            </div>
-            <p>{{ finding.guidance.riskImpact }}</p>
-            <strong>{{ finding.guidance.recommendedApproach }}</strong>
-          </article>
-        </div>
-      </article>
-    </section>
-
-    <section *ngIf="activeTab() === 'gates'" class="panel-grid">
-      <article class="panel wide">
-        <div class="panel-title">
-          <h2>{{ t('gateStatus') }}</h2>
-          <span>{{ current.qualityGates.length }} {{ t('gates').toLowerCase() }}</span>
-        </div>
-        <div class="gate-grid">
-          <article class="gate-card" *ngFor="let gate of current.qualityGates" [attr.data-status]="gate.status">
-            <div class="category-head">
-              <strong>{{ gate.name }}</strong>
-              <span>{{ gateStatusLabel(gate.status) }}</span>
-            </div>
-            <p>{{ gate.explanation }}</p>
-            <small>{{ gate.failingFindings }} {{ t('failingFindings') }}</small>
-          </article>
-        </div>
-      </article>
-
-      <article class="panel wide">
-        <h2>{{ t('impactedAreas') }}</h2>
-        <div class="area-grid">
-          <article class="area-card" *ngFor="let area of current.architectureAreas" [attr.data-status]="area.readinessStatus">
-            <div class="category-head">
-              <strong>{{ area.name }}</strong>
-              <span>{{ gateStatusLabel(area.readinessStatus) }}</span>
-            </div>
-            <p>{{ area.description }}</p>
-            <div class="area-metrics">
-              <span>{{ area.findings }} {{ t('findings') }}</span>
-              <span>{{ area.criticalFindings }} {{ t('critical').toLowerCase() }}</span>
-              <span>{{ area.majorFindings }} {{ t('major').toLowerCase() }}</span>
-            </div>
-          </article>
-        </div>
-      </article>
-    </section>
-
-    <section *ngIf="activeTab() === 'findings'" class="panel">
-      <div class="toolbar">
-        <input type="search" [(ngModel)]="search" (ngModelChange)="touchFilters()" [placeholder]="t('searchPlaceholder')">
-        <select [(ngModel)]="severityFilter" (ngModelChange)="touchFilters()" aria-label="Severity filter">
-          <option value="ALL">{{ t('allSeverities') }}</option>
-          <option *ngFor="let severity of severityOrder" [value]="severity">{{ severityLabel(severity) }}</option>
-        </select>
-        <select [(ngModel)]="categoryFilter" (ngModelChange)="touchFilters()" aria-label="Category filter">
-          <option value="ALL">{{ t('allAreas') }}</option>
-          <option *ngFor="let category of categories()" [value]="category">{{ category }}</option>
-        </select>
-        <select [(ngModel)]="typeFilter" (ngModelChange)="touchFilters()" [attr.aria-label]="t('findingType')">
-          <option value="ALL">{{ t('allTypes') }}</option>
-          <option *ngFor="let type of findingTypes()" [value]="type">{{ findingTypeLabel(type) }}</option>
-        </select>
-        <button type="button" class="ghost" (click)="resetFilters()">{{ t('clearFilters') }}</button>
-      </div>
-
-      <div class="problem-area-strip" *ngIf="problemTypeSummaries().length > 0">
-        <div class="strip-title">{{ t('problemAreasTitle') }}</div>
-        <button
-          type="button"
-          class="type-pill"
-          *ngFor="let type of problemTypeSummaries()"
-          [class.active]="typeFilter === type.type"
-          (click)="setTypeFilter(type.type)">
-          <span>{{ type.label }}</span>
-          <strong>{{ type.occurrences }}</strong>
-        </button>
-      </div>
-
-      <div class="active-filter" *ngIf="activeDecisionLane()">
-        {{ t('focusedLane') }}: <strong>{{ severityFilter === 'ALL' ? activeDecisionLane() : severityLabel(severityFilter) }}</strong>
-      </div>
-
-      <div class="finding-list grouped">
-        <section class="problem-group" *ngFor="let group of problemGroups()">
-          <div class="problem-group-head">
-            <div>
-              <span>{{ group.label }}</span>
-              <h3>{{ group.occurrences }} {{ t('findings') }}</h3>
-            </div>
-          </div>
-
-          <article class="finding" *ngFor="let finding of group.findings; trackBy: trackFinding">
-            <div class="finding-header">
-              <div>
-                <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
-                <span class="category">{{ finding.category }}</span>
-                <span class="rule-code">{{ t('technicalCode') }} {{ ruleCode(finding.ruleId) }}</span>
-              </div>
-              <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
-            </div>
-
-            <h3>{{ finding.title }}</h3>
-
-            <div class="finding-guidance action-oriented">
-              <div class="guidance-item detected">
-                <span>{{ t('detectedProblem') }}</span>
-                <p>{{ finding.guidance.detectedProblem }}</p>
-              </div>
-              <div class="guidance-item risk">
-                <span>{{ t('riskImpact') }}</span>
-                <p>{{ finding.guidance.riskImpact }}</p>
-              </div>
-              <div class="guidance-item solution">
-                <span>{{ t('recommendedFix') }}</span>
-                <p>{{ finding.guidance.recommendedApproach }}</p>
-              </div>
-            </div>
-
-            <a *ngIf="finding.guidance.documentationUrl" class="doc-link" [href]="finding.guidance.documentationUrl" target="_blank" rel="noopener">
-              {{ t('officialDocs') }}
-            </a>
-
-            <div class="before-after compact" *ngIf="false">
-              <div *ngIf="finding.guidance.beforeExample">
-                <h4>{{ t('currentFinding') }}</h4>
-                <pre class="code-evidence"><code>{{ finding.guidance.beforeExample }}</code></pre>
-              </div>
-              <div *ngIf="finding.guidance.afterExample">
-                <h4>{{ t('expectedImplementation') }}</h4>
-                <pre class="code-evidence"><code>{{ finding.guidance.afterExample }}</code></pre>
-              </div>
-            </div>
-
-            <details>
-              <summary>{{ t('involvedComponents') }} ({{ finding.affectedComponents.length }})</summary>
-              <p class="json-note" *ngIf="finding.affectedComponents.length > 12">{{ t('showingFirstComponents') }}</p>
-              <div class="component-list">
-                <div class="component" *ngFor="let component of visibleComponents(finding)">
-                  <strong>{{ componentTitle(component) }}</strong>
-                  <span>{{ componentTypeLabel(component.type) }}</span>
-                  <span>{{ component.filePath }}<ng-container *ngIf="component.line">:{{ component.line }}</ng-container></span>
-                  <p *ngIf="component.evidence"><b>{{ t('technicalEvidence') }}:</b> {{ component.evidence }}</p>
-                  <pre *ngIf="component.codeSnippet" class="code-evidence"><code>{{ component.codeSnippet }}</code></pre>
-                </div>
-              </div>
-              <p class="json-note" *ngIf="remainingComponents(finding) > 0">+{{ remainingComponents(finding) }} {{ t('moreComponents') }}</p>
-            </details>
-          </article>
-        </section>
-      </div>
-    </section>
-
-    <section *ngIf="activeTab() === 'advisor'" class="panel advisor-panel">
-      <div class="panel-title">
-        <div>
-          <h2>{{ t('springAdvisor') }}</h2>
-          <p>{{ t('advisorSubtitle') }}</p>
-        </div>
-        <span>{{ advisorCount(current) }} {{ t('advisorOpportunities') }}</span>
-      </div>
-
-      <div *ngIf="springAdvisorFindings().length === 0" class="empty inline-empty">
-        <h2>{{ t('advisorEmptyTitle') }}</h2>
-        <p>{{ t('advisorEmptyText') }}</p>
-      </div>
-
-      <div class="advisor-group-list" *ngIf="springAdvisorFindings().length > 0">
-        <section class="advisor-group" *ngFor="let group of advisorGroups()">
-          <div class="advisor-group-title">
-            <h3>{{ group.area }}</h3>
-            <span>{{ group.occurrences }} {{ t('advisorOpportunities') }}</span>
-          </div>
-
-          <article class="finding advisor-finding" *ngFor="let finding of group.findings; trackBy: trackFinding">
-            <div class="finding-header">
-              <div>
-                <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
-                <span class="category">{{ advisorArea(finding) }}</span>
-                <span class="rule-code">{{ t('technicalCode') }} {{ ruleCode(finding.ruleId) }}</span>
-              </div>
-              <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
-            </div>
-            <h3>{{ finding.title }}</h3>
-
-            <div class="advisor-flow">
-              <div>
-                <span>{{ t('detectedProblem') }}</span>
-                <p>{{ finding.guidance.detectedProblem }}</p>
-              </div>
-              <div>
-                <span>{{ t('springAlternativeToUse') }}</span>
-                <p><strong>{{ finding.guidance.springAlternative }}</strong></p>
-              </div>
-              <div>
-                <span>{{ t('riskImpact') }}</span>
-                <p>{{ finding.guidance.riskImpact }}</p>
-              </div>
-              <div>
-                <span>{{ t('recommendedFix') }}</span>
-                <p>{{ finding.guidance.recommendedApproach }}</p>
-              </div>
-            </div>
-
-            <a *ngIf="finding.guidance.documentationUrl" class="doc-link" [href]="finding.guidance.documentationUrl" target="_blank" rel="noopener">
-              {{ t('officialDocs') }}
-            </a>
-
-            <div class="real-evidence" *ngIf="firstComponent(finding) as component">
-              <h4>{{ t('realEvidence') }}</h4>
-              <p><strong>{{ componentTitle(component) }}</strong> · {{ component.filePath }}<ng-container *ngIf="component.line">:{{ component.line }}</ng-container></p>
-              <p *ngIf="component.evidence"><b>{{ t('technicalEvidence') }}:</b> {{ component.evidence }}</p>
-              <pre *ngIf="component.codeSnippet" class="code-evidence"><code>{{ component.codeSnippet }}</code></pre>
-              <p class="json-note">{{ t('examplesHidden') }}</p>
-            </div>
-
-
-            <div class="before-after" *ngIf="false">
-              <div *ngIf="finding.guidance.beforeExample">
-                <h4>{{ t('beforeExample') }}</h4>
-                <pre class="code-evidence"><code>{{ finding.guidance.beforeExample }}</code></pre>
-              </div>
-              <div *ngIf="finding.guidance.afterExample">
-                <h4>{{ t('afterExample') }}</h4>
-                <pre class="code-evidence"><code>{{ finding.guidance.afterExample }}</code></pre>
-              </div>
-            </div>
-
-            <details>
-              <summary>{{ t('involvedComponents') }} ({{ finding.affectedComponents.length }})</summary>
-              <div class="component-list">
-                <div class="component" *ngFor="let component of finding.affectedComponents">
-                  <strong>{{ componentTitle(component) }}</strong>
-                  <span>{{ componentTypeLabel(component.type) }}</span>
-                  <span>{{ component.filePath }}<ng-container *ngIf="component.line">:{{ component.line }}</ng-container></span>
-                  <p *ngIf="component.evidence"><b>{{ t('technicalEvidence') }}:</b> {{ component.evidence }}</p>
-                  <pre *ngIf="component.codeSnippet" class="code-evidence"><code>{{ component.codeSnippet }}</code></pre>
-                </div>
-              </div>
-            </details>
-          </article>
-        </section>
-      </div>
-    </section>
-
-    <section *ngIf="activeTab() === 'production'" class="panel advisor-panel">
-      <div class="panel-title">
-        <div>
-          <h2>{{ t('productionRules') }}</h2>
-          <p>{{ t('productionRulesSubtitle') }}</p>
-        </div>
-        <span>{{ productionFindings().length }} {{ t('findings') }}</span>
-      </div>
-      <div class="finding-list grouped">
-        <article class="finding" *ngFor="let finding of productionFindings(); trackBy: trackFinding">
-          <div class="finding-header">
-            <div>
-              <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
-              <span class="category">{{ finding.category }}</span>
-              <span class="rule-code">{{ t('technicalCode') }} {{ ruleCode(finding.ruleId) }}</span>
-            </div>
-            <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
-          </div>
-          <h3>{{ finding.title }}</h3>
-          <div class="guidance-grid">
-            <div><span>{{ t('riskImpact') }}</span><p>{{ finding.guidance.riskImpact }}</p></div>
-            <div><span>{{ t('recommendedFix') }}</span><p>{{ finding.guidance.recommendedApproach }}</p></div>
-          </div>
-          <div class="real-evidence" *ngIf="firstComponent(finding) as component">
-            <h4>{{ t('realEvidence') }}</h4>
-            <p><strong>{{ componentTitle(component) }}</strong> · {{ component.filePath }}<ng-container *ngIf="component.line">:{{ component.line }}</ng-container></p>
-            <p *ngIf="component.evidence"><b>{{ t('technicalEvidence') }}:</b> {{ component.evidence }}</p>
-            <pre *ngIf="component.codeSnippet" class="code-evidence"><code>{{ component.codeSnippet }}</code></pre>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section *ngIf="activeTab() === 'suggestions'" class="panel advisor-panel">
-      <div class="panel-title">
-        <div>
-          <h2>{{ t('suggestionsToVerify') }}</h2>
-          <p>{{ t('suggestionsSubtitle') }}</p>
-        </div>
-        <span>{{ suggestionFindings().length }} {{ t('findings') }}</span>
-      </div>
-      <div class="finding-list grouped">
-        <article class="finding" *ngFor="let finding of suggestionFindings(); trackBy: trackFinding">
-          <div class="finding-header">
-            <div>
-              <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
-              <span class="category">{{ finding.category }}</span>
-              <span class="rule-code">{{ t('confidence') }}: {{ confidenceLabel(finding) }}</span>
-            </div>
-            <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
-          </div>
-          <h3>{{ finding.title }}</h3>
-          <p>{{ finding.whyItMatters }}</p>
-          <strong>{{ finding.suggestedFix }}</strong>
-        </article>
-      </div>
-    </section>
-
-    <section *ngIf="activeTab() === 'actions'" class="panel">
-      <div class="panel-title">
-        <h2>{{ t('recommendedActions') }}</h2>
-        <span>{{ current.recommendedActions.length }} {{ t('priorities') }}</span>
-      </div>
-      <div class="action-list">
-        <article class="action" *ngFor="let action of current.recommendedActions">
-          <span class="priority">#{{ action.priority }}</span>
+        <article class="panel contribution-panel">
           <div>
-            <div class="finding-header compact">
-              <span class="badge" [attr.data-severity]="action.severity">{{ severityLabel(action.severity) }}</span>
-              <span class="rule-code">{{ ruleCode(action.ruleId) }}</span>
-              <span>{{ action.location }}</span>
-            </div>
-            <h3>{{ action.title }}</h3>
-            <p>{{ action.reason }}</p>
-            <strong>{{ action.action }}</strong>
+            <span class="section-kicker">{{ t('contributeTitle') }}</span>
+            <h2>{{ t('contributeTitle') }}</h2>
+            <p>{{ t('contributeText') }}</p>
           </div>
+          <button type="button" class="primary compact-button" (click)="selectPage('contact')">{{ t('navContact') }}</button>
         </article>
-      </div>
-    </section>
+      </section>
 
-    <section *ngIf="activeTab() === 'json'" class="panel">
-      <div class="panel-title">
-        <h2>{{ t('technicalJson') }}</h2>
-        <button type="button" class="ghost" (click)="exportJson()">{{ t('exportJson') }}</button>
-      </div>
-      <p class="json-note">{{ t('jsonNote') }}</p>
-      <pre>{{ rawJson() }}</pre>
-    </section>
-  </main>
+      <section *ngIf="activePage() === 'contact'" class="static-page contact-page">
+        <article class="panel mission-hero">
+          <span class="section-kicker">{{ t('contactTitle') }}</span>
+          <h2>{{ t('contactSubtitle') }}</h2>
+          <p>{{ t('contactCallout') }}</p>
+        </article>
 
-  <ng-template #emptyState>
-    <section class="empty">
-      <img class="empty-logo" src="assets/spring-guardian-logo.svg" [attr.alt]="t('logoAlt')">
-      <h2>{{ t('emptyTitle') }}</h2>
-      <p>{{ t('emptyText') }}</p>
-    </section>
-  </ng-template>
+        <div class="contact-grid">
+          <a class="contact-card" href="mailto:s.meneghetti7&#64;gmail.com">
+            <span>{{ t('contactEmailLabel') }}</span>
+            <strong>s.meneghetti7&#64;gmail.com</strong>
+            <p>{{ t('contactCallout') }}</p>
+          </a>
+          <a class="contact-card placeholder" href="#" aria-label="LinkedIn placeholder">
+            <span>LinkedIn</span>
+            <strong>{{ t('linkedinPlaceholder') }}</strong>
+            <p>{{ t('contributeText') }}</p>
+          </a>
+          <a class="contact-card placeholder" href="#" aria-label="Medium placeholder">
+            <span>Medium</span>
+            <strong>{{ t('mediumPlaceholder') }}</strong>
+            <p>{{ t('missionBody') }}</p>
+          </a>
+        </div>
+
+        <article class="panel contribution-panel">
+          <div>
+            <span class="section-kicker">{{ t('contributeTitle') }}</span>
+            <h2>{{ t('contributeTitle') }}</h2>
+            <p>{{ t('contributeText') }}</p>
+          </div>
+          <button type="button" class="ghost" (click)="selectPage('mission')">{{ t('navMission') }}</button>
+        </article>
+      </section>
+    </main>
+  </section>
 </div>

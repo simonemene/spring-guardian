@@ -33,6 +33,9 @@ final class RuleGuidanceCatalog {
         if (code.startsWith("SPR064")) {
             return advisor(language, "new ObjectMapper()", "ObjectMapper gestito da Spring Boot", "https://docs.spring.io/spring-boot/reference/features/json.html", "private final ObjectMapper mapper = new ObjectMapper();", "private final ObjectMapper mapper;\n\npublic MyComponent(ObjectMapper mapper) {\n    this.mapper = mapper;\n}");
         }
+        if (code.startsWith("SPR096")) {
+            return advisor(language, "spring.jpa.open-in-view=true", "Service-level @Transactional boundary with DTO/projection fetch plan", "https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative.html", "spring.jpa.open-in-view=true", "spring.jpa.open-in-view=false\n// Load required data inside @Transactional service methods");
+        }
         if (code.startsWith("SPR082")) {
             return advisor(language, "@Value usato in più punti", "@ConfigurationProperties validato", "https://docs.spring.io/spring-boot/reference/features/external-config.html", "@Value(\"${external.api.url}\")\nprivate String url;", "@ConfigurationProperties(\"external.api\")\n@Validated\npublic record ApiProperties(@NotBlank String url) {}");
         }

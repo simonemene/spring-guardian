@@ -21,8 +21,6 @@ logs/
 .DS_Store
 Thumbs.db
 
-package-lock.json
-**/package-lock.json
 node_modules/
 **/node_modules/
 dist/
@@ -36,3 +34,7 @@ dist/
 .env.*.local
 
 docker-compose.override.yml
+
+out-tsc/
+**/out-tsc/
+spring-guardian-report.*

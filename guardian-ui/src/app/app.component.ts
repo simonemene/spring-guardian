@@ -7,6 +7,7 @@ import { SpringGuardianApiService } from './spring-guardian-api.service';
 import { ArchitectureReviewReport, AffectedComponent, ArchitectureStyle, FindingGroup, ProjectType, ReleaseTarget, ReportLanguage, Severity } from './spring-guardian.model';
 
 type Tab = 'overview' | 'modules' | 'gates' | 'findings' | 'advisor' | 'production' | 'suggestions' | 'actions' | 'json';
+type AppPage = 'scan' | 'overview' | 'findings' | 'alternatives' | 'quality' | 'mission' | 'contact' | 'json';
 type DecisionLane = 'BLOCKERS' | 'IMPORTANT' | 'IMPROVEMENTS' | 'ADVISOR' | 'INFORMATION';
 type UploadMode = 'zip' | 'folder' | 'local';
 type TranslationKey = keyof typeof TRANSLATIONS.it;
@@ -205,6 +206,56 @@ const TRANSLATIONS = {
     informationLane: 'Note informative',
     informationLaneText: 'Info: opportunità e best practice a basso impatto.',
     openLane: 'Apri',
+    navScan: 'Analizza',
+    navOverview: 'Dashboard',
+    navFindings: 'Problemi',
+    navAlternatives: 'Alternative',
+    navQuality: 'Qualità',
+    navMission: 'Missione',
+    navContact: 'Contatti',
+    navJson: 'JSON',
+    workspaceTitle: 'Workspace architetturale',
+    workspaceSubtitle: 'Carica un progetto e ottieni una review leggibile, navigabile e orientata alla correzione.',
+    dashboardTitle: 'Dashboard progetto',
+    dashboardSubtitle: 'Situazione immediata, priorità e percorsi di approfondimento.',
+    findingsTitle: 'Problemi rilevati',
+    findingsSubtitle: 'Filtra per severità, area o tipo e apri solo ciò che devi correggere.',
+    alternativesTitle: 'Spring Alternatives',
+    alternativesPageSubtitle: 'Alternative concrete Spring-first per modernizzare il codice senza suggerimenti generici.',
+    qualityTitle: 'Qualità e readiness',
+    qualitySubtitle: 'Gate, moduli rilevati, produzione, suggerimenti e azioni in un’unica vista operativa.',
+    missionTitle: 'Missione del progetto',
+    missionSubtitle: 'Spring Guardian nasce per rendere le review architetturali Spring più chiare, ripetibili e utili ai team enterprise.',
+    missionBody: 'L’obiettivo è diventare uno standard aziendale per audit, modernization, governance, onboarding, code review e refactoring di progetti Java/Spring reali.',
+    missionPointOne: 'Specializzato su Spring, non un analyzer generico.',
+    missionPointTwo: 'Evidence-first: ogni finding deve portare a file, classe, riga o configurazione.',
+    missionPointThree: 'Remediation concreta con alternative Spring ufficiali e priorità di intervento.',
+    missionPointFour: 'CLI-first per CI, ma con frontend e report professionali per team e stakeholder.',
+    contactTitle: 'Contatti e contributi',
+    contactSubtitle: 'Hai idee, regole Spring da proporre o vuoi migliorare UX, report e documentazione?',
+    contactEmailLabel: 'Email',
+    linkedinPlaceholder: 'LinkedIn placeholder',
+    mediumPlaceholder: 'Medium placeholder',
+    contributeTitle: 'Contribuisci liberamente',
+    contributeText: 'Se vuoi contribuire, modifica pure il progetto: aggiungi rule, fixture, test, miglioramenti frontend, documentazione o report. Ogni contributo che rende Spring Guardian più utile ai team Java/Spring è benvenuto.',
+    reportLockedTitle: 'Prima esegui una scansione',
+    reportLockedText: 'La dashboard, i problemi, le alternative, i gate e il JSON tecnico diventano disponibili appena analizzi un progetto.',
+    newScan: 'Nuova scansione',
+    openDashboard: 'Apri dashboard',
+    scanNow: 'Avvia ora',
+    healthSnapshot: 'Situazione progetto',
+    quickCounters: 'Contatori operativi',
+    blockersCount: 'Blocchi',
+    highIssuesCount: 'Alti',
+    technicalDebtCount: 'Debito',
+    infoNotesCount: 'Note',
+    modulesCount: 'Moduli',
+    gatesCount: 'Gate',
+    attentionRequired: 'Da guardare',
+    noReportYet: 'Nessun report attivo',
+    sidebarHint: 'Menu prodotto',
+    contactCallout: 'Per domande, idee o collaborazione scrivi a s.meneghetti7@gmail.com.',
+    contributionHint: 'Il progetto è pensato per evolvere con contributi pratici: regole Spring, UX, test e documentazione.',
     logoAlt: 'Logo Spring Guardian'
   },
   en: {
@@ -400,6 +451,56 @@ const TRANSLATIONS = {
     informationLane: 'Informational notes',
     informationLaneText: 'Info findings: low-impact opportunities and best practices.',
     openLane: 'Open',
+    navScan: 'Scan',
+    navOverview: 'Dashboard',
+    navFindings: 'Findings',
+    navAlternatives: 'Alternatives',
+    navQuality: 'Quality',
+    navMission: 'Mission',
+    navContact: 'Contact',
+    navJson: 'JSON',
+    workspaceTitle: 'Architecture workspace',
+    workspaceSubtitle: 'Load a project and get a readable, navigable and fix-oriented review.',
+    dashboardTitle: 'Project dashboard',
+    dashboardSubtitle: 'Immediate status, priorities and guided drill-down paths.',
+    findingsTitle: 'Detected findings',
+    findingsSubtitle: 'Filter by severity, area or type and open only what you need to fix.',
+    alternativesTitle: 'Spring Alternatives',
+    alternativesPageSubtitle: 'Concrete Spring-first alternatives to modernize code without generic advice.',
+    qualityTitle: 'Quality and readiness',
+    qualitySubtitle: 'Gates, detected modules, production checks, suggestions and actions in one operational view.',
+    missionTitle: 'Project mission',
+    missionSubtitle: 'Spring Guardian makes Spring architecture reviews clearer, repeatable and useful for enterprise teams.',
+    missionBody: 'The goal is to become a company standard for audits, modernization, governance, onboarding, code review and refactoring of real Java/Spring projects.',
+    missionPointOne: 'Specialized on Spring, not a generic analyzer.',
+    missionPointTwo: 'Evidence-first: every finding should point to a file, class, line or configuration.',
+    missionPointThree: 'Concrete remediation with official Spring alternatives and intervention priority.',
+    missionPointFour: 'CLI-first for CI, with professional frontend and reports for teams and stakeholders.',
+    contactTitle: 'Contact and contributions',
+    contactSubtitle: 'Have ideas, Spring rules to propose, or UX/report/documentation improvements?',
+    contactEmailLabel: 'Email',
+    linkedinPlaceholder: 'LinkedIn placeholder',
+    mediumPlaceholder: 'Medium placeholder',
+    contributeTitle: 'Contribute freely',
+    contributeText: 'To contribute, modify the project directly: add rules, fixtures, tests, frontend improvements, documentation or reports. Every contribution that makes Spring Guardian more useful for Java/Spring teams is welcome.',
+    reportLockedTitle: 'Run a scan first',
+    reportLockedText: 'Dashboard, findings, alternatives, gates and technical JSON become available as soon as a project is analyzed.',
+    newScan: 'New scan',
+    openDashboard: 'Open dashboard',
+    scanNow: 'Start now',
+    healthSnapshot: 'Project status',
+    quickCounters: 'Operational counters',
+    blockersCount: 'Blockers',
+    highIssuesCount: 'High',
+    technicalDebtCount: 'Debt',
+    infoNotesCount: 'Notes',
+    modulesCount: 'Modules',
+    gatesCount: 'Gates',
+    attentionRequired: 'Needs attention',
+    noReportYet: 'No active report',
+    sidebarHint: 'Product menu',
+    contactCallout: 'For questions, ideas or collaboration write to s.meneghetti7@gmail.com.',
+    contributionHint: 'The project is designed to evolve through practical contributions: Spring rules, UX, tests and documentation.',
     logoAlt: 'Spring Guardian logo'
   }
 } as const;
@@ -422,6 +523,7 @@ export class AppComponent {
   readonly selectedFolderName = signal<string | null>(null);
   readonly uploadMode = signal<UploadMode>('zip');
   readonly activeTab = signal<Tab>('overview');
+  readonly activePage = signal<AppPage>('scan');
   readonly activeDecisionLane = signal<DecisionLane | null>(null);
   readonly selectedLanguage = signal<ReportLanguage>('it');
   readonly filterVersion = signal(0);
@@ -606,6 +708,22 @@ export class AppComponent {
     return current.findings.reduce((total, finding) => total + finding.occurrences, 0);
   });
 
+  readonly activeModuleCount = computed(() => {
+    const current = this.report();
+    if (!current) {
+      return 0;
+    }
+    return this.capabilityItems(current).filter((item) => item !== this.t('noFindings')).length;
+  });
+
+  readonly attentionGateCount = computed(() => {
+    const current = this.report();
+    if (!current) {
+      return 0;
+    }
+    return current.qualityGates.filter((gate) => gate.status !== 'PASS' && gate.status !== 'OK').length;
+  });
+
   readonly rawJson = computed(() => JSON.stringify(this.report(), null, 2));
 
   constructor(private readonly api: SpringGuardianApiService) {}
@@ -618,6 +736,7 @@ export class AppComponent {
     this.selectedLanguage.set(language);
     this.error.set(null);
     this.report.set(null);
+    this.activePage.set('scan');
     this.resetFilters();
   }
 
@@ -628,6 +747,51 @@ export class AppComponent {
 
   selectTab(tab: Tab): void {
     this.activeTab.set(tab);
+  }
+
+  selectPage(page: AppPage): void {
+    this.activePage.set(page);
+    if (page === 'overview') {
+      this.activeTab.set('overview');
+    }
+    if (page === 'findings') {
+      this.activeTab.set('findings');
+    }
+    if (page === 'alternatives') {
+      this.activeTab.set('advisor');
+    }
+    if (page === 'quality') {
+      this.activeTab.set('gates');
+    }
+    if (page === 'json') {
+      this.activeTab.set('json');
+    }
+  }
+
+  pageTitle(): string {
+    return ({
+      scan: this.t('workspaceTitle'),
+      overview: this.t('dashboardTitle'),
+      findings: this.t('findingsTitle'),
+      alternatives: this.t('alternativesTitle'),
+      quality: this.t('qualityTitle'),
+      mission: this.t('missionTitle'),
+      contact: this.t('contactTitle'),
+      json: this.t('technicalJson')
+    } as Record<AppPage, string>)[this.activePage()];
+  }
+
+  pageSubtitle(): string {
+    return ({
+      scan: this.t('workspaceSubtitle'),
+      overview: this.t('dashboardSubtitle'),
+      findings: this.t('findingsSubtitle'),
+      alternatives: this.t('alternativesPageSubtitle'),
+      quality: this.t('qualitySubtitle'),
+      mission: this.t('missionSubtitle'),
+      contact: this.t('contactSubtitle'),
+      json: this.t('jsonNote')
+    } as Record<AppPage, string>)[this.activePage()];
   }
 
   onFileSelected(event: Event): void {
@@ -724,10 +888,12 @@ export class AppComponent {
     this.activeDecisionLane.set(lane);
     if (lane === 'ADVISOR') {
       this.activeTab.set('advisor');
+      this.activePage.set('alternatives');
       this.touchFilters();
       return;
     }
     this.activeTab.set('findings');
+    this.activePage.set('findings');
     if (lane === 'BLOCKERS') {
       this.severityFilter = 'CRITICAL';
       this.touchFilters();
@@ -774,6 +940,7 @@ export class AppComponent {
     this.typeFilter = type;
     this.activeDecisionLane.set(null);
     this.activeTab.set('findings');
+    this.activePage.set('findings');
     this.touchFilters();
   }
 
@@ -1086,6 +1253,7 @@ export class AppComponent {
         }
         this.report.set(result);
         this.activeTab.set('overview');
+        this.activePage.set('overview');
         this.loading.set(false);
       },
       error: (error: HttpErrorResponse) => {

@@ -1076,3 +1076,36 @@ Every report now exposes the root path actually scanned by the backend. When the
 ## Trasparenza sulla sorgente analizzata
 
 Ogni report espone il percorso root realmente analizzato dal backend. Quando si usa la modalità percorso backend, l'interfaccia rimuove il report precedente prima di avviare una nuova scansione e mostra sia la sorgente richiesta sia il percorso risolto dal backend. In questo modo è chiaro quale progetto è stato analizzato.
+
+
+---
+
+## Enterprise iteration notes - 2026-06-19
+
+This version introduces a dedicated `guardian-report` module and a real self-contained HTML renderer for architecture reviews.
+
+### CLI examples
+
+```bash
+mvn clean verify
+mvn -pl guardian-cli -am package
+
+java -jar guardian-cli/target/spring-guardian-cli.jar scan ./my-app --format text
+java -jar guardian-cli/target/spring-guardian-cli.jar scan ./my-app --format json --output report.json
+java -jar guardian-cli/target/spring-guardian-cli.jar scan ./my-app --format html --output report.html
+java -jar guardian-cli/target/spring-guardian-cli.jar scan ./my-app --fail-on major
+```
+
+### Module layout
+
+```text
+guardian-core    deterministic scanner, model and Spring-centric rules
+guardian-report  text/html report renderers
+guardian-cli     Picocli CLI, JSON output and CI exit codes
+guardian-server  REST API and OpenAPI documentation
+guardian-ui      Angular dashboard for interactive scans
+```
+
+### Report UX
+
+The HTML report contains overview, score, severity metrics, release readiness, quality gates, impacted architecture areas, recommended actions, findings and Spring Alternatives. It is designed to be shareable with developers, tech leads and enterprise governance stakeholders.

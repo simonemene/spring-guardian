@@ -431,6 +431,11 @@ final class RuleTextCatalog {
                     "Gson manuale può creare una seconda policy JSON diversa dall'ObjectMapper configurato da Spring Boot.",
                     "Preferisci l'ObjectMapper gestito da Spring Boot oppure centralizza Gson come bean se è davvero richiesto."
             );
+            case "SPR096_JPA_OPEN_IN_VIEW_ENABLED" -> new RuleText(
+                    "Open EntityManager in View abilitato",
+                    "Mantenere aperto il contesto JPA durante la renderizzazione web nasconde lazy loading e sposta query database fuori dal confine transazionale del servizio.",
+                    "Imposta spring.jpa.open-in-view=false e carica i dati necessari nel service con DTO, projection, fetch join o entity graph."
+            );
             case "SPR082_VALUE_INJECTION_FOR_GROUPED_CONFIG" -> new RuleText(
                     "@Value usato per configurazione applicativa",
                     "Molti @Value sparsi rendono più difficile validare, documentare ed evolvere la configurazione.",
@@ -582,6 +587,11 @@ final class RuleTextCatalog {
             case "SPR079_LOW_LEVEL_HTTP_CLIENT" -> new RuleText("Low-level HTTP client", "Low-level HTTP clients make timeout, retry, proxy, TLS, tracing and tests less consistent.", "Prefer RestClient, WebClient or a centrally configured HTTP client bean.");
             case "SPR080_SIMPLE_DATE_FORMAT" -> new RuleText("SimpleDateFormat detected", "SimpleDateFormat is mutable and fragile, especially when reused across threads.", "Use java.time DateTimeFormatter and centralize formatting when it is part of an API contract.");
             case "SPR081_GSON_CREATED_MANUALLY" -> new RuleText("Gson created manually", "Manual Gson can create a second JSON policy that differs from Spring Boot configured ObjectMapper.", "Prefer the Boot-managed ObjectMapper or centralize Gson as a bean if Gson is explicitly required.");
+            case "SPR096_JPA_OPEN_IN_VIEW_ENABLED" -> new RuleText(
+                    "Open EntityManager in View enabled",
+                    "Keeping the JPA persistence context open during web rendering hides lazy loading and moves database access outside the service transaction boundary.",
+                    "Set spring.jpa.open-in-view=false and load required data inside service transactions with DTOs, projections, fetch joins or entity graphs."
+            );
             case "SPR082_VALUE_INJECTION_FOR_GROUPED_CONFIG" -> new RuleText("@Value used for application configuration", "Many scattered @Value properties make configuration harder to validate, document and evolve.", "Use @ConfigurationProperties with validation for grouped settings and keep @Value only for isolated values.");
             case "SPR083_ASYNC_WITHOUT_ENABLE_ASYNC" -> new RuleText("@Async without @EnableAsync", "@Async methods are ignored if asynchronous execution is not enabled in the Spring context.", "Add @EnableAsync in a configuration class and define the TaskExecutor used by asynchronous work.");
             case "SPR084_SCHEDULED_WITHOUT_ENABLE_SCHEDULING" -> new RuleText("@Scheduled without @EnableScheduling", "Scheduled methods are ignored if scheduling is not enabled in the Spring context.", "Add @EnableScheduling in a configuration class and make scheduler settings explicit.");

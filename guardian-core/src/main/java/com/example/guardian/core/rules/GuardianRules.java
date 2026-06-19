@@ -89,7 +89,8 @@ public final class GuardianRules {
                 new MavenDependencyVersionConflictRule(),
                 new MavenMixedStackDependencyRule(),
                 new MavenDependencyHygieneRule(),
-                new PomGovernanceRules()
+                new PomGovernanceRules(),
+                new OpenEntityManagerInViewEnabledRule()
         ));
         baseRules.addAll(WebBatchRuleCatalog.webRules());
         baseRules.addAll(WebBatchRuleCatalog.batchRules());

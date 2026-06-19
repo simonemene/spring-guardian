@@ -7,18 +7,25 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
  * Prepares temporary workspaces from uploaded ZIP archives or browser folder uploads.
  *
- * @author Simone Meneghetti
+ * @author p15518 - Simone Meneghetti
  */
 @Service
 public class ZipWorkspaceService {
+
+    private static final int MAX_ARCHIVE_ENTRIES = 25_000;
+    private static final long MAX_UNCOMPRESSED_BYTES = 250L * 1024L * 1024L;
+    private static final long MAX_SINGLE_FILE_BYTES = 50L * 1024L * 1024L;
+    private static final int BUFFER_SIZE = 16 * 1024;
 
     /**
      * Extracts a ZIP archive into a safe temporary workspace.
@@ -32,7 +39,7 @@ public class ZipWorkspaceService {
         }
 
         String originalName = file.getOriginalFilename();
-        if (originalName == null || !originalName.toLowerCase().endsWith(".zip")) {
+        if (originalName == null || !originalName.toLowerCase(Locale.ROOT).endsWith(".zip")) {
             throw new IllegalArgumentException("Sono supportati solo file .zip.");
         }
 
@@ -40,16 +47,32 @@ public class ZipWorkspaceService {
 
         try {
             Files.createDirectories(workspace);
+            long totalBytes = 0;
+            int entries = 0;
             try (ZipArchiveInputStream zip = new ZipArchiveInputStream(new BufferedInputStream(file.getInputStream()))) {
                 ZipArchiveEntry entry;
                 while ((entry = zip.getNextZipEntry()) != null) {
-                    Path target = safeResolve(workspace, entry.getName());
+                    entries++;
+                    if (entries > MAX_ARCHIVE_ENTRIES) {
+                        throw new IllegalArgumentException("Archivio ZIP troppo grande: numero massimo di file superato.");
+                    }
+
+                    String entryName = entry.getName();
+                    if (isIgnoredRelativePath(entryName)) {
+                        continue;
+                    }
+
+                    Path target = safeResolve(workspace, entryName);
 
                     if (entry.isDirectory()) {
                         Files.createDirectories(target);
                     } else {
                         Files.createDirectories(target.getParent());
-                        Files.copy(zip, target);
+                        long copied = copyEntry(zip, target);
+                        totalBytes += copied;
+                        if (copied > MAX_SINGLE_FILE_BYTES || totalBytes > MAX_UNCOMPRESSED_BYTES) {
+                            throw new IllegalArgumentException("Archivio ZIP troppo grande per una scansione interattiva.");
+                        }
                     }
                 }
             }
@@ -74,14 +97,26 @@ public class ZipWorkspaceService {
 
         try {
             Files.createDirectories(workspace);
+            long totalBytes = 0;
+            int copiedFiles = 0;
             for (MultipartFile file : files) {
                 if (file.isEmpty()) {
                     continue;
                 }
 
                 String originalName = file.getOriginalFilename();
-                if (originalName == null || originalName.isBlank()) {
+                if (originalName == null || originalName.isBlank() || isIgnoredRelativePath(originalName)) {
                     continue;
+                }
+
+                if (file.getSize() > MAX_SINGLE_FILE_BYTES) {
+                    throw new IllegalArgumentException("File troppo grande nella cartella caricata: " + originalName);
+                }
+
+                totalBytes += file.getSize();
+                copiedFiles++;
+                if (copiedFiles > MAX_ARCHIVE_ENTRIES || totalBytes > MAX_UNCOMPRESSED_BYTES) {
+                    throw new IllegalArgumentException("Cartella troppo grande per una scansione interattiva.");
                 }
 
                 Path target = safeResolve(workspace, originalName);
@@ -92,6 +127,22 @@ public class ZipWorkspaceService {
         } catch (IOException e) {
             throw new IllegalStateException("Impossibile copiare la cartella caricata.", e);
         }
+    }
+
+    private long copyEntry(InputStream input, Path target) throws IOException {
+        long copied = 0;
+        byte[] buffer = new byte[BUFFER_SIZE];
+        try (var output = Files.newOutputStream(target)) {
+            int read;
+            while ((read = input.read(buffer)) >= 0) {
+                copied += read;
+                if (copied > MAX_SINGLE_FILE_BYTES) {
+                    throw new IllegalArgumentException("File troppo grande nell'archivio ZIP: " + target.getFileName());
+                }
+                output.write(buffer, 0, read);
+            }
+        }
+        return copied;
     }
 
     private Path newWorkspace() {
@@ -130,5 +181,22 @@ public class ZipWorkspaceService {
             throw new IllegalArgumentException("Percorso non valido nel progetto caricato: " + relativePath);
         }
         return target;
+    }
+
+    private boolean isIgnoredRelativePath(String relativePath) {
+        if (relativePath == null || relativePath.isBlank()) {
+            return true;
+        }
+        String normalized = "/" + relativePath.replace('\\', '/').toLowerCase(Locale.ROOT);
+        return normalized.contains("/.git/")
+                || normalized.contains("/.idea/")
+                || normalized.contains("/.gradle/")
+                || normalized.contains("/target/")
+                || normalized.contains("/build/")
+                || normalized.contains("/node_modules/")
+                || normalized.contains("/dist/")
+                || normalized.contains("/out-tsc/")
+                || normalized.contains("/.angular/")
+                || normalized.contains("/coverage/");
     }
 }
