@@ -193,9 +193,7 @@ public class ProjectSourceScanner {
                 || normalized.contains("/node_modules/")
                 || normalized.contains("/dist/")
                 || normalized.contains("/.angular/")
-                || normalized.contains("/coverage/")
-                || normalized.contains("/tmp/")
-                || normalized.contains("/temp/")) {
+                || normalized.contains("/coverage/")) {
             return true;
         }
         String fileName = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase();

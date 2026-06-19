@@ -27,6 +27,12 @@ final class RuleGuidanceCatalog {
         if (code.startsWith("SPR085")) {
             return advisor(language, "LocalDateTime.now() usato direttamente", "Clock iniettato", "https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Clock.html", "LocalDateTime now = LocalDateTime.now();", "LocalDateTime now = LocalDateTime.now(clock);");
         }
+        if (code.startsWith("SPR083")) {
+            return advisor(language, "@Async senza @EnableAsync", "@EnableAsync con TaskExecutor esplicito", "https://docs.spring.io/spring-framework/reference/integration/scheduling.html", "@Async\nvoid runAsync() { ... }", "@EnableAsync\n@Configuration\nclass AsyncConfig { ... }");
+        }
+        if (code.startsWith("SPR084")) {
+            return advisor(language, "@Scheduled senza @EnableScheduling", "@EnableScheduling con scheduler configurato", "https://docs.spring.io/spring-framework/reference/integration/scheduling.html", "@Scheduled(fixedDelay = 1000)\nvoid run() { ... }", "@EnableScheduling\n@Configuration\nclass SchedulingConfig { ... }");
+        }
         return switch (code) {
             case "ADV001" -> advisor(language, "new ObjectMapper()", "ObjectMapper gestito da Spring Boot", "https://docs.spring.io/spring-boot/reference/features/json.html", "private final ObjectMapper mapper = new ObjectMapper();", "private final ObjectMapper mapper;\n\npublic MyComponent(ObjectMapper mapper) {\n    this.mapper = mapper;\n}");
             case "ADV002" -> advisor(language, "Gson/GsonBuilder manuale", "Jackson e la configurazione JSON di Spring Boot", "https://docs.spring.io/spring-boot/reference/features/json.html", "Gson gson = new GsonBuilder().create();", "ObjectMapper objectMapper gestito da Spring Boot");
@@ -111,10 +117,10 @@ final class RuleGuidanceCatalog {
             case "ADV081" -> advisor(language, "CSV reader manuale", "Spring Batch FlatFileItemReader", "https://docs.spring.io/spring-batch/reference/readers-and-writers/flat-files/file-item-reader.html", "Files.lines(path).map(this::parse);", "FlatFileItemReaderBuilder<Row>().resource(resource).delimited().names(...).build();");
             case "ADV082" -> advisor(language, "CSV writer manuale", "Spring Batch FlatFileItemWriter", "https://docs.spring.io/spring-batch/reference/readers-and-writers/flat-files/file-item-writer.html", "Files.writeString(path, csv);", "FlatFileItemWriterBuilder<Row>().resource(resource).delimited().names(...).build();");
             case "ADV083" -> advisor(language, "XML parsing manuale ripetuto", "Jackson XML/JAXB configurato come bean", "https://docs.spring.io/spring-boot/reference/features/json.html", "DocumentBuilderFactory.newInstance();", "Usa un mapper XML configurato come bean o binding dedicato.");
-            case "ADV084" -> advisor(language, "retry HTTP manuale", "RetryTemplate o Resilience4j", "https://docs.spring.io/spring-retry/docs/current/reference/html/", "for (int attempt=0; attempt<3; attempt++) call();", "@Retryable\npublic Response callRemote() { ... }");
+            case "ADV084" -> advisor(language, "retry HTTP manuale", "RetryTemplate o Resilience4j", "https://docs.spring.io/spring-retry/docs/current/reference/html/", "", "");
             case "ADV085" -> advisor(language, "timeout gestito con thread", "timeout del client HTTP", "https://docs.spring.io/spring-boot/reference/io/rest-client.html", "future.get(5, TimeUnit.SECONDS);", "Configura connect/read timeout nel RestClient/WebClient builder.");
             case "ADV086" -> advisor(language, "polling scheduler custom", "Spring Batch, Quartz o TaskScheduler", "https://docs.spring.io/spring-framework/reference/integration/scheduling.html", "while (true) { checkTable(); }", "@Scheduled(...) void checkTable() { ... } oppure Job Spring Batch pianificato.");
-            case "ADV087" -> advisor(language, "mappa idempotenza manuale", "servizio di idempotenza persistente o cache gestita", "https://docs.spring.io/spring-framework/reference/integration/cache.html", "processedIds.put(id, true);", "Usa una tabella di idempotenza con vincolo univoco, un repository dedicato o una cache gestita quando il dato è davvero volatile.");
+            case "ADV087" -> advisor(language, "mappa idempotenza manuale", "servizio di idempotenza persistente o cache gestita", "https://docs.spring.io/spring-framework/reference/integration/cache.html", "", "");
             case "ADV088" -> advisor(language, "contesto request statico", "interceptor/filter controllato", "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-config/interceptors.html", "RequestContext.set(user);", "HandlerInterceptor imposta e pulisce il contesto in afterCompletion.");
             case "ADV089" -> advisor(language, "parsing manuale Authorization header", "Spring Security filter/converter", "https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html", "String token = header.substring(7);", "Configura oauth2ResourceServer().jwt() o un AuthenticationConverter dedicato.");
             case "ADV090" -> advisor(language, "controllo ruoli manuale", "AuthorizationManager o method security", "https://docs.spring.io/spring-security/reference/servlet/authorization/method-security.html", "if (user.getRoles().contains(\"ADMIN\"))", "@PreAuthorize(\"hasRole('ADMIN')\")");
@@ -174,8 +180,45 @@ final class RuleGuidanceCatalog {
     }
 
     private static RuleGuidance specificEnglishGuidance(String code, String title, String evidence) {
-        
-        return null;
+        return switch (code) {
+            case "SPR041" -> problemEn(
+                    "Spring Security authorization rule is too broad" + evidence,
+                    "A broad permitAll rule can expose endpoints that should require authentication or authorization.",
+                    "Restrict permitAll to explicit public endpoints and make the default rule authenticated.",
+                    "SecurityFilterChain with explicit request matchers",
+                    "https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html",
+                    "http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());",
+                    "http.authorizeHttpRequests(auth -> auth\n    .requestMatchers(\"/actuator/health\").permitAll()\n    .anyRequest().authenticated());"
+            );
+            case "WEB004" -> problemEn(
+                    "Request DTO without Bean Validation" + evidence,
+                    "The controller accepts input without declared constraints, so incomplete or invalid data can reach the service layer.",
+                    "Add Bean Validation annotations on the request DTO and use @Valid in the controller.",
+                    "Bean Validation + @Valid",
+                    "https://docs.spring.io/spring-framework/reference/core/validation/beanvalidation.html",
+                    "public ResponseEntity<?> create(@RequestBody CustomerRequest request) { ... }",
+                    "public record CustomerRequest(@NotBlank String name) {}"
+            );
+            case "OBS025" -> problemEn(
+                    "Health details are always exposed" + evidence,
+                    "Always exposing health details may reveal operational information about dependencies or internal errors.",
+                    "Expose details only to authorized users or disable them in production.",
+                    "Actuator health endpoint",
+                    "https://docs.spring.io/spring-boot/reference/actuator/endpoints.html",
+                    "management.endpoint.health.show-details=always",
+                    "management.endpoint.health.show-details=when-authorized"
+            );
+            case "CLD003" -> problemEn(
+                    "Possible secret in packaged configuration" + evidence,
+                    "Passwords, tokens or keys committed with the artifact can be copied, logged or reused and are harder to rotate.",
+                    "Remove the value from the repository, rotate it if real and use environment variables, Vault, a secret manager or mounted configuration.",
+                    "Externalized configuration and secret management",
+                    "https://docs.spring.io/spring-boot/reference/features/external-config.html",
+                    "api.password=mySecret",
+                    "api.password=${API_PASSWORD}"
+            );
+            default -> null;
+        };
     }
 
     private static RuleGuidance italianAreaGuidance(String code, String title, String why, String fix, String evidence) {
@@ -247,11 +290,11 @@ final class RuleGuidanceCatalog {
     }
 
     private static RuleGuidance problemIt(String detected, String impact, String solution, String alternative, String docs, String before, String after) {
-        return new RuleGuidance(toItalianText(detected), toItalianText(impact), toItalianText(solution), toItalianText(alternative), docs, before, after);
+        return new RuleGuidance(toItalianText(detected), toItalianText(impact), toItalianText(solution), toItalianText(alternative), docs, "", "");
     }
 
     private static RuleGuidance problemEn(String detected, String impact, String solution, String alternative, String docs, String before, String after) {
-        return new RuleGuidance(toEnglishText(detected), toEnglishText(impact), toEnglishText(solution), toEnglishText(alternative), docs, before, after);
+        return new RuleGuidance(toEnglishText(detected), toEnglishText(impact), toEnglishText(solution), toEnglishText(alternative), docs, "", "");
     }
 
     private static String compactEvidence(String evidence, ReportLanguage language) {
@@ -275,8 +318,8 @@ final class RuleGuidanceCatalog {
                     "Use " + englishAlternative + ". Centralize the configuration as a bean or typed configuration object and keep application code focused on business behavior.",
                     englishAlternative,
                     documentationUrl,
-                    beforeExample,
-                    afterExample
+                    "",
+                    ""
             );
         }
         String italianDetected = toItalianText(detected);
@@ -287,8 +330,8 @@ final class RuleGuidanceCatalog {
                 "Usa " + italianAlternative + ". Centralizza la configurazione come bean o proprietà tipizzata e lascia al codice applicativo solo la logica di business.",
                 italianAlternative,
                 documentationUrl,
-                beforeExample,
-                afterExample
+                "",
+                ""
         );
     }
 

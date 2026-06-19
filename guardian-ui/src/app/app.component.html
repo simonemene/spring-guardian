@@ -126,6 +126,51 @@
       </article>
     </section>
 
+    <section class="impact-hub" aria-label="Report impact dashboard">
+      <article class="impact-card primary-impact">
+        <span>{{ t('precisionMode') }}</span>
+        <strong>{{ t('highConfidence') }}</strong>
+        <p>{{ t('precisionModeText') }}</p>
+      </article>
+
+      <article class="impact-card">
+        <span>{{ t('scopeOnly') }}</span>
+        <strong>{{ projectTypeLabel(current.profile.projectType) }}</strong>
+        <p>{{ t('scopeOnlyText') }}</p>
+      </article>
+
+      <article class="impact-card">
+        <span>{{ t('evidenceFirst') }}</span>
+        <strong>{{ current.findings.length }} rules · {{ totalFindingOccurrences() }} {{ t('occurrences') }}</strong>
+        <p>{{ t('evidenceFirstText') }}</p>
+      </article>
+
+      <article class="impact-card scan-identity">
+        <span>{{ t('projectIdentity') }}</span>
+        <strong>{{ current.projectName }}</strong>
+        <p *ngIf="current.projectRootPath">{{ shortPath(current.projectRootPath) }}</p>
+        <p *ngIf="!current.projectRootPath && currentScanSource()">{{ shortPath(currentScanSource()) }}</p>
+      </article>
+    </section>
+
+    <section class="severity-map" aria-label="Severity distribution">
+      <div class="severity-map-copy">
+        <h2>{{ t('impactVisualTitle') }}</h2>
+        <p>{{ t('impactVisualText') }}</p>
+      </div>
+      <div class="severity-bars">
+        <div class="severity-row" *ngFor="let severity of severityOrder" [attr.data-severity]="severity">
+          <div class="severity-row-head">
+            <span>{{ severityLabel(severity) }}</span>
+            <strong>{{ severityCount(severity) }} · {{ severityPercent(current, severity) }}%</strong>
+          </div>
+          <div class="severity-track">
+            <i [style.width.%]="severityPercent(current, severity)"></i>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="decision-board" aria-label="Priorità di intervento">
       <div class="decision-board-title">
         <div>
@@ -339,7 +384,7 @@
               {{ t('officialDocs') }}
             </a>
 
-            <div class="before-after compact" *ngIf="finding.guidance.beforeExample || finding.guidance.afterExample">
+            <div class="before-after compact" *ngIf="false">
               <div *ngIf="finding.guidance.beforeExample">
                 <h4>{{ t('currentFinding') }}</h4>
                 <pre class="code-evidence"><code>{{ finding.guidance.beforeExample }}</code></pre>
@@ -424,7 +469,16 @@
               {{ t('officialDocs') }}
             </a>
 
-            <div class="before-after" *ngIf="finding.guidance.beforeExample || finding.guidance.afterExample">
+            <div class="real-evidence" *ngIf="firstComponent(finding) as component">
+              <h4>{{ t('realEvidence') }}</h4>
+              <p><strong>{{ componentTitle(component) }}</strong> · {{ component.filePath }}<ng-container *ngIf="component.line">:{{ component.line }}</ng-container></p>
+              <p *ngIf="component.evidence"><b>{{ t('technicalEvidence') }}:</b> {{ component.evidence }}</p>
+              <pre *ngIf="component.codeSnippet" class="code-evidence"><code>{{ component.codeSnippet }}</code></pre>
+              <p class="json-note">{{ t('examplesHidden') }}</p>
+            </div>
+
+
+            <div class="before-after" *ngIf="false">
               <div *ngIf="finding.guidance.beforeExample">
                 <h4>{{ t('beforeExample') }}</h4>
                 <pre class="code-evidence"><code>{{ finding.guidance.beforeExample }}</code></pre>

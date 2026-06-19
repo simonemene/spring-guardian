@@ -125,6 +125,13 @@ public class CatalogPatternRule implements SpringRule {
         if (!containsAll(lowerContent, definition.requiredInFile())) {
             return;
         }
+
+        if (definition.id() != null && definition.id().startsWith("POM001") && lowerContent.contains("spring-boot-dependencies")) {
+            return;
+        }
+        if (definition.id() != null && definition.id().startsWith("POM001") && lowerContent.contains("spring-boot-starter-parent")) {
+            return;
+        }
         String[] lines = content.split("\\R", -1);
         int emitted = 0;
         for (int i = 0; i < lines.length; i++) {
@@ -236,9 +243,7 @@ public class CatalogPatternRule implements SpringRule {
                 || normalized.contains("/node_modules/")
                 || normalized.contains("/dist/")
                 || normalized.contains("/.angular/")
-                || normalized.contains("/coverage/")
-                || normalized.contains("/tmp/")
-                || normalized.contains("/temp/")) {
+                || normalized.contains("/coverage/")) {
             return true;
         }
         String fileName = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase(Locale.ROOT);
@@ -260,7 +265,8 @@ public class CatalogPatternRule implements SpringRule {
         }
         String lowerPath = normalizedPath.toLowerCase(Locale.ROOT);
         if (lowerPath.endsWith(".java")) {
-            return trimmed.startsWith("//")
+            return trimmed.startsWith("import ")
+                    || trimmed.startsWith("//")
                     || trimmed.startsWith("/*")
                     || trimmed.startsWith("*")
                     || trimmed.startsWith("*/");

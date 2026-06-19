@@ -73,4 +73,76 @@ class FalsePositiveNoiseControlTest {
         assertFalse(ruleIds.contains("BAT035_REMOTE_CALL_PER_ITEM_IN_PROCESSOR"));
         assertFalse(ruleIds.contains("ADV087_MANUAL_IDEMPOTENCY_MAP"));
     }
+
+    @Test
+    void webAdvisorDoesNotInferProblemsFromImportsDtosStaticConstantsOrNormalGetMappings() throws Exception {
+        Files.createDirectories(tempDir.resolve("src/main/java/com/acme/controller"));
+        Files.createDirectories(tempDir.resolve("src/main/java/com/acme/model"));
+        Files.createDirectories(tempDir.resolve("src/test/java/com/acme"));
+        Files.writeString(tempDir.resolve("pom.xml"), """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.springframework.boot</groupId>
+                            <artifactId>spring-boot-starter-web</artifactId>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """);
+        Files.writeString(tempDir.resolve("src/main/java/com/acme/controller/ExportController.java"), """
+                package com.acme.controller;
+
+                import java.nio.charset.StandardCharsets;
+                import org.springframework.web.bind.annotation.GetMapping;
+                import org.springframework.web.bind.annotation.RestController;
+
+                @RestController
+                class ExportController {
+                    private static final String NO_PARAMETER = "<NO_PARAM>";
+
+                    @GetMapping("/persone/{idStabilimento}")
+                    Object exportPersone() {
+                        Object report = new EndpointStatusDTO("ok");
+                        return report;
+                    }
+                }
+
+                class EndpointStatusDTO {
+                    EndpointStatusDTO(String value) {}
+                }
+                """);
+        Files.writeString(tempDir.resolve("src/main/java/com/acme/model/TestApiResponse.java"), """
+                package com.acme.model;
+
+                class TestApiResponse {
+                    static class Item {
+                        private int id;
+                    }
+                }
+                """);
+        Files.writeString(tempDir.resolve("src/test/java/com/acme/SmokeTest.java"), """
+                package com.acme;
+
+                import org.junit.jupiter.api.Test;
+
+                class SmokeTest {
+                    @Test
+                    void ok() {
+                        org.junit.jupiter.api.Assertions.assertTrue(true);
+                    }
+                }
+                """);
+
+        var report = new ProjectScanService(GuardianSettings.defaults()).scan(tempDir, ReportLanguage.ITALIAN);
+        Set<String> ruleIds = report.findings().stream().map(FindingGroup::ruleId).collect(Collectors.toSet());
+
+        assertFalse(ruleIds.contains("ADV026_CUSTOM_HEALTH_CONTROLLER"));
+        assertFalse(ruleIds.contains("ADV039_MANUAL_OBJECT_FACTORY"));
+        assertFalse(ruleIds.contains("ADV040_REPETITIVE_MANUAL_MAPPING"));
+        assertFalse(ruleIds.contains("ADV053_MANUAL_SINGLETON"));
+        assertFalse(ruleIds.contains("ADV084_HTTP_RETRY_MANUAL"));
+        assertFalse(ruleIds.contains("ADV088_STATIC_REQUEST_CONTEXT"));
+    }
+
 }

@@ -17,6 +17,16 @@ const TRANSLATIONS = {
     heroTitle: 'Proteggi la tua architettura Spring',
     brandSubtitle: 'Architettura · Prontezza · Modernizzazione',
     heroText: 'Analizza progetti Spring Boot, raggruppa i problemi per area tecnica e mostra in modo chiaro cosa correggere, perché conta e quali classi o file sono coinvolti.',
+    precisionMode: 'Modalità precisa Web/Batch',
+    precisionModeText: 'Regole più selettive, evidenza reale e nessun finding basato solo su import o esempi generici.',
+    scopeOnly: 'Perimetro attivo',
+    scopeOnlyText: 'Web/API e Spring Batch. Camel e altri profili restano fuori finché non avranno regole dedicate.',
+    evidenceFirst: 'Evidenza prima di tutto',
+    evidenceFirstText: 'Ogni card parte da file, riga e snippet realmente trovati nel progetto analizzato.',
+    impactVisualTitle: 'Mappa impatto',
+    impactVisualText: 'Distribuzione immediata delle severità per capire dove intervenire per primo.',
+    projectIdentity: 'Identità scansione',
+    highConfidence: 'Alta confidenza',
     language: 'Lingua report',
     italian: 'Italiano',
     english: 'Inglese',
@@ -90,8 +100,8 @@ const TRANSLATIONS = {
     focusedLane: 'Filtro decisionale attivo',
     showingFirstComponents: 'Mostro le prime occorrenze rilevanti. Il JSON tecnico contiene l’elenco completo.',
     moreComponents: 'altre occorrenze nel JSON tecnico',
-    currentFinding: 'Esempio problematico',
-    expectedImplementation: 'Esempio di implementazione consigliata',
+    currentFinding: 'Esempio generico non rilevato nel progetto',
+    expectedImplementation: 'Esempio generico di soluzione',
     findingType: 'Tipo problema',
     typeCode: 'Codice Java',
     typePom: 'POM Maven',
@@ -115,9 +125,11 @@ const TRANSLATIONS = {
     riskImpact: 'Cosa può comportare',
     springAlternativeToUse: 'Alternativa Spring da usare',
     officialDocs: 'Documentazione ufficiale',
-    beforeExample: 'Esempio prima',
-    afterExample: 'Esempio dopo',
-    currentCode: 'Codice rilevato',
+    beforeExample: 'Esempio generico prima',
+    afterExample: 'Esempio generico dopo',
+    currentCode: 'Codice realmente rilevato',
+    realEvidence: 'Evidenza reale nel progetto',
+    examplesHidden: 'Gli esempi generici non vengono mostrati nella card principale: usa file, riga e snippet reali per verificare il finding.',
     solutionPattern: 'Come dovrebbe essere fatto',
     advisorArea: 'Area advisor',
     involvedComponents: 'Classi e file coinvolti',
@@ -178,6 +190,16 @@ const TRANSLATIONS = {
     heroTitle: 'Protect your Spring architecture',
     brandSubtitle: 'Architecture · Readiness · Modernization',
     heroText: 'Analyze Spring Boot projects, group findings by technical area and clearly show what should be fixed, why it matters and which classes or files are involved.',
+    precisionMode: 'Precise Web/Batch mode',
+    precisionModeText: 'More selective rules, real evidence and no findings based only on imports or generic examples.',
+    scopeOnly: 'Active scope',
+    scopeOnlyText: 'Web/API and Spring Batch. Camel and other profiles stay out until dedicated rules are available.',
+    evidenceFirst: 'Evidence first',
+    evidenceFirstText: 'Every card starts from file, line and snippet actually found in the analyzed project.',
+    impactVisualTitle: 'Impact map',
+    impactVisualText: 'Immediate severity distribution to understand where to act first.',
+    projectIdentity: 'Scan identity',
+    highConfidence: 'High confidence',
     language: 'Report language',
     italian: 'Italian',
     english: 'English',
@@ -251,8 +273,8 @@ const TRANSLATIONS = {
     focusedLane: 'Active decision filter',
     showingFirstComponents: 'Showing the first relevant occurrences. The technical JSON contains the full list.',
     moreComponents: 'more occurrences in the technical JSON',
-    currentFinding: 'Problematic example',
-    expectedImplementation: 'Recommended implementation example',
+    currentFinding: 'Generic example not detected in the project',
+    expectedImplementation: 'Generic recommended solution example',
     findingType: 'Finding type',
     typeCode: 'Java code',
     typePom: 'Maven POM',
@@ -276,9 +298,11 @@ const TRANSLATIONS = {
     riskImpact: 'Possible impact',
     springAlternativeToUse: 'Spring alternative to use',
     officialDocs: 'Official documentation',
-    beforeExample: 'Before',
-    afterExample: 'After',
-    currentCode: 'Detected code',
+    beforeExample: 'Generic before example',
+    afterExample: 'Generic after example',
+    currentCode: 'Actually detected code',
+    realEvidence: 'Real evidence in the project',
+    examplesHidden: 'Generic examples are not shown in the main card: use file, line and real snippets to verify the finding.',
     solutionPattern: 'Expected implementation',
     advisorArea: 'Advisor area',
     involvedComponents: 'Involved classes and files',
@@ -345,7 +369,7 @@ const TRANSLATIONS = {
 })
 export class AppComponent {
   readonly severityOrder: Severity[] = ['CRITICAL', 'MAJOR', 'MINOR', 'INFO'];
-  readonly projectTypes: ProjectType[] = ['WEB_API', 'BATCH', 'LIBRARY'];
+  readonly projectTypes: ProjectType[] = ['WEB_API', 'BATCH'];
   readonly releaseTargets: ReleaseTarget[] = ['PRODUCTION', 'INTERNAL'];
 
   readonly report = signal<ArchitectureReviewReport | null>(null);
@@ -360,6 +384,8 @@ export class AppComponent {
   readonly selectedLanguage = signal<ReportLanguage>('it');
   readonly filterVersion = signal(0);
   readonly currentScanSource = signal<string | null>(null);
+
+  private scanSequence = 0;
 
   localPath = '';
   search = '';
@@ -498,6 +524,15 @@ export class AppComponent {
     });
   });
 
+
+  readonly totalFindingOccurrences = computed(() => {
+    const current = this.report();
+    if (!current) {
+      return 0;
+    }
+    return current.findings.reduce((total, finding) => total + finding.occurrences, 0);
+  });
+
   readonly rawJson = computed(() => JSON.stringify(this.report(), null, 2));
 
   constructor(private readonly api: SpringGuardianApiService) {}
@@ -585,6 +620,28 @@ export class AppComponent {
     this.filterVersion.update((version) => version + 1);
   }
 
+
+  severityPercent(report: ArchitectureReviewReport, severity: Severity): number {
+    const total = report.findings.reduce((sum, finding) => sum + finding.occurrences, 0);
+    if (total === 0) {
+      return 0;
+    }
+    return Math.round((this.severityCount(severity) / total) * 100);
+  }
+
+  severityTone(severity: Severity): string {
+    return severity.toLowerCase();
+  }
+
+  shortPath(value: string | null | undefined): string {
+    if (!value) {
+      return '-';
+    }
+    const normalized = value.replace(/\\/g, '/');
+    const parts = normalized.split('/').filter(Boolean);
+    return parts.slice(-3).join('/');
+  }
+
   decisionCount(report: ArchitectureReviewReport, lane: DecisionLane): number {
     return report.findings
       .filter((finding) => this.inDecisionLane(finding, lane))
@@ -647,6 +704,10 @@ export class AppComponent {
     this.activeDecisionLane.set(null);
     this.activeTab.set('findings');
     this.touchFilters();
+  }
+
+  firstComponent(finding: FindingGroup): AffectedComponent | null {
+    return finding.affectedComponents.length > 0 ? finding.affectedComponents[0] : null;
   }
 
   visibleComponents(finding: FindingGroup): AffectedComponent[] {
@@ -903,16 +964,25 @@ export class AppComponent {
   }
 
   private executeScan(request$: Observable<ArchitectureReviewReport>): void {
+    const scanToken = ++this.scanSequence;
     this.loading.set(true);
+    this.error.set(null);
     this.report.set(null);
+    this.activeTab.set('overview');
     this.resetFilters();
     request$.subscribe({
       next: (result) => {
+        if (scanToken !== this.scanSequence) {
+          return;
+        }
         this.report.set(result);
         this.activeTab.set('overview');
         this.loading.set(false);
       },
       error: (error: HttpErrorResponse) => {
+        if (scanToken !== this.scanSequence) {
+          return;
+        }
         const detail = error.error?.detail || error.error?.message || error.message;
         this.error.set(detail || this.t('scanError'));
         this.loading.set(false);

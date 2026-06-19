@@ -91,14 +91,10 @@ public final class GuardianRules {
                 new MavenDependencyHygieneRule(),
                 new PomGovernanceRules()
         ));
-        baseRules.addAll(ExtendedRuleCatalogs.architectureRules());
-        baseRules.addAll(ExtendedRuleCatalogs.securityRules());
-        baseRules.addAll(ExtendedRuleCatalogs.webApiRules());
-        baseRules.addAll(ExtendedRuleCatalogs.batchRules());
-        baseRules.addAll(ExtendedRuleCatalogs.cloudRules());
-        baseRules.addAll(ExtendedRuleCatalogs.observabilityRules());
-        baseRules.addAll(SpringAlternativeAdvisorCatalog.rules());
-        baseRules.addAll(ExtendedRuleCatalogs.advisorRules());
+        baseRules.addAll(WebBatchRuleCatalog.webRules());
+        baseRules.addAll(WebBatchRuleCatalog.batchRules());
+        baseRules.addAll(WebBatchRuleCatalog.sharedReadinessRules());
+        baseRules.addAll(WebBatchAdvisorCatalog.rules());
         return List.copyOf(baseRules);
     }
 }
