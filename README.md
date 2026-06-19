@@ -1,7 +1,5 @@
 # Spring Guardian
 
-<img width="1666" height="944" alt="Spring Guardian dashboard" src="https://github.com/user-attachments/assets/b355b536-4b9c-4d9e-bda3-38fa36e9aceb" />
-
 ## English
 
 Spring Guardian is a deterministic **Spring Architecture Auditor** and **Release Readiness Scanner** for Spring Boot projects.
