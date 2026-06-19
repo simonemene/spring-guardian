@@ -448,7 +448,7 @@ public class ProjectScanService {
     private String findingTypeFor(Finding finding) {
         String ruleId = finding.ruleId();
         String componentType = componentTypeOf(finding);
-        if (matches(ruleId, "ADV")) {
+        if (matches(ruleId, "SPR_ALT", "ADV")) {
             return "SPRING_ALTERNATIVE";
         }
         if (matches(ruleId, "CAP")) {
@@ -868,7 +868,7 @@ public class ProjectScanService {
                     new AreaDefinition("BUILD_CONFIG", "Build and configuration", "Configuration externalization, profiles, hardcoded values and build maintainability.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036", "SPR091", "SPR092")),
                     new AreaDefinition("CLOUD_READINESS", "Cloud readiness", "12-factor runtime neutrality, externalized configuration, local state, graceful runtime behavior and deployability.", List.of("CLD")),
                     new AreaDefinition("OBSERVABILITY", "Observability", "Actuator, Micrometer, logs, correlation, health and operational diagnostics.", List.of("OBS")),
-                    new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Spring Alternative Advisor", "Manual Java objects, low-level APIs and modern Spring alternatives worth evaluating.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090", "ADV")),
+                    new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Spring Alternative Advisor", "Manual Java objects, low-level APIs and modern Spring alternatives worth evaluating.", List.of("SPR_ALT", "SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090", "ADV")),
                     new AreaDefinition("SPRING_CAPABILITIES", "Spring capabilities", "Detected Spring modules compared with useful missing capabilities such as Validation, Actuator and OpenAPI.", List.of("CAP"))
             );
         }
@@ -885,7 +885,7 @@ public class ProjectScanService {
                 new AreaDefinition("BUILD_CONFIG", "Build e configurazione", "Esternalizzazione della configurazione, profili, valori scritti nel codice e manutenibilità della build.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036", "SPR091", "SPR092")),
                 new AreaDefinition("CLOUD_READINESS", "Prontezza cloud", "Neutralità a runtime secondo i principi 12-factor, configurazione esterna, stato locale, comportamento operativo e rilasciabilità.", List.of("CLD")),
                 new AreaDefinition("OBSERVABILITY", "Osservabilità", "Actuator, Micrometer, log, correlazione, stato di salute e diagnostica operativa.", List.of("OBS")),
-                new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Advisor Spring", "Oggetti Java creati manualmente, API di basso livello e alternative Spring più integrate da valutare.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090", "ADV")),
+                new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Advisor Spring", "Oggetti Java creati manualmente, API di basso livello e alternative Spring più integrate da valutare.", List.of("SPR_ALT", "SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090", "ADV")),
                 new AreaDefinition("SPRING_CAPABILITIES", "Capability Spring", "Moduli Spring rilevati confrontati con capability utili mancanti come Validation, Actuator e OpenAPI.", List.of("CAP"))
         );
     }
@@ -913,7 +913,7 @@ public class ProjectScanService {
         if (matches(ruleId, "OBS")) {
             return language == ReportLanguage.ENGLISH ? "Observability" : "Osservabilità";
         }
-        if (matches(ruleId, "ADV")) {
+        if (matches(ruleId, "SPR_ALT", "ADV")) {
             return "Spring Alternative Advisor";
         }
         if (matches(ruleId, "CAP")) {
@@ -959,7 +959,7 @@ public class ProjectScanService {
     }
 
     private boolean springAlternativeAdvisorRule(String ruleId) {
-        return matches(ruleId, "ADV", "SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090");
+        return matches(ruleId, "SPR_ALT", "ADV", "SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090");
     }
 
     private boolean securityRule(String ruleId) {
