@@ -10,12 +10,14 @@
 
     <modules>
         <module>guardian-core</module>
+        <module>guardian-report</module>
         <module>guardian-cli</module>
         <module>guardian-server</module>
     </modules>
 
     <properties>
         <java.version>17</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-boot.version>3.3.7</spring-boot.version>
         <javaparser.version>3.26.3</javaparser.version>
         <picocli.version>4.7.6</picocli.version>

@@ -29,6 +29,7 @@ class ConfigurationAndDependencyGovernanceRulesTest {
                 spring.datasource.url=jdbc:postgresql://localhost:5432/app
                 spring.profiles.active=prod
                 external.payment.endpoint=https://payments.example.local
+                spring.jpa.open-in-view=true
                 """);
 
         Files.writeString(tempDir.resolve("pom.xml"), """
@@ -88,6 +89,7 @@ class ConfigurationAndDependencyGovernanceRulesTest {
         assertTrue(ruleIds.contains("SPR093_MAVEN_DEPENDENCY_VERSION_CONFLICT"));
         assertTrue(ruleIds.contains("SPR094_MAVEN_MIXED_STACK_DEPENDENCIES"));
         assertTrue(ruleIds.contains("SPR095_MAVEN_DEPENDENCY_HYGIENE"));
+        assertTrue(ruleIds.contains("SPR096_JPA_OPEN_IN_VIEW_ENABLED"));
         assertTrue(report.findings().stream().anyMatch(finding -> "CONFIGURATION".equals(finding.findingType())));
         assertTrue(report.findings().stream().anyMatch(finding -> "DEPENDENCIES".equals(finding.findingType())));
     }

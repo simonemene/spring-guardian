@@ -1,7 +1,7 @@
 FROM node:20-alpine AS build
 WORKDIR /app
-COPY guardian-ui/package.json ./package.json
-RUN npm install --no-audit --no-fund
+COPY guardian-ui/package.json guardian-ui/package-lock.json ./
+RUN npm ci --no-audit --no-fund
 COPY guardian-ui/ ./
 RUN npm run build
 

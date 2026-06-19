@@ -3,10 +3,12 @@ WORKDIR /workspace
 
 COPY pom.xml ./
 COPY guardian-core/pom.xml guardian-core/pom.xml
+COPY guardian-report/pom.xml guardian-report/pom.xml
 COPY guardian-cli/pom.xml guardian-cli/pom.xml
 COPY guardian-server/pom.xml guardian-server/pom.xml
 
 COPY guardian-core/src guardian-core/src
+COPY guardian-report/src guardian-report/src
 COPY guardian-server/src guardian-server/src
 
 RUN mvn -q -pl guardian-server -am -DskipTests package && cp guardian-server/target/guardian-server-*.jar /tmp/app.jar

@@ -3,9 +3,9 @@ package com.example.guardian.cli;
 import picocli.CommandLine;
 
 /**
- * Spring Guardian component for GuardianCliApplication.
+ * Spring Guardian CLI entry point.
  *
- * @author Simone Meneghetti
+ * @author p15518 - Simone Meneghetti
  */
 public class GuardianCliApplication {
 

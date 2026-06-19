@@ -42,13 +42,38 @@ class ZipWorkspaceServiceTest {
         assertTrue(Files.exists(workspace.resolve("src/main/java/App.java")));
     }
 
+
+
+    @Test
+    void extractZipSkipsGeneratedAndDependencyDirectories() throws Exception {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(output)) {
+            add(zip, "demo/pom.xml", "<project/>");
+            add(zip, "demo/target/classes/App.class", "compiled");
+            add(zip, "demo/node_modules/lib/index.js", "dependency");
+            add(zip, "demo/.git/config", "git");
+        }
+        MockMultipartFile file = new MockMultipartFile("file", "project.zip", "application/zip", output.toByteArray());
+
+        Path workspace = service.extractZip(file);
+
+        assertTrue(Files.exists(workspace.resolve("pom.xml")));
+        org.junit.jupiter.api.Assertions.assertFalse(Files.exists(workspace.resolve("target/classes/App.class")));
+        org.junit.jupiter.api.Assertions.assertFalse(Files.exists(workspace.resolve("node_modules/lib/index.js")));
+        org.junit.jupiter.api.Assertions.assertFalse(Files.exists(workspace.resolve(".git/config")));
+    }
+
     private ByteArrayOutputStream zipBytes(String name, String content) throws Exception {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(output)) {
-            zip.putNextEntry(new ZipEntry(name));
-            zip.write(content.getBytes());
-            zip.closeEntry();
+            add(zip, name, content);
         }
         return output;
+    }
+
+    private void add(ZipOutputStream zip, String name, String content) throws Exception {
+        zip.putNextEntry(new ZipEntry(name));
+        zip.write(content.getBytes());
+        zip.closeEntry();
     }
 }

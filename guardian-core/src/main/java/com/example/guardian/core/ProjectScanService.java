@@ -484,7 +484,7 @@ public class ProjectScanService {
         if (matches(ruleId, "SPR015")) {
             return "POM";
         }
-        if (matches(ruleId, "SPR001", "SPR036", "SPR037", "SPR038", "SPR039", "SPR091", "SPR092")) {
+        if (matches(ruleId, "SPR001", "SPR036", "SPR037", "SPR038", "SPR039", "SPR091", "SPR092", "SPR096")) {
             return "CONFIGURATION";
         }
         if (matches(ruleId, "SPR012", "SPR043", "SPR044", "SPR045", "SPR052") || "TEST_CLASS".equals(componentType)) {
@@ -859,7 +859,7 @@ public class ProjectScanService {
                     new AreaDefinition("DEPENDENCY_INJECTION", "Dependency injection", "Constructor injection, field injection, immutable dependencies and Spring component wiring.", List.of("SPR002", "SPR029", "SPR061", "SPR062")),
                     new AreaDefinition("WEB_LAYER", "Web layer and API contracts", "Controller boundaries, DTOs, validation, versioning, HTTP semantics and OpenAPI documentation.", List.of("SPR003", "SPR004", "SPR006", "SPR010", "SPR013", "SPR014", "SPR019", "SPR023", "SPR024", "SPR050", "SPR051", "SPR056", "SPR060", "SPR063", "WEB")),
                     new AreaDefinition("SECURITY", "Spring Security", "Spring Security, secrets, actuator exposure, CSRF, CORS, authorization and password handling.", List.of("SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059", "SEC")),
-                    new AreaDefinition("JPA_PERSISTENCE", "JPA and persistence", "Entity mapping, transactions, repository calls, fetch plans, schema safety and persistence boundaries.", List.of("SPR009", "SPR017", "SPR038", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057")),
+                    new AreaDefinition("JPA_PERSISTENCE", "JPA and persistence", "Entity mapping, transactions, repository calls, fetch plans, schema safety and persistence boundaries.", List.of("SPR009", "SPR017", "SPR038", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057", "SPR096")),
                     new AreaDefinition("SPRING_BATCH", "Spring Batch", "Batch restartability, chunk behavior, readers, writers, skip/retry and operational safety.", List.of("BAT")),
                     new AreaDefinition("ARCHITECTURE_BOUNDARIES", "Architecture and boundaries", "Layer direction, DDD or hexagonal boundaries, package structure and class responsibilities.", List.of("SPR005", "SPR007", "SPR008", "SPR018", "SPR027", "SPR028", "SPR030", "SPR031", "SPR055", "ARCH")),
                     new AreaDefinition("RUNTIME_CORRECTNESS", "Runtime correctness", "Exception handling, null-safety, optional handling, hidden proxy effects and unsafe state changes.", List.of("SPR011", "SPR020", "SPR025", "SPR047")),
@@ -876,7 +876,7 @@ public class ProjectScanService {
                 new AreaDefinition("DEPENDENCY_INJECTION", "Iniezione delle dipendenze", "Iniezione da costruttore, iniezione su campo, dipendenze immutabili e cablaggio dei componenti Spring.", List.of("SPR002", "SPR029", "SPR061", "SPR062")),
                 new AreaDefinition("WEB_LAYER", "Layer web e contratti API", "Confini dei controller, DTO, validazione, versionamento, semantica HTTP e documentazione OpenAPI.", List.of("SPR003", "SPR004", "SPR006", "SPR010", "SPR013", "SPR014", "SPR019", "SPR023", "SPR024", "SPR050", "SPR051", "SPR056", "SPR060", "SPR063", "WEB")),
                 new AreaDefinition("SECURITY", "Sicurezza", "Spring Security, segreti, esposizione actuator, CSRF, CORS, autorizzazione e gestione password.", List.of("SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059", "SEC")),
-                new AreaDefinition("JPA_PERSISTENCE", "JPA e persistenza", "Mappatura delle entity, transazioni, chiamate ai repository, piani di fetch, sicurezza dello schema e confini di persistenza.", List.of("SPR009", "SPR017", "SPR038", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057")),
+                new AreaDefinition("JPA_PERSISTENCE", "JPA e persistenza", "Mappatura delle entity, transazioni, chiamate ai repository, piani di fetch, sicurezza dello schema e confini di persistenza.", List.of("SPR009", "SPR017", "SPR038", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057", "SPR096")),
                 new AreaDefinition("SPRING_BATCH", "Spring Batch", "Riavviabilità, dimensione dei chunk, reader, writer, skip/retry e sicurezza operativa dei batch.", List.of("BAT")),
                 new AreaDefinition("ARCHITECTURE_BOUNDARIES", "Architettura e confini", "Direzione dei layer, confini DDD o esagonali, struttura dei pacchetti e responsabilità delle classi.", List.of("SPR005", "SPR007", "SPR008", "SPR018", "SPR027", "SPR028", "SPR030", "SPR031", "SPR055", "ARCH")),
                 new AreaDefinition("RUNTIME_CORRECTNESS", "Correttezza runtime", "Gestione delle eccezioni, null-safety, Optional, effetti nascosti dei proxy e modifiche di stato non sicure.", List.of("SPR011", "SPR020", "SPR025", "SPR047")),
@@ -928,7 +928,7 @@ public class ProjectScanService {
         if (matches(ruleId, "SPR008", "SPR011", "SPR017", "SPR018", "SPR020", "SPR025", "SPR047")) {
             return language == ReportLanguage.ENGLISH ? "Runtime correctness" : "Correttezza runtime";
         }
-        if (matches(ruleId, "SPR009", "SPR026", "SPR038", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057")) {
+        if (matches(ruleId, "SPR009", "SPR026", "SPR038", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057", "SPR096")) {
             return language == ReportLanguage.ENGLISH ? "JPA, persistence and integrations" : "JPA, persistenza e integrazioni";
         }
         if (matches(ruleId, "SPR002", "SPR029", "SPR061", "SPR062")) {
