@@ -99,6 +99,9 @@ final class SpringAlternativeRulesCatalog {
         rules.add(new ConfigurationPropertiesValidationAlternativeRule());
         rules.add(delegate(new PossibleSecretInConfigRule(), "SPR_ALT019_SECRET_LIKE_PROPERTY", "Secret-like property committed", "Secrets in repository configuration can leak credentials and make rotation harder.", "Move secrets to environment variables, Vault, secret manager or mounted configuration."));
         rules.add(delegate(new ConsoleLoggingRule(), "SPR_ALT020_SYSTEM_OUT_LOGGING", "Console logging detected", "System.out, System.err and printStackTrace bypass logging levels, appenders, correlation and structured collection.", "Use SLF4J with contextual messages and pass exceptions as logger parameters."));
+        rules.add(new ManualSecurityAuthorizationAlternativeRule(ManualSecurityAuthorizationAlternativeRule.Mode.PRINCIPAL_NULL));
+        rules.add(new ManualSecurityAuthorizationAlternativeRule(ManualSecurityAuthorizationAlternativeRule.Mode.SECURITY_CONTEXT_IN_BUSINESS_CODE));
+        rules.add(new ManualSecurityAuthorizationAlternativeRule(ManualSecurityAuthorizationAlternativeRule.Mode.ROLE_STRING_CHECK));
         return rules;
     }
 

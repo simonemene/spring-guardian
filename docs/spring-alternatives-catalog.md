@@ -42,3 +42,15 @@ The preferred remediation shape is:
 1. keep the hard architectural rule for release gating when the issue is severe;
 2. show a `SPR_ALT###` advisor beside it with the concrete Spring alternative;
 3. exclude advisor findings from prioritized release-blocking actions while keeping them visible in reports and UI.
+
+### Manual Spring Security checks
+
+Spring Guardian now detects manual authorization signals that should be owned by Spring Security instead of scattered business code:
+
+| ID | Problem | Spring alternative |
+|---|---|---|
+| `SPR_ALT021_MANUAL_PRINCIPAL_SECURITY_CHECK` | `principal != null`, `getUserPrincipal() != null` or `Authentication != null` used as an authorization boundary | `SecurityFilterChain`, `@PreAuthorize`, `@AuthenticationPrincipal` or a dedicated authorization service |
+| `SPR_ALT022_SECURITY_CONTEXT_HOLDER_IN_BUSINESS_CODE` | services/domain code read `SecurityContextHolder` directly | keep security infrastructure in adapters and pass explicit user/permission data to use cases |
+| `SPR_ALT023_MANUAL_ROLE_STRING_CHECK` | scattered `ROLE_*` string checks | `@PreAuthorize`, `AuthorizationManager` or a typed domain permission service |
+
+These findings also reduce the Security and Production Readiness maturity scores because authorization ownership is not fully centralized.

@@ -734,6 +734,9 @@ final class RuleTextCatalog {
             case "SPR_ALT018" -> "@ConfigurationProperties senza validazione";
             case "SPR_ALT019" -> "Segreto in configurazione versionabile";
             case "SPR_ALT020" -> "Logging console diretto";
+            case "SPR_ALT021" -> "Controllo manuale Principal";
+            case "SPR_ALT022" -> "SecurityContextHolder nel codice business";
+            case "SPR_ALT023" -> "Controllo ruoli manuale";
             case "BAT004" -> "Dimensione chunk da rendere configurabile";
             case "BAT008" -> "DataSource creato manualmente nel batch";
             case "BAT012" -> "Retry su eccezione troppo generica";

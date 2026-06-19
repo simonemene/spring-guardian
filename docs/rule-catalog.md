@@ -40,7 +40,7 @@ Every grouped finding should provide:
 
 ## Enterprise Spring Alternatives
 
-The unified advisor catalog now exposes `SPR_ALT001`-`SPR_ALT020`.
+The unified advisor catalog now exposes `SPR_ALT001`-`SPR_ALT023`.
 These rules are advisory by design: they point to concrete Spring-native remediations and are grouped under **Spring Alternative Advisor** in reports.
 
 | ID | Detects | Spring alternative |
@@ -65,3 +65,6 @@ These rules are advisory by design: they point to concrete Spring-native remedia
 | `SPR_ALT018_CONFIGURATION_PROPERTIES_WITHOUT_VALIDATION` | properties binding without validation | `@ConfigurationProperties` + `@Validated` |
 | `SPR_ALT019_SECRET_LIKE_PROPERTY` | secret-like committed property | externalized config / secret manager |
 | `SPR_ALT020_SYSTEM_OUT_LOGGING` | console logging / stacktrace printing | SLF4J / structured logging |
+| `SPR_ALT021_MANUAL_PRINCIPAL_SECURITY_CHECK` | `Principal` / `Authentication` null checks used as authorization | `@PreAuthorize`, `SecurityFilterChain`, `@AuthenticationPrincipal` or authorization service |
+| `SPR_ALT022_SECURITY_CONTEXT_HOLDER_IN_BUSINESS_CODE` | `SecurityContextHolder` read from service/domain code | security adapter plus explicit authenticated identity/use-case parameter |
+| `SPR_ALT023_MANUAL_ROLE_STRING_CHECK` | scattered `ROLE_*` string comparisons | method security, `AuthorizationManager` or typed domain permission service |

@@ -21,11 +21,62 @@ Its goal is not to produce a noisy list of generic static-analysis warnings. Its
 
 Spring Guardian is complementary to tools such as SonarQube. It focuses on Spring architecture, framework usage, modernization opportunities, cloud readiness, maintainability and release-readiness patterns.
 
+## Spring Guardian Architect Mode
+
+Architect Mode turns a scan into a Spring modernization roadmap:
+
+```bash
+java -jar guardian-cli/target/spring-guardian-cli.jar architect ./my-app --format html --output architecture-report.html
+```
+
+It generates:
+
+```text
+Spring Project Fingerprint
+Spring Maturity Score
+Spring Architecture Map
+Cycle detection between logical modules
+Modernization Plan
+Exportable Improvement Checklist
+Production Readiness Advisor
+Spring Upgrade Path
+OpenRewrite suggestions YAML
+```
+
+Export examples:
+
+```bash
+java -jar guardian-cli/target/spring-guardian-cli.jar architect ./my-app \
+  --format markdown \
+  --output spring-modernization-plan.md \
+  --export-checklist modernization-checklist.json \
+  --export-mermaid module-map.mmd \
+  --export-openrewrite openrewrite-suggestions.yml
+```
+
+The UI exposes the same data in a user-friendly Architect Mode page with counters, map, checklist, production readiness details, upgrade path and artifact downloads.
+
+### How to read Architect Mode
+
+Architect Mode is designed as a modernization roadmap, not as a raw list of warnings.
+
+**Spring Maturity Score** is calibrated from three inputs: detected Spring capabilities, concrete rule findings and Spring-specific anti-patterns. Each area shows the score, the evidence that lowered it and the recommended Spring-native correction. A high score means no important signal was found for that area, not that the code is perfect. A low score means Spring Guardian found evidence such as missing DTO/validation, weak transaction boundaries, unsafe actuator exposure, manual security checks, missing observability or outdated Spring APIs.
+
+**Architecture Map** shows the current structure first. The visual graph uses the expected Spring flow `Controller -> Service -> Repository -> Entity` and highlights violations such as controller-to-repository access, service dependency on web/controller code, missing service/application boundaries and cross-module coupling. The dialog view is the human-readable architecture map; Mermaid remains a technical export for documentation and CI artifacts.
+
+**Modernization Plan** converts findings into an ordered checklist. Each item contains the affected files/classes when available, why it matters, the Spring alternative, suggested change, effort, business impact and related findings. The checklist can be exported as JSON or Markdown and used as a backlog for refactoring work.
+
+**Production Readiness Advisor** answers whether the application can safely run in production. It checks actuator governance, health exposure, secret externalization, logging, profiles, dependency governance, manual security authorization and cloud/runtime readiness.
+
+**Spring Upgrade Path** is not just a dependency upgrade list. It explains the current baseline and proposes steps in a safe order. Each step has a reason, evidence, concrete actions, risk, effort and optional OpenRewrite recipes. OpenRewrite output is a suggestion layer: Spring Guardian does not rewrite code automatically.
+
+**OpenRewrite suggestions** are generated only when findings or the detected baseline justify them. They are intended for guided pull requests after the team reviews the modernization plan.
+
 
 ## Backend Spring Alternatives
 
 The backend uses a unified `SpringAlternativeRulesCatalog`.
-It keeps legacy `ADV###` compatibility and adds `SPR_ALT001`-`SPR_ALT020` enterprise alternatives for Security, Actuator, Web/API contracts, JPA, transactions, configuration and observability.
+It keeps legacy `ADV###` compatibility and adds `SPR_ALT001`-`SPR_ALT023` enterprise alternatives for Security, Actuator, Web/API contracts, JPA, transactions, configuration and observability.
 
 Examples:
 
@@ -35,6 +86,9 @@ SPR_ALT006  REST DTO instead of JPA entity response
 SPR_ALT010  disable Open EntityManager in View and load DTO/projection in service transaction
 SPR_ALT018  @ConfigurationProperties + @Validated
 SPR_ALT020  SLF4J instead of System.out / printStackTrace
+SPR_ALT021  avoid Principal != null checks; use Spring Security authorization
+SPR_ALT022  keep SecurityContextHolder outside business code
+SPR_ALT023  replace manual ROLE_* string checks with method/security policies
 ```
 
 Spring Alternative findings are visible in CLI, JSON, HTML report and UI as modernization guidance. They do not replace hard release-readiness rules; they explain the concrete Spring-native remediation.

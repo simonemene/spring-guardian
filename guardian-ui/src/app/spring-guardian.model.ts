@@ -273,6 +273,10 @@ export interface UpgradeStep {
   risk: string;
   springAlternative: string;
   evidence: string[];
+  whyRecommended: string;
+  actions: string[];
+  effort: string;
+  openRewriteRecipes: string[];
 }
 
 export interface OpenRewritePlan {
