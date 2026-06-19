@@ -137,20 +137,45 @@ public class ProjectScanService {
     }
 
     private int calculateScore(List<Finding> findings, ProjectProfile profile) {
-        int penalty = 0;
+        int criticalPenalty = 0;
+        int majorPenalty = 0;
+        int minorPenalty = 0;
+        int infoPenalty = 0;
+        int advisorPenalty = 0;
+        int suggestionPenalty = 0;
         for (Finding finding : findings) {
+            boolean advisor = springAlternativeAdvisorRule(finding.ruleId());
+            boolean capabilityGap = matches(finding.ruleId(), "CAP");
             int weight = switch (finding.severity()) {
                 case CRITICAL -> 12;
-                case MAJOR -> 6;
-                case MINOR -> 2;
-                case INFO -> 1;
+                case MAJOR -> 5;
+                case MINOR -> advisor || capabilityGap ? 1 : 2;
+                case INFO -> advisor || capabilityGap ? 1 : 1;
             };
             if (profile.knownIssuesAccepted() && finding.severity() == Severity.MAJOR && !securityRule(finding.ruleId())) {
                 weight = Math.max(2, weight / 2);
             }
-            penalty += weight;
+            if (advisor) {
+                advisorPenalty += weight;
+            } else if (finding.severity() == Severity.CRITICAL) {
+                criticalPenalty += weight;
+            } else if (finding.severity() == Severity.MAJOR) {
+                majorPenalty += weight;
+            } else if (finding.severity() == Severity.MINOR) {
+                minorPenalty += weight;
+            } else if (matches(finding.ruleId(), "SUG")) {
+                suggestionPenalty += weight;
+            } else {
+                infoPenalty += weight;
+            }
         }
-        return Math.max(0, 100 - penalty);
+        int cappedPenalty = criticalPenalty
+                + majorPenalty
+                + Math.min(minorPenalty, 18)
+                + Math.min(infoPenalty, 6)
+                + Math.min(advisorPenalty, 8)
+                + Math.min(suggestionPenalty, 2);
+        return Math.max(0, 100 - cappedPenalty);
     }
 
     private String calculateRiskLevel(int score, Map<Severity, Long> bySeverity) {
@@ -182,7 +207,7 @@ public class ProjectScanService {
 
     private String italianSummaryFor(String riskLevel, String readinessStatus) {
         if ("NOT_READY".equals(readinessStatus)) {
-            return "Il progetto non è ancora pronto per il rilascio secondo il profilo selezionato: correggi prima i blocchi critici e le aree ad alto impatto.";
+            return "Il progetto non è ancora pronto per il rilascio secondo i moduli Spring rilevati e le regole di produzione: correggi prima i blocchi critici e le aree ad alto impatto.";
         }
         if ("READY_WITH_WARNINGS".equals(readinessStatus)) {
             return "Il progetto può procedere solo con consapevolezza tecnica: non ci sono blocchi critici, ma restano miglioramenti da pianificare.";
@@ -197,7 +222,7 @@ public class ProjectScanService {
 
     private String englishSummaryFor(String riskLevel, String readinessStatus) {
         if ("NOT_READY".equals(readinessStatus)) {
-            return "The project is not release-ready for the selected profile yet: fix critical blockers and high-impact areas first.";
+            return "The project is not release-ready according to the detected Spring modules and production rules yet: fix critical blockers and high-impact areas first.";
         }
         if ("READY_WITH_WARNINGS".equals(readinessStatus)) {
             return "The project can move forward only with technical awareness: no critical blockers remain, but improvements should be planned.";
@@ -266,6 +291,7 @@ public class ProjectScanService {
         if (language == ReportLanguage.ENGLISH) {
             return switch (findingType) {
                 case "SPRING_ALTERNATIVE" -> "Manual Java APIs and modern Spring alternatives detected by the Spring Alternative Advisor.";
+                case "SPRING_CAPABILITY_GAP" -> "Missing Spring capabilities inferred from the detected modules and project shape.";
                 case "DEPENDENCIES" -> "Dependency and Maven version issues that may affect build stability or Spring compatibility.";
                 case "POM" -> "Maven POM structure, plugin and dependency management quality.";
                 case "CONFIGURATION" -> "Configuration files, profiles, secrets and environment-sensitive settings.";
@@ -284,6 +310,7 @@ public class ProjectScanService {
         }
         return switch (findingType) {
             case "SPRING_ALTERNATIVE" -> "API Java manuali e alternative Spring moderne rilevate dallo Spring Alternative Advisor.";
+            case "SPRING_CAPABILITY_GAP" -> "Capability Spring mancanti dedotte dai moduli rilevati e dalla struttura del progetto.";
             case "DEPENDENCIES" -> "Problemi su dipendenze e versioni Maven che possono influire su build o compatibilità Spring.";
             case "POM" -> "Qualità del POM Maven, dei plugin e della gestione centralizzata delle dipendenze.";
             case "CONFIGURATION" -> "File di configurazione, profili, segreti e impostazioni dipendenti dall'ambiente.";
@@ -424,6 +451,9 @@ public class ProjectScanService {
         if (matches(ruleId, "ADV")) {
             return "SPRING_ALTERNATIVE";
         }
+        if (matches(ruleId, "CAP")) {
+            return "SPRING_CAPABILITY_GAP";
+        }
         if (matches(ruleId, "SEC")) {
             return "SECURITY";
         }
@@ -482,6 +512,7 @@ public class ProjectScanService {
         if (language == ReportLanguage.ENGLISH) {
             return switch (findingType) {
                 case "SPRING_ALTERNATIVE" -> "Spring Alternative Advisor";
+                case "SPRING_CAPABILITY_GAP" -> "Missing Spring capabilities";
                 case "DEPENDENCIES" -> "Dependencies";
                 case "POM" -> "Maven POM";
                 case "CONFIGURATION" -> "Configuration";
@@ -500,6 +531,7 @@ public class ProjectScanService {
         }
         return switch (findingType) {
             case "SPRING_ALTERNATIVE" -> "Spring Alternative Advisor";
+            case "SPRING_CAPABILITY_GAP" -> "Capability Spring mancanti";
             case "DEPENDENCIES" -> "Dipendenze";
             case "POM" -> "POM Maven";
             case "CONFIGURATION" -> "Configurazione";
@@ -610,7 +642,7 @@ public class ProjectScanService {
                     "Start from release readiness, then quality gates, then recommended actions. Findings are grouped by deterministic rule to keep the report readable on large projects.",
                     List.of(
                             "Fix every critical finding before considering the CI scan green.",
-                            "Use the project profile only to calibrate the current stateless scan; Spring Guardian does not persist baselines.",
+                            "Use the detected Spring modules to understand why each rule was applied; Spring Guardian does not persist baselines.",
                             "Review findings by area: dependency injection, web layer, security, JPA, architecture, tests, build and Spring Alternative Advisor.",
                             "Keep deterministic rules as the source of truth. No AI calls, database calls or hidden state are required."
                     )
@@ -665,6 +697,7 @@ public class ProjectScanService {
         gates.add(gate("GATE_TESTS", language, area(areas, "TESTS"), true));
         gates.add(gate("GATE_BUILD_CONFIG", language, area(areas, "BUILD_CONFIG"), true));
         gates.add(gate("GATE_SPRING_ALTERNATIVE_ADVISOR", language, area(areas, "SPRING_ALTERNATIVE_ADVISOR"), false));
+        gates.add(gate("GATE_SPRING_CAPABILITIES", language, area(areas, "SPRING_CAPABILITIES"), false));
         gates.add(new QualityGate(
                 "GATE_PROFILE_ALIGNMENT",
                 gateName("GATE_PROFILE_ALIGNMENT", language),
@@ -735,11 +768,11 @@ public class ProjectScanService {
         boolean expectsDdd = context.profile().architectureStyle().name().equals("DOMAIN_DRIVEN_DESIGN") || context.profile().architectureStyle().name().equals("HEXAGONAL");
         if (expectsDdd && (!context.capabilities().hasDomainLayer() || !context.capabilities().hasApplicationLayer())) {
             return language == ReportLanguage.ENGLISH
-                    ? "The selected DDD or hexagonal profile expects clear domain and application layers, but they were not both detected."
+                    ? "The detected architecture style expects clear domain and application layers, but they were not both detected."
                     : "Il profilo DDD o esagonale selezionato richiede layer domain e application chiari, ma non sono stati rilevati entrambi.";
         }
         return language == ReportLanguage.ENGLISH
-                ? "The selected project profile is consistent with the detected structure for this stateless scan."
+                ? "The automatically detected Spring modules are consistent with the project structure for this stateless scan."
                 : "Il profilo progetto selezionato è coerente con la struttura rilevata in questa scansione stateless.";
     }
 
@@ -761,15 +794,15 @@ public class ProjectScanService {
     private String releaseExplanation(String status, ProjectProfile profile, ReportLanguage language) {
         if (language == ReportLanguage.ENGLISH) {
             return switch (status) {
-                case "READY" -> "No blocking findings were detected by the deterministic gates for the selected profile.";
-                case "READY_WITH_WARNINGS" -> "The scan has no blocking failures for the selected profile, but the remaining warnings should be planned before scaling the project.";
-                default -> "The selected profile blocks release until the listed gates are fixed.";
+                case "READY" -> "No blocking findings were detected by the deterministic gates for the detected Spring modules.";
+                case "READY_WITH_WARNINGS" -> "The scan has no blocking failures for the detected Spring modules, but the remaining warnings should be planned before scaling the project.";
+                default -> "The deterministic production gates block release until the listed findings are fixed.";
             };
         }
         return switch (status) {
-            case "READY" -> "I gate deterministici non hanno rilevato blocchi per il profilo selezionato.";
-            case "READY_WITH_WARNINGS" -> "La scansione non ha blocchi per il profilo selezionato, ma le avvertenze restanti vanno pianificate prima di far scalare il progetto.";
-            default -> "Il profilo selezionato blocca il rilascio finché i gate indicati non vengono corretti.";
+            case "READY" -> "I gate deterministici non hanno rilevato blocchi per i moduli Spring rilevati.";
+            case "READY_WITH_WARNINGS" -> "La scansione non ha blocchi per i moduli Spring rilevati, ma le avvertenze restanti vanno pianificate prima di far scalare il progetto.";
+            default -> "I gate deterministici bloccano il rilascio finché i finding indicati non vengono corretti.";
         };
     }
 
@@ -788,6 +821,7 @@ public class ProjectScanService {
                 case "GATE_TESTS" -> "Tests";
                 case "GATE_BUILD_CONFIG" -> "Build and configuration";
                 case "GATE_SPRING_ALTERNATIVE_ADVISOR" -> "Spring Alternative Advisor";
+                case "GATE_SPRING_CAPABILITIES" -> "Spring capabilities";
                 case "GATE_PROFILE_ALIGNMENT" -> "Profile alignment";
                 default -> code;
             };
@@ -805,6 +839,7 @@ public class ProjectScanService {
             case "GATE_TESTS" -> "Test";
             case "GATE_BUILD_CONFIG" -> "Build e configurazione";
             case "GATE_SPRING_ALTERNATIVE_ADVISOR" -> "Spring Alternative Advisor";
+            case "GATE_SPRING_CAPABILITIES" -> "Capability Spring";
             case "GATE_PROFILE_ALIGNMENT" -> "Coerenza profilo";
             default -> code;
         };
@@ -833,7 +868,8 @@ public class ProjectScanService {
                     new AreaDefinition("BUILD_CONFIG", "Build and configuration", "Configuration externalization, profiles, hardcoded values and build maintainability.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036", "SPR091", "SPR092")),
                     new AreaDefinition("CLOUD_READINESS", "Cloud readiness", "12-factor runtime neutrality, externalized configuration, local state, graceful runtime behavior and deployability.", List.of("CLD")),
                     new AreaDefinition("OBSERVABILITY", "Observability", "Actuator, Micrometer, logs, correlation, health and operational diagnostics.", List.of("OBS")),
-                    new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Spring Alternative Advisor", "Manual Java objects, low-level APIs and modern Spring alternatives worth evaluating.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090", "ADV"))
+                    new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Spring Alternative Advisor", "Manual Java objects, low-level APIs and modern Spring alternatives worth evaluating.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090", "ADV")),
+                    new AreaDefinition("SPRING_CAPABILITIES", "Spring capabilities", "Detected Spring modules compared with useful missing capabilities such as Validation, Actuator and OpenAPI.", List.of("CAP"))
             );
         }
         return List.of(
@@ -849,7 +885,8 @@ public class ProjectScanService {
                 new AreaDefinition("BUILD_CONFIG", "Build e configurazione", "Esternalizzazione della configurazione, profili, valori scritti nel codice e manutenibilità della build.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036", "SPR091", "SPR092")),
                 new AreaDefinition("CLOUD_READINESS", "Prontezza cloud", "Neutralità a runtime secondo i principi 12-factor, configurazione esterna, stato locale, comportamento operativo e rilasciabilità.", List.of("CLD")),
                 new AreaDefinition("OBSERVABILITY", "Osservabilità", "Actuator, Micrometer, log, correlazione, stato di salute e diagnostica operativa.", List.of("OBS")),
-                new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Advisor Spring", "Oggetti Java creati manualmente, API di basso livello e alternative Spring più integrate da valutare.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090", "ADV"))
+                new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Advisor Spring", "Oggetti Java creati manualmente, API di basso livello e alternative Spring più integrate da valutare.", List.of("SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090", "ADV")),
+                new AreaDefinition("SPRING_CAPABILITIES", "Capability Spring", "Moduli Spring rilevati confrontati con capability utili mancanti come Validation, Actuator e OpenAPI.", List.of("CAP"))
         );
     }
 
@@ -878,6 +915,9 @@ public class ProjectScanService {
         }
         if (matches(ruleId, "ADV")) {
             return "Spring Alternative Advisor";
+        }
+        if (matches(ruleId, "CAP")) {
+            return language == ReportLanguage.ENGLISH ? "Missing Spring capabilities" : "Capability Spring mancanti";
         }
         if (matches(ruleId, "SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059")) {
             return language == ReportLanguage.ENGLISH ? "Spring Security" : "Sicurezza";
@@ -942,6 +982,7 @@ public class ProjectScanService {
                 case "Tests" -> "Test presence, assertion quality, excessive usage of heavy Spring tests and time-based fragility.";
                 case "Configuration and maintainability" -> "Build, logging, naming, hardcoded values and general maintainability hygiene.";
                 case "Spring Alternative Advisor" -> "Manual Java objects, low-level APIs and modern Spring alternatives worth evaluating.";
+                case "Missing Spring capabilities" -> "Detected Spring modules compared with useful missing capabilities such as Validation, Actuator and OpenAPI.";
                 default -> "General deterministic findings detected by Spring Guardian.";
             };
         }
@@ -960,6 +1001,7 @@ public class ProjectScanService {
             case "Test" -> "Presenza dei test, qualità degli assert, uso eccessivo di test Spring pesanti e fragilità temporale.";
             case "Configurazione e manutenibilità" -> "Build, log, nomenclatura, valori scritti nel codice e pulizia generale del codice e della configurazione.";
             case "Spring Alternative Advisor" -> "Oggetti Java creati manualmente, API di basso livello e alternative Spring più integrate da valutare.";
+            case "Capability Spring mancanti" -> "Moduli Spring rilevati confrontati con capability utili mancanti come Validation, Actuator e OpenAPI.";
             default -> "Problemi deterministici generali rilevati da Spring Guardian.";
         };
     }

@@ -81,15 +81,13 @@ public class ProjectSourceScanner {
     }
 
     private JavaSourceFile parseJavaFile(Path root, Path path) {
+        String relativePath = root.relativize(path).toString();
+        String content = readSafely(path);
         try {
-            String content = Files.readString(path, StandardCharsets.UTF_8);
             CompilationUnit cu = StaticJavaParser.parse(content);
-            String relativePath = root.relativize(path).toString();
             return new JavaSourceFile(path, relativePath, content, cu);
         } catch (Exception e) {
-            CompilationUnit empty = new CompilationUnit();
-            String relativePath = root.relativize(path).toString();
-            return new JavaSourceFile(path, relativePath, "", empty);
+            return new JavaSourceFile(path, relativePath, content, new CompilationUnit());
         }
     }
 

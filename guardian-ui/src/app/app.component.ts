@@ -4,9 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { SpringGuardianApiService } from './spring-guardian-api.service';
-import { ArchitectureReviewReport, AffectedComponent, ArchitectureStyle, FindingGroup, ProjectType, ReleaseTarget, ReportLanguage, ScanProfile, Severity } from './spring-guardian.model';
+import { ArchitectureReviewReport, AffectedComponent, ArchitectureStyle, FindingGroup, ProjectType, ReleaseTarget, ReportLanguage, Severity } from './spring-guardian.model';
 
-type Tab = 'overview' | 'gates' | 'findings' | 'advisor' | 'actions' | 'json';
+type Tab = 'overview' | 'modules' | 'gates' | 'findings' | 'advisor' | 'production' | 'suggestions' | 'actions' | 'json';
 type DecisionLane = 'BLOCKERS' | 'IMPORTANT' | 'IMPROVEMENTS' | 'ADVISOR' | 'INFORMATION';
 type UploadMode = 'zip' | 'folder' | 'local';
 type TranslationKey = keyof typeof TRANSLATIONS.it;
@@ -41,11 +41,19 @@ const TRANSLATIONS = {
     folderHelp: 'Seleziona la cartella principale del progetto, ad esempio quella che contiene il pom.xml.',
     backendFolderPath: 'Percorso cartella sul backend',
     backendPathHelp: 'Serve quando backend e progetto sono sulla stessa macchina o quando Docker monta una cartella sotto /scan.',
-    scanSettings: 'Profilo scansione',
-    projectType: 'Tipo di progetto',
-    releaseTarget: 'Obiettivo di rilascio',
-    knownIssues: 'È un progetto legacy con problemi noti',
-    profileHelp: 'Il profilo calibra solo la scansione corrente. L’architettura viene rilevata automaticamente. Non viene salvato nulla e non vengono effettuate chiamate a database o servizi AI.',
+    scanSettings: 'Analisi automatica',
+    projectType: 'Tipo rilevato',
+    releaseTarget: 'Prontezza rilascio',
+    knownIssues: 'Baseline legacy rilevata o dichiarata',
+    profileHelp: 'Spring Guardian rileva automaticamente i moduli Spring dal POM e dal codice. Non devi scegliere il tipo progetto: carica il progetto e avvia la review.',
+    automaticProfileTitle: 'Analisi automatica Spring',
+    automaticProfileText: 'Carica il progetto: Spring Guardian rileva Web, Security, Batch, JPA, JDBC, Actuator, Validation e OpenAPI prima di applicare le regole.',
+    analysisStepsTitle: 'Cosa succede dopo il click',
+    analysisStepModules: '1. Rilevo i moduli Spring realmente presenti.',
+    analysisStepRules: '2. Applico solo le regole compatibili con quei moduli.',
+    analysisStepAlternatives: '3. Evidenzio alternative Spring concrete al codice manuale.',
+    analysisStepProduction: '4. Controllo prontezza produzione, azioni e JSON tecnico.',
+    noManualProfile: 'Nessun profilo manuale: Web, Batch e Production readiness vengono riconosciuti dalla scansione.',
     webApi: 'API Web / REST',
     batch: 'Batch',
     library: 'Libreria / starter',
@@ -65,6 +73,20 @@ const TRANSLATIONS = {
     javaFiles: 'file Java',
     pomFiles: 'POM',
     overview: 'Riepilogo',
+    springModules: 'Moduli Spring',
+    springModulesSubtitle: 'Capability rilevate dal POM e dal codice: il report applica le regole solo dove il modulo ha senso.',
+    productionRules: 'Regole produzione',
+    productionRulesSubtitle: 'Rischi di rilascio: configurazione, segreti, Actuator, Maven, profili e prontezza operativa.',
+    suggestionsToVerify: 'Consigli da verificare',
+    suggestionsSubtitle: 'Note a bassa confidenza o a basso impatto: utili per revisione, ma non trattarle come blocchi senza conferma.',
+    capabilityDetected: 'Rilevato',
+    capabilityMissing: 'Non rilevato',
+    capabilityRecommended: 'Consigliato',
+    confidence: 'Confidenza',
+    highConfidenceLabel: 'Alta',
+    mediumConfidenceLabel: 'Media',
+    verifyConfidenceLabel: 'Da verificare',
+    springArchitecture: 'Architettura Spring',
     gates: 'Controlli qualità',
     problems: 'Problemi',
     springAdvisor: 'Alternative Spring',
@@ -86,7 +108,7 @@ const TRANSLATIONS = {
     requestedSource: 'Sorgente richiesta',
     detectedStack: 'Stack rilevato',
     detectedStyles: 'Stile rilevato',
-    selectedProfile: 'Profilo della scansione',
+    selectedProfile: 'Rilevamento automatico',
     impactedAreas: 'Aree architetturali',
     howToRead: 'Come leggere il report',
     gateStatus: 'Stato gate',
@@ -214,11 +236,19 @@ const TRANSLATIONS = {
     folderHelp: 'Select the project root folder, for example the one containing pom.xml.',
     backendFolderPath: 'Backend folder path',
     backendPathHelp: 'Use this when the backend and the project are on the same machine or when Docker mounts a folder under /scan.',
-    scanSettings: 'Scan profile',
-    projectType: 'Project type',
-    releaseTarget: 'Release target',
+    scanSettings: 'Automatic analysis',
+    projectType: 'Detected type',
+    releaseTarget: 'Release readiness',
     knownIssues: 'This is a legacy project with known issues',
-    profileHelp: 'The profile calibrates only this scan. Architecture is detected automatically. Nothing is persisted and no database or AI calls are made.',
+    profileHelp: 'Spring Guardian detects Spring modules automatically from the POM and source code. You do not need to choose a project type: load the project and start the review.',
+    automaticProfileTitle: 'Automatic Spring analysis',
+    automaticProfileText: 'Load the project: Spring Guardian detects Web, Security, Batch, JPA, JDBC, Actuator, Validation and OpenAPI before applying rules.',
+    analysisStepsTitle: 'What happens after scan',
+    analysisStepModules: '1. Detect the Spring modules actually present.',
+    analysisStepRules: '2. Apply only rules that match those modules.',
+    analysisStepAlternatives: '3. Highlight concrete Spring alternatives to manual code.',
+    analysisStepProduction: '4. Check production readiness, actions and technical JSON.',
+    noManualProfile: 'No manual profile: Web, Batch and production readiness are inferred from the scan.',
     webApi: 'Web / REST API',
     batch: 'Batch',
     library: 'Library / starter',
@@ -238,6 +268,20 @@ const TRANSLATIONS = {
     javaFiles: 'Java files',
     pomFiles: 'POM files',
     overview: 'Overview',
+    springModules: 'Spring Modules',
+    springModulesSubtitle: 'Capabilities detected from the POM and code: the report applies rules only where the module makes sense.',
+    productionRules: 'Production Rules',
+    productionRulesSubtitle: 'Release risks: configuration, secrets, Actuator, Maven, profiles and operational readiness.',
+    suggestionsToVerify: 'Suggestions to Verify',
+    suggestionsSubtitle: 'Low-confidence or low-impact notes: useful for review, but do not treat them as blockers without confirmation.',
+    capabilityDetected: 'Detected',
+    capabilityMissing: 'Not detected',
+    capabilityRecommended: 'Recommended',
+    confidence: 'Confidence',
+    highConfidenceLabel: 'High',
+    mediumConfidenceLabel: 'Medium',
+    verifyConfidenceLabel: 'To verify',
+    springArchitecture: 'Spring Architecture',
     gates: 'Quality gates',
     problems: 'Findings',
     springAdvisor: 'Spring Alternatives',
@@ -259,7 +303,7 @@ const TRANSLATIONS = {
     requestedSource: 'Requested source',
     detectedStack: 'Detected stack',
     detectedStyles: 'Detected style',
-    selectedProfile: 'Selected profile',
+    selectedProfile: 'Automatic detection',
     impactedAreas: 'Architecture areas',
     howToRead: 'How to read the report',
     gateStatus: 'Gate status',
@@ -369,8 +413,6 @@ const TRANSLATIONS = {
 })
 export class AppComponent {
   readonly severityOrder: Severity[] = ['CRITICAL', 'MAJOR', 'MINOR', 'INFO'];
-  readonly projectTypes: ProjectType[] = ['WEB_API', 'BATCH'];
-  readonly releaseTargets: ReleaseTarget[] = ['PRODUCTION', 'INTERNAL'];
 
   readonly report = signal<ArchitectureReviewReport | null>(null);
   readonly loading = signal(false);
@@ -392,9 +434,6 @@ export class AppComponent {
   severityFilter: Severity | 'ALL' = 'ALL';
   categoryFilter = 'ALL';
   typeFilter = 'ALL';
-  projectType: ProjectType = 'WEB_API';
-  releaseTarget: ReleaseTarget = 'PRODUCTION';
-  knownIssuesAccepted = false;
 
   readonly categories = computed(() => {
     const current = this.report();
@@ -429,6 +468,40 @@ export class AppComponent {
     return Array.from(groups.entries())
       .map(([area, findings]) => ({ area, findings, occurrences: findings.reduce((total, finding) => total + finding.occurrences, 0) }))
       .sort((left, right) => left.area.localeCompare(right.area));
+  });
+
+  readonly moduleCards = computed(() => {
+    const current = this.report();
+    if (!current) {
+      return [];
+    }
+    const c = current.capabilities;
+    const it = this.selectedLanguage() === 'it';
+    return [
+      this.moduleCard('Spring Web/API', c.usesSpringWeb, c.usesSpringWeb ? 'spring-boot-starter-web / @RestController' : it ? 'Nessun segnale Web MVC/WebFlux' : 'No Web MVC/WebFlux signal', c.usesSpringWeb ? it ? 'Regole Web/API attive: controller, DTO, validazione, error handling e OpenAPI.' : 'Web/API rules active: controllers, DTOs, validation, error handling and OpenAPI.' : it ? 'Le regole Web restano inattive se il modulo non è presente.' : 'Web rules stay inactive when the module is not present.'),
+      this.moduleCard('Spring Security', c.usesSpringSecurity, c.usesSpringSecurity ? 'spring-boot-starter-security / SecurityFilterChain' : it ? 'Nessun segnale Spring Security' : 'No Spring Security signal', c.usesSpringSecurity ? it ? 'Regole Security attive: matcher, chain, CSRF, header e configurazione.' : 'Security rules active: matchers, chains, CSRF, headers and configuration.' : it ? 'Le regole Security non vengono applicate senza segnali reali.' : 'Security rules are not applied without real signals.'),
+      this.moduleCard('Spring Batch', c.usesSpringBatch, c.usesSpringBatch ? 'spring-batch-core / @EnableBatchProcessing' : it ? 'Nessun segnale Spring Batch' : 'No Spring Batch signal', c.usesSpringBatch ? it ? 'Regole Batch attive: job, step, reader, writer, retry, skip e restartability.' : 'Batch rules active: jobs, steps, readers, writers, retry, skip and restartability.' : it ? 'Le regole Batch restano inattive se il progetto non è Batch.' : 'Batch rules stay inactive when the project is not Batch.'),
+      this.moduleCard('Spring Data JPA', c.usesJpa, c.usesJpa ? 'spring-boot-starter-data-jpa / @Entity' : it ? 'Nessun segnale JPA' : 'No JPA signal', c.usesJpa ? it ? 'Regole persistenza abilitate dove applicabili.' : 'Persistence rules enabled where applicable.' : it ? 'I controlli JPA restano inattivi.' : 'JPA checks stay inactive.'),
+      this.moduleCard('Actuator', c.usesActuator, c.usesActuator ? 'spring-boot-starter-actuator' : it ? 'Actuator non rilevato' : 'Actuator not detected', c.usesActuator ? it ? 'Health, info, metriche e readiness possono essere valutate.' : 'Health, info, metrics and readiness can be reviewed.' : it ? 'Consigliato per prontezza produzione e osservabilità.' : 'Recommended for production readiness and observability.'),
+      this.moduleCard('Bean Validation', c.usesValidation, c.usesValidation ? 'spring-boot-starter-validation / @Valid' : it ? 'Validation non rilevata' : 'Validation not detected', c.usesValidation ? it ? 'La validazione degli input può essere valutata.' : 'Input validation can be reviewed.' : it ? 'Consigliata per DTO e request body Web/API.' : 'Recommended for Web/API DTOs and request bodies.'),
+      this.moduleCard('OpenAPI', c.usesOpenApi, c.usesOpenApi ? 'springdoc-openapi / @Operation' : it ? 'OpenAPI non rilevato' : 'OpenAPI not detected', c.usesOpenApi ? it ? 'La documentazione API può essere valutata.' : 'API documentation can be reviewed.' : it ? 'Consigliato per API pubbliche o interne governate.' : 'Recommended for public or governed internal APIs.')
+    ];
+  });
+
+  readonly productionFindings = computed(() => {
+    const current = this.report();
+    if (!current) {
+      return [];
+    }
+    return current.findings.filter((finding) => this.isProductionFinding(finding));
+  });
+
+  readonly suggestionFindings = computed(() => {
+    const current = this.report();
+    if (!current) {
+      return [];
+    }
+    return current.findings.filter((finding) => this.isSuggestionFinding(finding));
   });
 
   readonly problemTypeSummaries = computed(() => {
@@ -574,8 +647,6 @@ export class AppComponent {
   scan(): void {
     this.error.set(null);
     const language = this.selectedLanguage();
-    const profile = this.currentProfile();
-
     if (this.uploadMode() === 'zip') {
       const file = this.selectedFile();
       if (!file) {
@@ -583,7 +654,7 @@ export class AppComponent {
         return;
       }
       this.currentScanSource.set(file.name);
-      this.executeScan(this.api.scanZip(file, language, profile));
+      this.executeScan(this.api.scanZip(file, language));
       return;
     }
 
@@ -594,7 +665,7 @@ export class AppComponent {
         return;
       }
       this.currentScanSource.set(this.selectedFolderName() ?? this.t('selectedFolderFallback'));
-      this.executeScan(this.api.scanFolder(files, language, profile));
+      this.executeScan(this.api.scanFolder(files, language));
       return;
     }
 
@@ -604,7 +675,7 @@ export class AppComponent {
       return;
     }
     this.currentScanSource.set(path);
-    this.executeScan(this.api.scanLocalPath(path, language, profile));
+    this.executeScan(this.api.scanLocalPath(path, language));
   }
 
   resetFilters(): void {
@@ -808,6 +879,7 @@ export class AppComponent {
       RUNTIME_CODE: this.t('typeRuntimeCode'),
       SPRING_ALTERNATIVE: this.t('typeSpringAlternative'),
       SPRING_BATCH: this.t('typeSpringBatch'),
+      SPRING_CAPABILITY_GAP: this.t('springModules'),
       ARCHITECTURE: this.t('typeArchitecture'),
       CLOUD_READINESS: this.t('typeCloudReadiness'),
       OBSERVABILITY: this.t('typeObservability')
@@ -877,7 +949,8 @@ export class AppComponent {
     return ({
       WEB_API: this.t('webApi'),
       BATCH: this.t('batch'),
-      LIBRARY: this.t('library')
+      LIBRARY: this.t('library'),
+      UNKNOWN: this.t('autoDetected')
     } as Record<string, string>)[value] ?? this.humanize(value);
   }
 
@@ -896,7 +969,7 @@ export class AppComponent {
   }
 
   ruleCode(ruleId: string): string {
-    return ruleId.match(/^(SPR|SEC|WEB|BAT|CLD|OBS|POM|ADV|ARCH)\d+/)?.[0] ?? ruleId;
+    return ruleId.match(/^(SPR|SEC|WEB|BAT|CLD|OBS|POM|ADV|ARCH|CAP)\d+/)?.[0] ?? ruleId;
   }
 
   occurrenceLabel(count: number): string {
@@ -917,6 +990,16 @@ export class AppComponent {
     return component.name || component.filePath || this.componentTypeLabel(component.type);
   }
 
+  detectedScopeLabel(current: ArchitectureReviewReport): string {
+    const modules = [];
+    if (current.capabilities.usesSpringWeb) modules.push('Web/API');
+    if (current.capabilities.usesSpringSecurity) modules.push('Security');
+    if (current.capabilities.usesSpringBatch) modules.push('Batch');
+    if (current.capabilities.usesJpa) modules.push('JPA');
+    if (current.capabilities.usesActuator) modules.push('Actuator');
+    return modules.length > 0 ? modules.join(' · ') : this.t('autoDetected');
+  }
+
   capabilityItems(current: ArchitectureReviewReport): string[] {
     const capabilities = current.capabilities;
     const values = [
@@ -932,6 +1015,41 @@ export class AppComponent {
     return values.length > 0 ? values : [this.t('noFindings')];
   }
 
+
+  moduleCard(name: string, active: boolean, evidence: string, description: string): { name: string; active: boolean; evidence: string; description: string; status: string } {
+    return {
+      name,
+      active,
+      evidence,
+      description,
+      status: active ? this.t('capabilityDetected') : this.t('capabilityMissing')
+    };
+  }
+
+  isProductionFinding(finding: FindingGroup): boolean {
+    const type = this.findingType(finding);
+    return ['CLOUD_READINESS', 'OBSERVABILITY', 'DEPENDENCIES', 'POM', 'CONFIGURATION'].includes(type)
+      || finding.ruleId.startsWith('CLD')
+      || finding.ruleId.startsWith('OBS')
+      || finding.ruleId.startsWith('POM');
+  }
+
+  isSuggestionFinding(finding: FindingGroup): boolean {
+    if (this.isSpringAdvisorFinding(finding) || this.isProductionFinding(finding)) {
+      return false;
+    }
+    return finding.severity === 'INFO' || finding.findingType === 'CODE';
+  }
+
+  confidenceLabel(finding: FindingGroup): string {
+    if (finding.ruleId.startsWith('CAP') || this.isSpringAdvisorFinding(finding)) {
+      return this.t('highConfidenceLabel');
+    }
+    if (finding.severity === 'INFO') {
+      return this.t('verifyConfidenceLabel');
+    }
+    return this.t('mediumConfidenceLabel');
+  }
 
   advisorArea(finding: FindingGroup): string {
     const code = this.ruleCode(finding.ruleId);
@@ -952,15 +1070,6 @@ export class AppComponent {
     if (['ADV014','ADV015','ADV081','ADV082','ADV071'].includes(code)) return italian ? 'File, CSV e Batch' : 'Files, CSV and Batch';
     if (numeric >= 1 && numeric <= 100) return italian ? 'Modernizzazione Spring' : 'Spring modernization';
     return finding.findingTypeLabel || this.t('typeSpringAlternative');
-  }
-
-  private currentProfile(): ScanProfile {
-    return {
-      projectType: this.projectType,
-      architectureStyle: 'AUTO_DETECTED',
-      releaseTarget: this.releaseTarget,
-      knownIssuesAccepted: this.knownIssuesAccepted
-    };
   }
 
   private executeScan(request$: Observable<ArchitectureReviewReport>): void {

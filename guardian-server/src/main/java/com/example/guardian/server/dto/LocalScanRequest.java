@@ -18,7 +18,7 @@ public record LocalScanRequest(
         @NotBlank
         @Schema(description = "Absolute or mounted project directory path.", example = "C:\\progetti\\spring-guardian")
         String path,
-        @Schema(description = "Project type. Accepted values: WEB_API, BATCH, LIBRARY.", example = "WEB_API")
+        @Schema(description = "Project type. Accepted values: UNKNOWN, WEB_API, BATCH, LIBRARY.", example = "UNKNOWN")
         String projectType,
         @Schema(description = "Architecture style. Accepted values: AUTO_DETECTED, LAYERED, DOMAIN_DRIVEN_DESIGN, HEXAGONAL, LEGACY_LAYERED.", example = "AUTO_DETECTED")
         String architectureStyle,

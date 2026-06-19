@@ -48,34 +48,24 @@
         <small>{{ t('backendPathHelp') }}</small>
       </div>
 
-      <div class="profile-box">
-        <h2>{{ t('scanSettings') }}</h2>
-        <div class="profile-grid compact-profile">
-          <div class="field">
-            <label>{{ t('projectType') }}</label>
-            <div class="radio-group">
-              <label class="radio-card" *ngFor="let type of projectTypes">
-                <input type="radio" name="projectType" [value]="type" [(ngModel)]="projectType">
-                <span>{{ projectTypeLabel(type) }}</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="field">
-            <label>{{ t('releaseTarget') }}</label>
-            <div class="radio-group">
-              <label class="radio-card" *ngFor="let target of releaseTargets">
-                <input type="radio" name="releaseTarget" [value]="target" [(ngModel)]="releaseTarget">
-                <span>{{ releaseTargetLabel(target) }}</span>
-              </label>
-            </div>
-          </div>
+      <div class="auto-analysis-box">
+        <div class="auto-analysis-head">
+          <span>{{ t('scanSettings') }}</span>
+          <strong>{{ t('automaticProfileTitle') }}</strong>
+          <p>{{ t('automaticProfileText') }}</p>
         </div>
+        <div class="analysis-flow" [attr.aria-label]="t('analysisStepsTitle')">
+          <div><b>01</b><span>{{ t('analysisStepModules') }}</span></div>
+          <div><b>02</b><span>{{ t('analysisStepRules') }}</span></div>
+          <div><b>03</b><span>{{ t('analysisStepAlternatives') }}</span></div>
+          <div><b>04</b><span>{{ t('analysisStepProduction') }}</span></div>
+        </div>
+        <small>{{ t('noManualProfile') }}</small>
+      </div>
 
-        <label class="check-row">
-          <input type="checkbox" [(ngModel)]="knownIssuesAccepted">
-          <span>{{ t('knownIssues') }}</span>
-        </label>
+      <div class="scan-ready-strip">
+        <span>{{ t('projectType') }}</span>
+        <strong>{{ t('autoDetected') }}</strong>
         <small>{{ t('profileHelp') }}</small>
       </div>
 
@@ -135,7 +125,7 @@
 
       <article class="impact-card">
         <span>{{ t('scopeOnly') }}</span>
-        <strong>{{ projectTypeLabel(current.profile.projectType) }}</strong>
+        <strong>{{ detectedScopeLabel(current) }}</strong>
         <p>{{ t('scopeOnlyText') }}</p>
       </article>
 
@@ -191,9 +181,12 @@
 
     <nav class="tabs" aria-label="Report sections">
       <button type="button" [class.active]="activeTab() === 'overview'" (click)="selectTab('overview')">{{ t('overview') }}</button>
+      <button type="button" [class.active]="activeTab() === 'modules'" (click)="selectTab('modules')">{{ t('springModules') }}</button>
       <button type="button" [class.active]="activeTab() === 'gates'" (click)="selectTab('gates')">{{ t('gates') }}</button>
-      <button type="button" [class.active]="activeTab() === 'findings'" (click)="selectTab('findings')">{{ t('problems') }}</button>
+      <button type="button" [class.active]="activeTab() === 'findings'" (click)="selectTab('findings')">{{ t('springArchitecture') }}</button>
       <button type="button" [class.active]="activeTab() === 'advisor'" (click)="selectTab('advisor')">{{ t('springAdvisor') }}</button>
+      <button type="button" [class.active]="activeTab() === 'production'" (click)="selectTab('production')">{{ t('productionRules') }}</button>
+      <button type="button" [class.active]="activeTab() === 'suggestions'" (click)="selectTab('suggestions')">{{ t('suggestionsToVerify') }}</button>
       <button type="button" [class.active]="activeTab() === 'actions'" (click)="selectTab('actions')">{{ t('actions') }}</button>
       <button type="button" [class.active]="activeTab() === 'json'" (click)="selectTab('json')">{{ t('technicalJson') }}</button>
     </nav>
@@ -231,7 +224,7 @@
           <span *ngIf="currentScanSource()">{{ t('requestedSource') }}: <strong>{{ currentScanSource() }}</strong></span>
           <span *ngIf="current.projectRootPath">{{ t('scannedRootPath') }}: <strong>{{ current.projectRootPath }}</strong></span>
           <span>{{ t('scan') }}: <strong>{{ current.scannedAt | date:'medium' }}</strong></span>
-          <span>{{ t('selectedProfile') }}: <strong>{{ projectTypeLabel(current.profile.projectType) }} · {{ architectureStyleLabel(current.profile.architectureStyle) }} · {{ releaseTargetLabel(current.profile.releaseTarget) }}</strong></span>
+          <span>{{ t('selectedProfile') }}: <strong>{{ detectedScopeLabel(current) }} · {{ architectureStyleLabel(current.profile.architectureStyle) }}</strong></span>
         </div>
       </article>
 
@@ -269,6 +262,43 @@
         <ul>
           <li *ngFor="let step of current.explanation.nextSteps">{{ step }}</li>
         </ul>
+      </article>
+    </section>
+
+    <section *ngIf="activeTab() === 'modules'" class="panel-grid">
+      <article class="panel wide">
+        <div class="panel-title">
+          <div>
+            <h2>{{ t('springModules') }}</h2>
+            <p>{{ t('springModulesSubtitle') }}</p>
+          </div>
+          <span>{{ moduleCards().length }} {{ t('springModules').toLowerCase() }}</span>
+        </div>
+        <div class="module-grid">
+          <article class="module-card" *ngFor="let module of moduleCards()" [attr.data-active]="module.active">
+            <div class="category-head">
+              <strong>{{ module.name }}</strong>
+              <span>{{ module.status }}</span>
+            </div>
+            <p>{{ module.description }}</p>
+            <small>{{ module.evidence }}</small>
+          </article>
+        </div>
+      </article>
+
+      <article class="panel wide">
+        <h2>{{ t('springModules') }} · {{ t('springAdvisor') }}</h2>
+        <p>{{ t('advisorSubtitle') }}</p>
+        <div class="area-grid">
+          <article class="area-card" *ngFor="let finding of current.findings" [hidden]="finding.findingType !== 'SPRING_CAPABILITY_GAP'">
+            <div class="category-head">
+              <strong>{{ finding.title }}</strong>
+              <span>{{ t('confidence') }}: {{ confidenceLabel(finding) }}</span>
+            </div>
+            <p>{{ finding.guidance.riskImpact }}</p>
+            <strong>{{ finding.guidance.recommendedApproach }}</strong>
+          </article>
+        </div>
       </article>
     </section>
 
@@ -503,6 +533,64 @@
             </details>
           </article>
         </section>
+      </div>
+    </section>
+
+    <section *ngIf="activeTab() === 'production'" class="panel advisor-panel">
+      <div class="panel-title">
+        <div>
+          <h2>{{ t('productionRules') }}</h2>
+          <p>{{ t('productionRulesSubtitle') }}</p>
+        </div>
+        <span>{{ productionFindings().length }} {{ t('findings') }}</span>
+      </div>
+      <div class="finding-list grouped">
+        <article class="finding" *ngFor="let finding of productionFindings(); trackBy: trackFinding">
+          <div class="finding-header">
+            <div>
+              <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
+              <span class="category">{{ finding.category }}</span>
+              <span class="rule-code">{{ t('technicalCode') }} {{ ruleCode(finding.ruleId) }}</span>
+            </div>
+            <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
+          </div>
+          <h3>{{ finding.title }}</h3>
+          <div class="guidance-grid">
+            <div><span>{{ t('riskImpact') }}</span><p>{{ finding.guidance.riskImpact }}</p></div>
+            <div><span>{{ t('recommendedFix') }}</span><p>{{ finding.guidance.recommendedApproach }}</p></div>
+          </div>
+          <div class="real-evidence" *ngIf="firstComponent(finding) as component">
+            <h4>{{ t('realEvidence') }}</h4>
+            <p><strong>{{ componentTitle(component) }}</strong> · {{ component.filePath }}<ng-container *ngIf="component.line">:{{ component.line }}</ng-container></p>
+            <p *ngIf="component.evidence"><b>{{ t('technicalEvidence') }}:</b> {{ component.evidence }}</p>
+            <pre *ngIf="component.codeSnippet" class="code-evidence"><code>{{ component.codeSnippet }}</code></pre>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section *ngIf="activeTab() === 'suggestions'" class="panel advisor-panel">
+      <div class="panel-title">
+        <div>
+          <h2>{{ t('suggestionsToVerify') }}</h2>
+          <p>{{ t('suggestionsSubtitle') }}</p>
+        </div>
+        <span>{{ suggestionFindings().length }} {{ t('findings') }}</span>
+      </div>
+      <div class="finding-list grouped">
+        <article class="finding" *ngFor="let finding of suggestionFindings(); trackBy: trackFinding">
+          <div class="finding-header">
+            <div>
+              <span class="badge" [attr.data-severity]="finding.severity">{{ severityLabel(finding.severity) }}</span>
+              <span class="category">{{ finding.category }}</span>
+              <span class="rule-code">{{ t('confidence') }}: {{ confidenceLabel(finding) }}</span>
+            </div>
+            <strong>{{ occurrenceLabel(finding.occurrences) }}</strong>
+          </div>
+          <h3>{{ finding.title }}</h3>
+          <p>{{ finding.whyItMatters }}</p>
+          <strong>{{ finding.suggestedFix }}</strong>
+        </article>
       </div>
     </section>
 

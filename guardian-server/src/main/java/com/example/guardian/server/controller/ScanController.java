@@ -74,8 +74,8 @@ public class ScanController {
             @RequestPart("file") MultipartFile file,
             @Parameter(description = "Report language. Accepted values: it, en.", example = "it")
             @RequestParam(defaultValue = "it") String language,
-            @Parameter(description = "Project type. Accepted values: WEB_API, BATCH, LIBRARY.", example = "WEB_API")
-            @RequestParam(defaultValue = "WEB_API") String projectType,
+            @Parameter(description = "Project type. Accepted values: UNKNOWN, WEB_API, BATCH, LIBRARY.", example = "UNKNOWN")
+            @RequestParam(defaultValue = "UNKNOWN") String projectType,
             @Parameter(description = "Architecture style. Accepted values: AUTO_DETECTED, LAYERED, DOMAIN_DRIVEN_DESIGN, HEXAGONAL, LEGACY_LAYERED.", example = "AUTO_DETECTED")
             @RequestParam(defaultValue = "AUTO_DETECTED") String architectureStyle,
             @Parameter(description = "Release target. Accepted values: PRODUCTION, INTERNAL, LEGACY_BASELINE.", example = "PRODUCTION")
@@ -109,8 +109,8 @@ public class ScanController {
             @RequestPart("files") List<MultipartFile> files,
             @Parameter(description = "Report language. Accepted values: it, en.", example = "it")
             @RequestParam(defaultValue = "it") String language,
-            @Parameter(description = "Project type. Accepted values: WEB_API, BATCH, LIBRARY.", example = "WEB_API")
-            @RequestParam(defaultValue = "WEB_API") String projectType,
+            @Parameter(description = "Project type. Accepted values: UNKNOWN, WEB_API, BATCH, LIBRARY.", example = "UNKNOWN")
+            @RequestParam(defaultValue = "UNKNOWN") String projectType,
             @Parameter(description = "Architecture style. Accepted values: AUTO_DETECTED, LAYERED, DOMAIN_DRIVEN_DESIGN, HEXAGONAL, LEGACY_LAYERED.", example = "AUTO_DETECTED")
             @RequestParam(defaultValue = "AUTO_DETECTED") String architectureStyle,
             @Parameter(description = "Release target. Accepted values: PRODUCTION, INTERNAL, LEGACY_BASELINE.", example = "PRODUCTION")

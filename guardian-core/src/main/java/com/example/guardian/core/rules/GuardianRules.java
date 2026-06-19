@@ -94,6 +94,7 @@ public final class GuardianRules {
         baseRules.addAll(WebBatchRuleCatalog.webRules());
         baseRules.addAll(WebBatchRuleCatalog.batchRules());
         baseRules.addAll(WebBatchRuleCatalog.sharedReadinessRules());
+        baseRules.add(new MissingSpringCapabilityRule());
         baseRules.addAll(WebBatchAdvisorCatalog.rules());
         return List.copyOf(baseRules);
     }

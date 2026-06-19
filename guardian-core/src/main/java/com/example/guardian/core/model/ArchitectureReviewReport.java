@@ -10,7 +10,7 @@ import java.util.Map;
  * @param projectName analyzed project name
  * @param scannedAt scan timestamp
  * @param projectRootPath absolute project root path used by the scan
- * @param profile scan profile selected for this analysis
+ * @param profile scan profile resolved for this analysis
  * @param capabilities detected Spring and architecture capabilities
  * @param summary executive report summary
  * @param releaseReadiness deterministic release readiness decision

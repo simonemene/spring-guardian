@@ -91,3 +91,10 @@ src/assets/favicon.svg
 ```
 
 The mark uses a friendly guardian mascot with a shield that deflects broken legacy-code fragments. The compact logo is used in the header and favicon; the wordmark is used in the hero section.
+
+## Automatic scan UX
+
+The scan form is intentionally simple: users choose ZIP, folder upload or backend path, then start the scan. Project type and release target are inferred by the backend from Spring dependencies, code and configuration.
+
+The dashboard uses Spring-centric sections: Spring Modules, Spring Architecture, Spring Alternatives, Production Rules, Suggestions to Verify, Actions and Technical JSON.
+
