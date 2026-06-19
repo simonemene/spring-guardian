@@ -506,17 +506,17 @@ final class RuleTextCatalog {
             case "SPR001_HARDCODED_CONFIG" -> new RuleText("Hardcoded technical value", "Timeouts, durations, URLs, thresholds and technical parameters hardcoded in source code are harder to change across environments and increase invasive change risk.", "Move the value to application configuration and bind it with @ConfigurationProperties, using explicit types such as Duration when possible.");
             case "SPR002_FIELD_INJECTION" -> new RuleText("Field injection", "Field injection hides dependencies, complicates unit testing and allows partially initialized objects.", "Use constructor injection with final fields, preferably with a single constructor.");
             case "SPR003_CONTROLLER_INJECTS_REPOSITORY" -> new RuleText("Controller directly depends on a repository", "A controller should orchestrate HTTP requests, not data access. Skipping the service layer increases coupling and duplication.", "Introduce an application service and move rules, transactions and repository access there.");
-            case "SPR004_FAT_CONTROLLER" -> new RuleText("Controller is too large", "Large controllers tend to mix validation, mapping, application logic and gestione degli errori, making the API fragile.", "Keep controllers thin and move logic to services, mappers and dedicated validators.");
+            case "SPR004_FAT_CONTROLLER" -> new RuleText("Controller is too large", "Large controllers tend to mix validation, mapping, application logic and error handling, making the API fragile.", "Keep controllers thin and move logic to services, mappers and dedicated validators.");
             case "SPR005_MISSING_SERVICE_LAYER" -> new RuleText("Service layer is missing or unclear", "Without a clear service layer, application logic often ends up in controllers, repositories or unmanaged utilities.", "Create explicit services for main use cases and keep repositories focused on data access.");
-            case "SPR006_ENTITY_EXPOSED_IN_CONTROLLER" -> new RuleText("JPA entity exposed by the API", "Exposing entities from controllers couples the REST contract to the database model and may leak internal fields or relationships.", "Use richiesta/risposta DTOs and explicit mappers between API and domain or persistence models.");
+            case "SPR006_ENTITY_EXPOSED_IN_CONTROLLER" -> new RuleText("JPA entity exposed by the API", "Exposing entities from controllers couples the REST contract to the database model and may leak internal fields or relationships.", "Use request/response DTOs and explicit mappers between API and domain or persistence models.");
             case "SPR007_SELF_INVOCATION_PROXY" -> new RuleText("Internal call may bypass the Spring proxy", "When a method calls another method of the same class annotated with @Transactional, @Async or similar, the Spring proxy may not be applied.", "Move the proxied method to another bean or reorganize the use case so the call crosses the Spring proxy.");
             case "SPR008_INVALID_TRANSACTIONAL_USAGE" -> new RuleText("Suspicious @Transactional usage", "Transactions placed at the wrong level may not protect the operation or may create unclear transactional boundaries.", "Place @Transactional on the service representing the use case and verify propagation, readOnly and exception handling.");
             case "SPR009_MANUAL_CONNECTION_MANAGEMENT" -> new RuleText("Manual JDBC connection management", "Opening or closing connections manually bypasses part of Spring management and may cause leaks or inconsistent transactions.", "Use JdbcTemplate, Spring repositories or the Spring transaction manager, avoiding DriverManager and unnecessary manual closes.");
-            case "SPR010_MISSING_REST_CONTROLLER_ADVICE" -> new RuleText("Central REST gestione degli errori is missing", "Without @RestControllerAdvice, errors may produce inconsistent responses, stack traces or unclear client messages.", "Add a global @RestControllerAdvice with standard responses for validation, business errors and technical failures.");
+            case "SPR010_MISSING_REST_CONTROLLER_ADVICE" -> new RuleText("Central REST error handling is missing", "Without @RestControllerAdvice, errors may produce inconsistent responses, stack traces or unclear client messages.", "Add a global @RestControllerAdvice with standard responses for validation, business errors and technical failures.");
             case "SPR011_GENERIC_TRY_CATCH" -> new RuleText("Overly generic catch block", "Catching Exception or Throwable hides different failure modes behind the same behavior and may prevent rollback or correct handling.", "Catch specific exceptions, let unmanaged exceptions propagate, and centralize error mapping with @RestControllerAdvice.");
             case "SPR012_MISSING_TESTS" -> new RuleText("No test coverage detected", "Missing tests make refactoring and changes on controllers, services and business rules risky.", "Add unit tests for logic, slice tests for controllers/repositories and integration tests for critical flows.");
             case "SPR013_API_VERSIONING_MISSING" -> new RuleText("API versioning is missing", "APIs without explicit versioning are harder to evolve without breaking existing clients.", "Use a stable prefix such as /api/v1 or a documented versioning strategy.");
-            case "SPR014_PATH_VARIABLE_WITHOUT_NAME" -> new RuleText("PathVariable has no explicit name", "Relying on compiled nomi dei parametri can be fragile when the build does not retain parameter metadata.", "Always specify the name in @PathVariable.");
+            case "SPR014_PATH_VARIABLE_WITHOUT_NAME" -> new RuleText("PathVariable has no explicit name", "Relying on compiled parameter names can be fragile when the build does not retain parameter metadata.", "Always specify the name in @PathVariable.");
             case "SPR015_POM_QUALITY", "SPR015_MAVEN_VERSION_AND_PROFILE_POLICY" -> new RuleText("Maven quality can be improved", "An unmanaged POM makes it harder to standardize builds, versions and plugins over time.", "Centralize versions, plugins and conventions in the parent or dependencyManagement.");
             case "SPR016_NAMING_CONVENTION" -> new RuleText("Naming is not consistent", "Inconsistent names make component roles and responsibilities harder to understand.", "Rename classes and beans using clear Spring conventions: Controller, Service, Repository, Configuration, Properties.");
             case "SPR017_READ_ONLY_TRANSACTION_MISSING" -> new RuleText("Read-only transaction is missing", "Read-only use cases without readOnly lose useful information for optimization and clarity.", "Use @Transactional(readOnly = true) on read-only service methods.");
@@ -572,11 +572,11 @@ final class RuleTextCatalog {
             case "SPR069_MANUAL_PASSWORD_ENCODER" -> new RuleText("PasswordEncoder created manually", "Password encoding should be centrally governed to avoid different strategies across login, tests and migrations.", "Define one PasswordEncoder bean and inject it where passwords are encoded or verified.");
             case "SPR070_DIRECT_ENVIRONMENT_ACCESS" -> new RuleText("Environment read directly from code", "System.getenv or System.getProperty hides configuration, validation and profile handling from Spring.", "Use @ConfigurationProperties, Environment or validated properties classes.");
             case "SPR071_MANUAL_FILE_RESOURCE_ACCESS" -> new RuleText("File resource opened manually", "Direct file access makes it harder to switch between classpath, filesystem and external resources.", "Use Resource, ResourceLoader or configurable properties to make resource access explicit and testable.");
-            case "SPR072_SPRING_BEAN_CREATED_WITH_NEW" -> new RuleText("Spring collaborator created with new", "Creating services, repositories, clients or adapters with new bypasses dependency injection, proxies, transactions, validation and sostituzione nei test.", "Register the collaborator as a bean and inject it through constructor injection.");
+            case "SPR072_SPRING_BEAN_CREATED_WITH_NEW" -> new RuleText("Spring collaborator created with new", "Creating services, repositories, clients or adapters with new bypasses dependency injection, proxies, transactions, validation and test substitution.", "Register the collaborator as a bean and inject it through constructor injection.");
             case "SPR073_MOCKBEAN_MODERNIZATION_ADVISOR" -> new RuleText("Spring Boot Mockito annotation should be modernized", "@MockBean and related annotations are deprecated in recent Spring Boot versions in favor of Spring Framework support.", "Evaluate @MockitoBean and @MockitoSpyBean for new tests or progressive modernization.");
             case "SPR074_STRUCTURED_LOGGING_ADVISOR" -> new RuleText("Structured logging is not configured", "Structured logs improve diagnostics, correlation and aggregation in modern environments without custom logging code.", "Evaluate Spring Boot structured logging with ECS, GELF or Logstash formats for production profiles.");
             case "SPR075_MOCKMVC_TESTER_ADVISOR" -> new RuleText("MockMvcTester opportunity", "MockMvcTester provides more fluent MVC assertions in recent Spring Boot projects.", "Evaluate MockMvcTester for new controller slice tests while keeping existing MockMvc tests stable.");
-            case "SPR076_MANUAL_REST_TEMPLATE" -> new RuleText("RestTemplate created manually", "A manually created RestTemplate can bypass shared timeout, interceptor, gestione degli errori and observability configuration.", "Inject a configured RestTemplate bean, or evaluate RestClient for new synchronous HTTP clients.");
+            case "SPR076_MANUAL_REST_TEMPLATE" -> new RuleText("RestTemplate created manually", "A manually created RestTemplate can bypass shared timeout, interceptor, error handling and observability configuration.", "Inject a configured RestTemplate bean, or evaluate RestClient for new synchronous HTTP clients.");
             case "SPR077_WEBCLIENT_BUILDER_CREATED_MANUALLY" -> new RuleText("WebClient created manually", "Direct WebClient creation can duplicate codecs, base URLs, filters, metrics and TLS/proxy configuration.", "Inject WebClient.Builder or a centrally configured WebClient bean.");
             case "SPR078_RESTCLIENT_BUILDER_CREATED_MANUALLY" -> new RuleText("RestClient created directly", "RestClient is modern, but repeated local builders can duplicate timeouts, interceptors and observability configuration.", "Expose a RestClient.Builder or RestClient bean when the client is used by application services.");
             case "SPR079_LOW_LEVEL_HTTP_CLIENT" -> new RuleText("Low-level HTTP client", "Low-level HTTP clients make timeout, retry, proxy, TLS, tracing and tests less consistent.", "Prefer RestClient, WebClient or a centrally configured HTTP client bean.");
@@ -591,6 +591,47 @@ final class RuleTextCatalog {
             case "SPR089_MANUAL_VALIDATOR_FACTORY" -> new RuleText("ValidatorFactory created manually", "Manual ValidatorFactory instances can bypass Spring validation configuration and constraint validator injection.", "Inject Validator or use @Valid and @Validated at web/service boundaries.");
             case "SPR090_MANUAL_CACHE_STRUCTURE" -> new RuleText("Possible manual in-memory cache", "Maps used as caches inside Spring components are invisible to eviction policy, metrics and operational control.", "Evaluate Spring Cache with a configured CacheManager when the map represents reusable cached data.");
 
+            case "WEB010_GET_ENDPOINT_MUTATES_STATE" -> new RuleText("GET endpoint appears to mutate state", "GET should be safe and idempotent. Using GET for state changes can break caches, proxies, automatic retries and HTTP clients.", "Use POST, PUT or PATCH for operations that modify state.");
+            case "WEB016_TECHNICAL_TRY_CATCH_IN_CONTROLLER" -> new RuleText("Technical try/catch inside controller", "Technical error mapping inside controllers makes API responses less uniform and harder to test.", "Move error mapping to @RestControllerAdvice.");
+            case "WEB024_MULTIPART_WITHOUT_LIMIT_POLICY" -> new RuleText("Multipart endpoint has no size/type policy", "Uploads without explicit policies can consume excessive resources or accept unexpected content.", "Configure multipart limits and validate file type, size and name.");
+            case "WEB029_EXCEPTION_MESSAGE_EXPOSED" -> new RuleText("Exception message exposed to the client", "exception.getMessage() can leak internal implementation details or technical data to clients.", "Use ProblemDetail or a standardized application error handled by @RestControllerAdvice.");
+            case "WEB037_PAGEABLE_WITHOUT_LIMIT" -> new RuleText("Pageable endpoint has no explicit limit", "Pagination without a maximum size can produce expensive queries and oversized payloads.", "Configure a maximum page size and validate pagination parameters.");
+            case "WEB039_MANUAL_AUTHORIZATION_IN_CONTROLLER" -> new RuleText("Manual authorization inside controller", "Authorization checks scattered in controllers are harder to verify and test.", "Use method security, AuthorizationManager or centralized policies.");
+            case "BAT004_CHUNK_SIZE_HARDCODED" -> new RuleText("Hardcoded chunk size", "A hardcoded chunk size is harder to tune across environments and workloads.", "Move the chunk size to validated typed configuration.");
+            case "BAT008_MANUAL_DATASOURCE_IN_READER_WRITER" -> new RuleText("DataSource created manually in batch code", "Manual DataSource or connection creation can bypass transactions, pooling and centralized configuration.", "Inject the Spring-managed DataSource and build readers/writers as configured beans.");
+            case "BAT012_RETRY_ON_GENERIC_EXCEPTION" -> new RuleText("Retry configured on a generic exception", "Retrying every exception can hide non-recoverable bugs and repeat non-idempotent operations.", "Retry only recoverable exceptions and document backoff and attempt limits.");
+            case "BAT013_SKIP_ON_GENERIC_EXCEPTION" -> new RuleText("Skip configured on a generic exception", "Skipping every exception can hide functional errors and produce incomplete data.", "Skip only expected exceptions and add SkipListener or audit.");
+            case "BAT014_SKIP_LIMIT_TOO_HIGH" -> new RuleText("Skip limit is too high", "A very high skip limit can let a job complete with too many discarded records.", "Set a skip limit aligned with expected data quality and monitor discarded records.");
+            case "BAT015_FAULT_TOLERANCE_WITHOUT_SKIP_LISTENER" -> new RuleText("Fault tolerance needs observability", "Retry and skip without listeners make discarded or retried records harder to audit.", "Add SkipListener, RetryListener or dedicated metrics.");
+            case "BAT019_ALLOW_START_IF_COMPLETE_ON_STEP" -> new RuleText("Step can start again after completion", "allowStartIfComplete(true) can rerun a completed step and requires explicit idempotency.", "Use it only for truly idempotent steps and document restart semantics.");
+            case "BAT020_PREVENT_RESTART_REVIEW" -> new RuleText("Restart is disabled", "Disabling restart can make operational recovery more expensive after a failure.", "Use preventRestart only when rerun is dangerous or unsupported and document the recovery procedure.");
+            case "BAT021_TASK_EXECUTOR_WITHOUT_THREAD_SAFETY" -> new RuleText("Parallel batch step needs thread-safety review", "taskExecutor in a batch step requires reader, processor and writer compatibility with concurrent execution.", "Verify thread-safety, shared state, ordering and transaction boundaries before parallelizing.");
+            case "BAT022_PARTITION_GRID_SIZE_HARDCODED" -> new RuleText("Partition grid size is hardcoded", "A fixed grid size may not fit different environments or workloads.", "Move the grid size to configuration and tune it by available resources.");
+            case "BAT023_MANUAL_BATCH_THREAD_POOL" -> new RuleText("Batch thread pool created manually", "A manual thread pool may not be governed by Spring lifecycle, metrics and shutdown.", "Define a configured and observable TaskExecutor bean.");
+            case "BAT024_SYSTEM_EXIT_IN_BATCH" -> new RuleText("System.exit inside batch code", "Terminating the JVM from a batch job can interrupt transactions, other jobs and cleanup.", "Propagate a controlled error and let Spring Batch or the scheduler handle exit status.");
+            case "BAT025_THREAD_SLEEP_IN_BATCH" -> new RuleText("Thread.sleep inside batch code", "Thread.sleep blocks application threads and makes retry/backoff behavior fragile.", "Use explicit retry/backoff or controlled scheduling.");
+            case "BAT028_READER_SELECT_STAR" -> new RuleText("Reader uses SELECT *", "SELECT * couples the reader to physical table structure and may load unnecessary columns.", "Select explicit columns and keep stable ordering when needed.");
+            case "BAT040_BATCH_INPUT_OUTPUT_PATH_HARDCODED" -> new RuleText("Batch input/output path is hardcoded", "Local or absolute paths make the job environment-dependent and harder to deploy and test.", "Move paths to external configuration or use platform-managed Resource/Storage.");
+            case "CLD003_SECRET_IN_PACKAGED_CONFIG" -> new RuleText("Possible secret in configuration", "Passwords, tokens or keys in the repository can be copied, logged or reused.", "Remove the value from the repository and use environment variables, Vault, a secret manager or mounted configuration.");
+            case "CLD005_OPERATIONAL_CRON_IN_ARTIFACT" -> new RuleText("Operational cron packaged in the artifact", "A committed operational schedule makes runtime behavior harder to change between environments.", "Use an external property for the cron expression and set it per environment.");
+            case "CLD015_ACTUATOR_HEALTH_DETAILS_ALWAYS_EXPOSED" -> new RuleText("Health details always exposed", "Always exposing health details can leak operational information about components and dependencies.", "Use when-authorized in production or disable unnecessary details.");
+            case "OBS025_HEALTH_DETAILS_ALWAYS_EXPOSED" -> new RuleText("Health details always exposed", "Always exposing health details can leak operational information about components and dependencies.", "Use when-authorized in production or disable unnecessary details.");
+            case "OBS006_CONSOLE_PRINT" -> new RuleText("System.out used for logging", "System.out bypasses levels, formatting, MDC and centralized log collection.", "Use SLF4J Logger with useful context.");
+            case "OBS007_PRINT_STACK_TRACE" -> new RuleText("printStackTrace used", "printStackTrace bypasses application logging and weakens diagnostics.", "Log the exception with SLF4J and pass the throwable as the last argument.");
+            case "POM001_BOOT_WITHOUT_PARENT_OR_BOM" -> new RuleText("Spring Boot without parent or BOM", "Without the Spring Boot parent or BOM, dependency versions are harder to govern.", "Use spring-boot-starter-parent or the spring-boot-dependencies BOM.");
+            case "ADV001_MANUAL_OBJECT_MAPPER" -> new RuleText("ObjectMapper created manually", "Manual ObjectMapper instances can bypass Spring Boot Jackson modules and global JSON policy.", "Inject the Boot-managed ObjectMapper or expose a single configured bean.");
+            case "ADV002_MANUAL_GSON" -> new RuleText("Gson created manually", "A second JSON engine can produce contracts different from the Boot-managed Jackson configuration.", "Prefer the Boot-managed ObjectMapper or centralize Gson as a bean when explicitly required.");
+            case "ADV003_MANUAL_REST_TEMPLATE" -> new RuleText("RestTemplate created manually", "A RestTemplate created with new can skip shared timeout, interceptor, error handling and observability.", "Inject a configured RestTemplate or evaluate RestClient for new synchronous clients.");
+            case "ADV004_WEBCLIENT_CREATE_SCATTERED" -> new RuleText("WebClient.create used directly", "WebClient.create can duplicate base URLs, codecs, filters, metrics and TLS/proxy configuration.", "Inject WebClient.Builder or a configured WebClient bean.");
+            case "ADV005_RESTCLIENT_CREATE_SCATTERED" -> new RuleText("RestClient.create used directly", "RestClient.create can duplicate timeouts, interceptors and observability.", "Expose a RestClient bean or inject a configured RestClient.Builder.");
+            case "ADV006_LOW_LEVEL_HTTP_CLIENT" -> new RuleText("Low-level HTTP client", "Low-level HTTP clients make timeout, retry, tracing and tests less consistent.", "Prefer RestClient, WebClient or a centrally configured HTTP client bean.");
+            case "ADV008_MANUAL_THREAD_CREATION" -> new RuleText("Thread created manually", "Manual threads bypass Spring lifecycle, graceful shutdown and observability.", "Use TaskExecutor, ThreadPoolTaskExecutor, @Async or TaskScheduler.");
+            case "ADV009_MANUAL_EXECUTOR" -> new RuleText("Executor created manually", "Manual executors can escape shutdown, metrics and central tuning.", "Expose a TaskExecutor or ThreadPoolTaskExecutor bean.");
+            case "ADV011_THREAD_SLEEP" -> new RuleText("Thread.sleep in application code", "Thread.sleep makes backoff, retry and async orchestration fragile.", "Use scheduling, explicit retry/backoff or controlled synchronization.");
+            case "ADV013_SCATTERED_VALUE" -> new RuleText("@Value used for application configuration", "Scattered @Value properties are harder to validate and document.", "Group settings in validated @ConfigurationProperties.");
+            case "ADV021_MANUAL_VALIDATOR_FACTORY" -> new RuleText("ValidatorFactory created manually", "Manual ValidatorFactory instances can bypass Spring validation configuration.", "Inject Validator or use @Valid/@Validated at web/service boundaries.");
+            case "ADV033_DIRECT_LOCAL_DATE_NOW", "ADV033_DIRECT_LOCAL_DATE_TIME_NOW", "ADV033_DIRECT_INSTANT_NOW" -> new RuleText("System time read directly", "Direct clock access makes tests and temporal reproduction harder.", "Inject java.time.Clock and use now(clock).");
+            case "ADV066_COMPLETABLE_FUTURE_DEFAULT_EXECUTOR" -> new RuleText("CompletableFuture without explicit executor", "The common pool is not governed by Spring and can create uncontrolled concurrency.", "Use @Async with a configured executor or pass an explicit Executor.");
             case "SPR091_APPLICATION_PROPERTIES_SHOULD_BE_EXTERNALIZED" -> new RuleText("Application configuration should be externalized", "Runtime values inside application.properties or application.yml make the artifact environment-specific and increase non-repeatable release risk.", "Keep only safe placeholders or defaults in the repository and pass values through environment variables, mounted config, ConfigMap/Secret, Vault or the deployment platform.");
             case "SPR092_HARDCODED_ACTIVE_SPRING_PROFILE" -> new RuleText("Active Spring profile is packaged", "spring.profiles.active inside packaged configuration forces application behavior and may override the environment or pipeline decision.", "Remove spring.profiles.active from packaged files and set the profile through environment variables, startup arguments or the deployment platform.");
             case "SPR093_MAVEN_DEPENDENCY_VERSION_CONFLICT" -> new RuleText("Maven dependency version conflict", "The same dependency declared with different versions can create unstable classpaths, non-repeatable builds and runtime issues that are hard to diagnose.", "Keep one version per dependency and govern it through the Spring Boot BOM, a parent POM or dependencyManagement.");
@@ -624,11 +665,11 @@ final class RuleTextCatalog {
         if (id.startsWith("WEB")) {
             return part == TextPart.WHY
                     ? "Il contratto web/API risulta meno chiaro o meno robusto. Controller troppo accoppiati, DTO non validati o risposte non standardizzate aumentano il rischio di regressioni e comportamenti incoerenti per i client."
-                    : "Mantieni i controller sottili, usa DTO validati, centralizza la gestione degli errori, documenta gli endpoint pubblici e separa il contratto REST dal modello di persistenza.";
+                    : "Mantieni i controller sottili, usa DTO validati, centralizza la error handling, documenta gli endpoint pubblici e separa il contratto REST dal modello di persistenza.";
         }
         if (id.startsWith("BAT")) {
             return part == TextPart.WHY
-                    ? "La configurazione Batch rilevata può compromettere riavvio, idempotenza, osservabilità o gestione degli errori. In produzione questi aspetti sono essenziali per esecuzioni ripetibili e governabili."
+                    ? "La configurazione Batch rilevata può compromettere riavvio, idempotenza, osservabilità o error handling. In produzione questi aspetti sono essenziali per esecuzioni ripetibili e governabili."
                     : "Rendi espliciti parametri, dimensione del chunk, reader, writer, retry, skip, listener, metriche e semantica di riavvio. Evita stato mutabile non controllato e operazioni non idempotenti.";
         }
         if (id.startsWith("CLD")) {
@@ -658,6 +699,39 @@ final class RuleTextCatalog {
     private static String mappedItalianTitle(String ruleId) {
         String code = shortCode(ruleId);
         return switch (code) {
+            case "BAT004" -> "Dimensione chunk da rendere configurabile";
+            case "BAT008" -> "DataSource creato manualmente nel batch";
+            case "BAT012" -> "Retry su eccezione troppo generica";
+            case "BAT013" -> "Skip su eccezione troppo generica";
+            case "BAT014" -> "Skip limit troppo alto";
+            case "BAT015" -> "Fault tolerance da rendere osservabile";
+            case "BAT019" -> "Step rieseguibile anche se già completato";
+            case "BAT020" -> "Restart disabilitato";
+            case "BAT021" -> "Step parallelo da verificare per thread-safety";
+            case "BAT022" -> "Grid size di partizionamento da configurare";
+            case "BAT023" -> "Thread pool batch creato manualmente";
+            case "BAT024" -> "System.exit dentro un batch";
+            case "BAT025" -> "Thread.sleep dentro un batch";
+            case "BAT028" -> "Reader con SELECT *";
+            case "BAT040" -> "Percorso input/output batch hardcoded";
+            case "WEB016" -> "Try/catch tecnico dentro controller";
+            case "WEB024" -> "Endpoint multipart senza policy dimensione/tipo";
+            case "WEB037" -> "Pageable senza limite esplicito";
+            case "WEB039" -> "Autorizzazione manuale nel controller";
+            case "POM001" -> "Spring Boot senza parent o BOM evidente";
+            case "ADV001" -> "ObjectMapper creato manualmente";
+            case "ADV002" -> "Gson creato manualmente";
+            case "ADV003" -> "RestTemplate creato manualmente";
+            case "ADV004" -> "WebClient.create usato direttamente";
+            case "ADV005" -> "RestClient.create usato direttamente";
+            case "ADV006" -> "Client HTTP di basso livello";
+            case "ADV008" -> "Thread creato manualmente";
+            case "ADV009" -> "Executor creato manualmente";
+            case "ADV011" -> "Thread.sleep nel codice applicativo";
+            case "ADV013" -> "@Value usato per configurazione applicativa";
+            case "ADV021" -> "ValidatorFactory creato manualmente";
+            case "ADV033" -> "Ora di sistema letta direttamente";
+            case "ADV066" -> "CompletableFuture senza executor esplicito";
             case "CLD001" -> "URL o datasource specifico dell'ambiente nel pacchetto";
             case "CLD002" -> "Profilo Spring attivo salvato nella configurazione";
             case "CLD003" -> "Possibile segreto nella configurazione";
@@ -801,9 +875,6 @@ final class RuleTextCatalog {
                 .replace("Maven dependency versions potrebbe essere hardcoded", "Versioni Maven potenzialmente hardcoded")
                 .replace("could be hardcoded", "potrebbero essere hardcoded")
                 .replace("might be hardcoded", "potrebbero essere hardcoded")
-                .replace("ItemProcessor dovrebbe essere statoless", "ItemProcessor dovrebbe essere stateless")
-                .replace("operazioneal", "operativo")
-                .replace("operazioneally", "operativamente")
                 .replace("declare", "dichiarare")
                 .replace("expose", "esporre")
                 .replace("mapped", "mappato")

@@ -23,7 +23,7 @@ class ZipWorkspaceServiceTest {
 
         Path workspace = service.extractZip(file);
 
-        assertTrue(Files.exists(workspace.resolve("demo/pom.xml")));
+        assertTrue(Files.exists(workspace.resolve("pom.xml")));
     }
 
     @Test
@@ -39,7 +39,7 @@ class ZipWorkspaceServiceTest {
 
         Path workspace = service.copyUploadedFolder(List.of(file));
 
-        assertTrue(Files.exists(workspace.resolve("demo/src/main/java/App.java")));
+        assertTrue(Files.exists(workspace.resolve("src/main/java/App.java")));
     }
 
     private ByteArrayOutputStream zipBytes(String name, String content) throws Exception {

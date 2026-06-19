@@ -21,6 +21,19 @@ Its goal is not to produce a noisy list of generic static-analysis warnings. Its
 
 Spring Guardian is complementary to tools such as SonarQube. It focuses on Spring architecture, framework usage, modernization opportunities, cloud readiness, maintainability and release-readiness patterns.
 
+## Current supported scope
+
+This hardened version intentionally focuses on two project profiles only:
+
+```text
+WEB_API  -> Spring MVC / REST APIs, validation, controller boundaries, security-related web risks and release readiness.
+BATCH    -> Spring Batch jobs, chunk/retry/skip behavior, restartability, operational paths and batch observability.
+```
+
+Camel-specific route analysis is intentionally disabled for now. Camel classes are scanned only as normal Java/Spring code when they belong to a Web/API project; they are not interpreted as Spring Batch processors or Camel-specific architecture findings.
+
+The rule engine favors high-confidence evidence. Import statements, comments and generic Java constructs are not used as the main proof for architectural or Advisor findings.
+
 
 ## Brand identity
 
@@ -90,8 +103,8 @@ Possible impact
 Recommended solution
 Detected class/file/line
 Source evidence
-Before/after or expected implementation example
 Official documentation link when useful
+Optional generic example only outside the main evidence block
 ```
 
 The **Findings** tab is grouped by technical area so the report does not feel mixed or noisy:
@@ -117,8 +130,6 @@ Spring Alternative Advisor cards have an additional structure:
 Detected manual/low-level implementation
 Spring alternative to use
 Official documentation link
-Before example
-After example
 Affected source code
 ```
 
@@ -258,7 +269,7 @@ The UI supports three scan modes:
 Supported parameters:
 
 ```text
-projectType: WEB_API | BATCH | LIBRARY
+projectType: WEB_API | BATCH
 architectureStyle: AUTO_DETECTED | LAYERED | DOMAIN_DRIVEN_DESIGN | HEXAGONAL | LEGACY_LAYERED
 releaseTarget: PRODUCTION | INTERNAL | LEGACY_BASELINE
 knownIssuesAccepted: true | false
@@ -302,22 +313,21 @@ GATE_PROFILE_ALIGNMENT
 
 Advisor findings do not block production by default. They are separated from blocking issues so the report remains actionable.
 
-## Full rule expansion
+## Rule catalog policy
 
-The extended catalog includes the following deterministic families:
+The rule catalog keeps stable rule identifiers, but the runtime catalog is intentionally conservative in this version. It enables high-confidence checks for:
 
 ```text
-ARCH001-ARCH025  Architecture, DDD, hexagonal and modular boundaries
-SEC001-SEC040    Spring Security hardening and release readiness
-WEB001-WEB040    Web/API contracts, validation and controller boundaries
-BAT001-BAT040    Spring Batch restartability and operational readiness
-CLD001-CLD030    12-factor and cloud readiness
-OBS001-OBS025    Observability, logging, metrics and diagnostics
-POM001-POM040    Maven dependency and build governance
-ADV001-ADV100    Spring Alternative Advisor and modernization opportunities
+WEB*   Web/API contracts, validation and controller boundaries
+BAT*   Spring Batch restartability and operational readiness
+CLD*   selected 12-factor/cloud-readiness configuration checks
+OBS*   selected observability and logging checks
+POM*   selected Maven dependency-governance checks
+ADV*   high-confidence Spring Alternative Advisor detections
+SPR*   original Spring-specific rules that have concrete source evidence
 ```
 
-Spring Guardian also includes the original Spring-specific rules for field injection, repository usage from controllers, JPA exposure through APIs, self-invocation proxy risks, transaction boundaries, missing tests, unsafe configuration, actuator exposure, CSRF/CORS issues, JPA eager fetching, dependency conflicts and more.
+Rules that only relied on imports, comments, isolated keywords or weak textual hints are not part of the active runtime catalog. This keeps the report credible: every finding must be supported by code that demonstrates the reported issue.
 
 ## Source evidence in findings
 
@@ -590,6 +600,19 @@ L'obiettivo non è produrre una lista rumorosa di segnalazioni generiche, ma ris
 
 Spring Guardian non sostituisce strumenti generici come SonarQube. È complementare: si concentra su architettura Spring, uso corretto del framework, modernizzazione, prontezza cloud, manutenibilità e readiness di rilascio.
 
+## Perimetro supportato attuale
+
+Questa versione stabilizzata si concentra intenzionalmente su due profili di progetto:
+
+```text
+WEB_API  -> API Spring MVC / REST, validazione, confini controller, rischi web/security e readiness di rilascio.
+BATCH    -> job Spring Batch, chunk/retry/skip, riavviabilità, path operativi e osservabilità batch.
+```
+
+L'analisi specifica di Camel è volutamente disattivata per ora. Le classi Camel vengono lette solo come normale codice Java/Spring quando appartengono a un progetto Web/API; non vengono interpretate come processor Spring Batch o come finding architetturali specifici di Camel.
+
+Il motore regole privilegia evidenze ad alta confidenza. Import, commenti e costrutti Java generici non vengono usati come prova principale per problemi architetturali o finding dello Spring Advisor.
+
 
 ## Identità visiva
 
@@ -667,8 +690,6 @@ Le schede dello Spring Alternative Advisor hanno una struttura ancora più espli
 Implementazione manuale o API di basso livello rilevata
 Alternativa Spring da usare
 Link alla documentazione ufficiale
-Esempio prima
-Esempio dopo
 Codice sorgente coinvolto
 ```
 
@@ -772,20 +793,21 @@ Apri:
 http://localhost:4200
 ```
 
-## Catalogo esteso
+## Politica del catalogo regole
 
-La versione estesa include queste famiglie di regole:
+La versione attuale mantiene identificativi regola stabili, ma abilita nel runtime solo controlli ad alta confidenza per Web/API e Spring Batch:
 
 ```text
-ARCH001-ARCH025  Architettura, DDD, esagonale e confini modulari
-SEC001-SEC040    Spring Security e readiness di rilascio
-WEB001-WEB040    Contratti Web/API, validazione e confini controller
-BAT001-BAT040    Spring Batch, restartability e operatività
-CLD001-CLD030    12-factor e prontezza cloud
-OBS001-OBS025    Osservabilità, logging, metriche e diagnostica
-POM001-POM040    Governo Maven, dipendenze e build
-ADV001-ADV100    Spring Alternative Advisor e modernizzazione
+WEB*   Contratti Web/API, validazione e confini controller
+BAT*   Spring Batch, riavviabilità e prontezza operativa
+CLD*   controlli selezionati di configurazione 12-factor/cloud readiness
+OBS*   controlli selezionati di osservabilità e logging
+POM*   controlli selezionati di governo Maven
+ADV*   rilevazioni ad alta confidenza dello Spring Alternative Advisor
+SPR*   regole Spring-specifiche originali con evidenza concreta nel codice
 ```
+
+Le regole basate solo su import, commenti, keyword isolate o segnali testuali deboli non fanno parte del catalogo runtime attivo.
 
 ## Evidenza del codice rilevato
 

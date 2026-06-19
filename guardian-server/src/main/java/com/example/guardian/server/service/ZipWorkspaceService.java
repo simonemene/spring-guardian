@@ -53,7 +53,7 @@ public class ZipWorkspaceService {
                     }
                 }
             }
-            return workspace;
+            return resolveProjectRoot(workspace);
         } catch (IOException e) {
             throw new IllegalStateException("Impossibile estrarre il file ZIP.", e);
         }
@@ -88,7 +88,7 @@ public class ZipWorkspaceService {
                 Files.createDirectories(target.getParent());
                 file.transferTo(target);
             }
-            return workspace;
+            return resolveProjectRoot(workspace);
         } catch (IOException e) {
             throw new IllegalStateException("Impossibile copiare la cartella caricata.", e);
         }
@@ -96,6 +96,27 @@ public class ZipWorkspaceService {
 
     private Path newWorkspace() {
         return Path.of(System.getProperty("java.io.tmpdir"), "spring-guardian", UUID.randomUUID().toString());
+    }
+
+    private Path resolveProjectRoot(Path workspace) throws IOException {
+        if (Files.exists(workspace.resolve("pom.xml")) || Files.isDirectory(workspace.resolve("src"))) {
+            return workspace;
+        }
+
+        try (var children = Files.list(workspace)) {
+            List<Path> visibleChildren = children
+                    .filter(path -> path.getFileName() != null)
+                    .filter(path -> !path.getFileName().toString().startsWith("."))
+                    .toList();
+            if (visibleChildren.size() == 1 && Files.isDirectory(visibleChildren.get(0))) {
+                Path candidate = visibleChildren.get(0);
+                if (Files.exists(candidate.resolve("pom.xml")) || Files.isDirectory(candidate.resolve("src"))) {
+                    return candidate;
+                }
+            }
+        }
+
+        return workspace;
     }
 
     private Path safeResolve(Path workspace, String relativePath) {

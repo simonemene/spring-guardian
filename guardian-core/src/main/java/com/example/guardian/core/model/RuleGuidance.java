@@ -10,8 +10,8 @@ package com.example.guardian.core.model;
  * @param recommendedApproach expected implementation approach
  * @param springAlternative Spring object, abstraction or pattern to use when applicable
  * @param documentationUrl official documentation URL or empty value when not applicable
- * @param beforeExample minimal example of the problematic style
- * @param afterExample minimal example of the recommended style
+ * @param beforeExample optional generic example, intentionally empty in UI reports unless explicitly safe
+ * @param afterExample optional generic example, intentionally empty in UI reports unless explicitly safe
  * @author Simone Meneghetti
  */
 public record RuleGuidance(
