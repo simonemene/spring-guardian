@@ -7,7 +7,7 @@ import { SpringGuardianApiService } from './spring-guardian-api.service';
 import { ArchitectureReviewReport, AffectedComponent, ArchitectureStyle, FindingGroup, ProjectType, ReleaseTarget, ReportLanguage, Severity } from './spring-guardian.model';
 
 type Tab = 'overview' | 'modules' | 'gates' | 'findings' | 'advisor' | 'production' | 'suggestions' | 'actions' | 'json';
-type AppPage = 'scan' | 'overview' | 'findings' | 'alternatives' | 'quality' | 'mission' | 'contact' | 'json';
+type AppPage = 'scan' | 'overview' | 'architect' | 'findings' | 'alternatives' | 'quality' | 'mission' | 'contact' | 'json';
 type DecisionLane = 'BLOCKERS' | 'IMPORTANT' | 'IMPROVEMENTS' | 'ADVISOR' | 'INFORMATION';
 type UploadMode = 'zip' | 'folder' | 'local';
 type TranslationKey = keyof typeof TRANSLATIONS.it;
@@ -208,6 +208,7 @@ const TRANSLATIONS = {
     openLane: 'Apri',
     navScan: 'Analizza',
     navOverview: 'Dashboard',
+    navArchitect: 'Architect Mode',
     navFindings: 'Problemi',
     navAlternatives: 'Alternative',
     navQuality: 'Qualità',
@@ -218,6 +219,19 @@ const TRANSLATIONS = {
     workspaceSubtitle: 'Carica un progetto e ottieni una review leggibile, navigabile e orientata alla correzione.',
     dashboardTitle: 'Dashboard progetto',
     dashboardSubtitle: 'Situazione immediata, priorità e percorsi di approfondimento.',
+    architectTitle: 'Architect Mode',
+    architectSubtitle: 'Maturity score, mappa architetturale, cicli, roadmap e checklist di modernizzazione.',
+    productInfo: 'Informazioni progetto',
+    architectKpiMaturity: 'Maturity Score',
+    architectKpiProduction: 'Production Readiness',
+    architectKpiModules: 'Moduli mappati',
+    architectKpiCycles: 'Cicli rilevati',
+    architectFingerprint: 'Fingerprint Spring',
+    architectureMapTitle: 'Spring Architecture Map',
+    modernizationChecklist: 'Checklist di modernizzazione',
+    mermaidGraph: 'Grafico Mermaid',
+    upgradePathTitle: 'Spring Upgrade Path',
+    openRewriteTitle: 'OpenRewrite suggestions',
     findingsTitle: 'Problemi rilevati',
     findingsSubtitle: 'Filtra per severità, area o tipo e apri solo ciò che devi correggere.',
     alternativesTitle: 'Spring Alternatives',
@@ -453,6 +467,7 @@ const TRANSLATIONS = {
     openLane: 'Open',
     navScan: 'Scan',
     navOverview: 'Dashboard',
+    navArchitect: 'Architect Mode',
     navFindings: 'Findings',
     navAlternatives: 'Alternatives',
     navQuality: 'Quality',
@@ -463,6 +478,19 @@ const TRANSLATIONS = {
     workspaceSubtitle: 'Load a project and get a readable, navigable and fix-oriented review.',
     dashboardTitle: 'Project dashboard',
     dashboardSubtitle: 'Immediate status, priorities and guided drill-down paths.',
+    architectTitle: 'Architect Mode',
+    architectSubtitle: 'Maturity score, architecture map, cycles, roadmap and modernization checklist.',
+    productInfo: 'Project information',
+    architectKpiMaturity: 'Maturity Score',
+    architectKpiProduction: 'Production Readiness',
+    architectKpiModules: 'Mapped modules',
+    architectKpiCycles: 'Detected cycles',
+    architectFingerprint: 'Spring fingerprint',
+    architectureMapTitle: 'Spring Architecture Map',
+    modernizationChecklist: 'Modernization checklist',
+    mermaidGraph: 'Mermaid graph',
+    upgradePathTitle: 'Spring Upgrade Path',
+    openRewriteTitle: 'OpenRewrite suggestions',
     findingsTitle: 'Detected findings',
     findingsSubtitle: 'Filter by severity, area or type and open only what you need to fix.',
     alternativesTitle: 'Spring Alternatives',
@@ -772,6 +800,7 @@ export class AppComponent {
     return ({
       scan: this.t('workspaceTitle'),
       overview: this.t('dashboardTitle'),
+      architect: this.t('architectTitle'),
       findings: this.t('findingsTitle'),
       alternatives: this.t('alternativesTitle'),
       quality: this.t('qualityTitle'),
@@ -785,6 +814,7 @@ export class AppComponent {
     return ({
       scan: this.t('workspaceSubtitle'),
       overview: this.t('dashboardSubtitle'),
+      architect: this.t('architectSubtitle'),
       findings: this.t('findingsSubtitle'),
       alternatives: this.t('alternativesPageSubtitle'),
       quality: this.t('qualitySubtitle'),

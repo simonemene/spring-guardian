@@ -4,6 +4,12 @@ import com.example.guardian.core.model.AffectedComponent;
 import com.example.guardian.core.model.ArchitectureReviewReport;
 import com.example.guardian.core.model.CategorySummary;
 import com.example.guardian.core.model.FindingGroup;
+import com.example.guardian.core.model.ModernizationChecklistItem;
+import com.example.guardian.core.model.SpringArchitectureCycle;
+import com.example.guardian.core.model.SpringMaturityAreaScore;
+import com.example.guardian.core.model.SpringModuleDependency;
+import com.example.guardian.core.model.SpringModuleSummary;
+import com.example.guardian.core.model.UpgradeStep;
 import com.example.guardian.core.model.Severity;
 
 import java.util.Comparator;
@@ -31,6 +37,10 @@ public class HtmlReportRenderer implements ReportRenderer {
                 .append("<strong>Spring Guardian</strong><small>Architecture Review</small></div></div>")
                 .append("<nav>")
                 .append("<a href=\"#overview\">Overview</a>")
+                .append("<a href=\"#architect\">Architect Mode</a>")
+                .append("<a href=\"#maturity\">Maturity Score</a>")
+                .append("<a href=\"#architecture-map\">Architecture Map</a>")
+                .append("<a href=\"#roadmap\">Modernization Roadmap</a>")
                 .append("<a href=\"#gates\">Quality Gates</a>")
                 .append("<a href=\"#areas\">Architecture Areas</a>")
                 .append("<a href=\"#actions\">Actions</a>")
@@ -63,6 +73,8 @@ public class HtmlReportRenderer implements ReportRenderer {
         metric(html, "Info", severity(report, Severity.INFO), "Advisory notes");
         metric(html, "Rules", String.valueOf(report.rulesExecuted()), "Executed checks");
         html.append("</section>");
+
+        appendArchitectMode(html, report);
 
         html.append("<section id=\"gates\" class=\"card\"><div class=\"section-title\"><div><p class=\"eyebrow\">Governance</p><h2>Quality gates</h2></div>")
                 .append("<span class=\"readiness ").append(css(report.releaseReadiness().status())).append("\">")
@@ -119,6 +131,138 @@ public class HtmlReportRenderer implements ReportRenderer {
         html.append("</main></body></html>");
         return html.toString();
     }
+
+
+    private void appendArchitectMode(StringBuilder html, ArchitectureReviewReport report) {
+        if (report.architectMode() == null) {
+            return;
+        }
+
+        var architect = report.architectMode();
+        html.append("<section id=\"architect\" class=\"card architect-card\"><div class=\"section-title\"><div>")
+                .append("<p class=\"eyebrow\">Spring Guardian Architect Mode</p><h2>From scan to modernization roadmap</h2></div>")
+                .append("<span class=\"pill\">").append(escape(architect.fingerprint().buildTool())).append(" · ")
+                .append(escape(architect.fingerprint().javaVersion())).append(" · Boot ")
+                .append(escape(architect.fingerprint().springBootVersion())).append("</span></div>")
+                .append("<p>").append(escape(architect.fingerprint().summary())).append("</p>")
+                .append("<div class=\"architect-grid\">")
+                .append("<article><span>Maturity</span><strong>").append(architect.maturityScore().overallScore()).append("/100</strong><small>")
+                .append(escape(architect.maturityScore().status())).append("</small></article>")
+                .append("<article><span>Modules</span><strong>").append(architect.architectureMap().modules().size()).append("</strong><small>logical packages</small></article>")
+                .append("<article><span>Dependencies</span><strong>").append(architect.architectureMap().dependencies().size()).append("</strong><small>cross-module imports</small></article>")
+                .append("<article><span>Cycles</span><strong>").append(architect.architectureMap().cycles().size()).append("</strong><small>basic detection</small></article>")
+                .append("<article><span>Checklist</span><strong>").append(architect.modernizationPlan().checklist().size()).append("</strong><small>exportable actions</small></article>")
+                .append("<article><span>Production</span><strong>").append(architect.productionReadiness().score()).append("/100</strong><small>")
+                .append(escape(architect.productionReadiness().status())).append("</small></article>")
+                .append("</div></section>");
+
+        appendMaturity(html, architect.maturityScore().areas());
+        appendArchitectureMap(html, architect.architectureMap().modules(), architect.architectureMap().dependencies(), architect.architectureMap().cycles(), architect.architectureMap().mermaidDiagram());
+        appendRoadmap(html, architect.modernizationPlan().checklist(), architect.upgradePath().steps(), architect.openRewritePlan().yaml());
+    }
+
+    private void appendMaturity(StringBuilder html, java.util.List<SpringMaturityAreaScore> areas) {
+        html.append("<section id=\"maturity\" class=\"card\"><div class=\"section-title\"><div>")
+                .append("<p class=\"eyebrow\">Spring Maturity Score</p><h2>How Spring-native is this project?</h2></div></div>")
+                .append("<div class=\"maturity-list\">");
+        for (SpringMaturityAreaScore area : areas) {
+            html.append("<article class=\"maturity-row ").append(css(area.status())).append("\">")
+                    .append("<div><strong>").append(escape(area.name())).append("</strong><small>")
+                    .append(escape(String.join(" · ", area.drivers()))).append("</small></div>")
+                    .append("<div class=\"maturity-meter\"><span style=\"width:").append(area.score()).append("%\"></span></div>")
+                    .append("<b>").append(area.score()).append("</b>")
+                    .append("</article>");
+        }
+        html.append("</div></section>");
+    }
+
+    private void appendArchitectureMap(
+            StringBuilder html,
+            java.util.List<SpringModuleSummary> modules,
+            java.util.List<SpringModuleDependency> dependencies,
+            java.util.List<SpringArchitectureCycle> cycles,
+            String mermaid
+    ) {
+        html.append("<section id=\"architecture-map\" class=\"card\"><div class=\"section-title\"><div>")
+                .append("<p class=\"eyebrow\">Spring Architecture Map</p><h2>Current package/module shape</h2></div>")
+                .append("<span class=\"pill\">Mermaid export ready</span></div>")
+                .append("<div class=\"module-grid\">");
+        for (SpringModuleSummary module : modules) {
+            html.append("<article class=\"module-card\"><h3>").append(escape(module.name())).append("</h3>")
+                    .append("<small>").append(escape(module.basePackage())).append("</small>")
+                    .append("<div class=\"chips\"><b>").append(module.controllers()).append(" ctrl</b><b>")
+                    .append(module.services()).append(" svc</b><b>").append(module.repositories()).append(" repo</b><b>")
+                    .append(module.entities()).append(" entity</b><b>").append(module.clients()).append(" client</b></div>");
+            if (!module.risks().isEmpty()) {
+                html.append("<ul>");
+                module.risks().forEach(risk -> html.append("<li>").append(escape(risk)).append("</li>"));
+                html.append("</ul>");
+            }
+            html.append("</article>");
+        }
+        html.append("</div>");
+
+        if (!dependencies.isEmpty()) {
+            html.append("<h3>Cross-module dependencies</h3><div class=\"dependency-list\">");
+            for (SpringModuleDependency dependency : dependencies) {
+                html.append("<div><b>").append(escape(dependency.fromModule())).append(" → ")
+                        .append(escape(dependency.toModule())).append("</b><span>")
+                        .append(dependency.weight()).append(" import(s)</span><small>")
+                        .append(escape(String.join(" · ", dependency.examples()))).append("</small></div>");
+            }
+            html.append("</div>");
+        }
+
+        if (!cycles.isEmpty()) {
+            html.append("<h3>Cycle detection</h3><div class=\"cycle-list\">");
+            for (SpringArchitectureCycle cycle : cycles) {
+                html.append("<article><strong>").append(escape(String.join(" → ", cycle.modules()))).append("</strong><p>")
+                        .append(escape(cycle.remediation())).append("</p></article>");
+            }
+            html.append("</div>");
+        }
+
+        html.append("<details><summary>Mermaid module graph</summary><pre><code>")
+                .append(escape(mermaid))
+                .append("</code></pre></details></section>");
+    }
+
+    private void appendRoadmap(StringBuilder html, java.util.List<ModernizationChecklistItem> checklist, java.util.List<UpgradeStep> upgradeSteps, String openRewriteYaml) {
+        html.append("<section id=\"roadmap\" class=\"card\"><div class=\"section-title\"><div>")
+                .append("<p class=\"eyebrow\">Modernization Plan</p><h2>Checklist di miglioramento esportabile</h2></div>")
+                .append("<span class=\"pill\">").append(checklist.size()).append(" actions</span></div>");
+        html.append("<div class=\"checklist\">");
+        int displayed = 0;
+        for (ModernizationChecklistItem item : checklist) {
+            if (displayed >= 25) {
+                break;
+            }
+            html.append("<label class=\"check-item\"><input type=\"checkbox\">")
+                    .append("<span><b>").append(escape(item.title())).append("</b><small>")
+                    .append("Priority ").append(item.priority()).append(" · ").append(item.severity()).append(" · effort ")
+                    .append(item.effort()).append(" · impact ").append(item.businessImpact()).append("</small>")
+                    .append("<em>").append(escape(item.suggestedChange())).append("</em>");
+            if (!item.files().isEmpty()) {
+                html.append("<code>").append(escape(String.join(", ", item.files()))).append("</code>");
+            }
+            html.append("</span></label>");
+            displayed++;
+        }
+        if (checklist.size() > displayed) {
+            html.append("<p class=\"empty\">").append(checklist.size() - displayed).append(" more checklist item(s) available in JSON/Markdown export.</p>");
+        }
+        html.append("</div>");
+
+        html.append("<h3>Spring Upgrade Path</h3><div class=\"upgrade-list\">");
+        for (UpgradeStep step : upgradeSteps) {
+            html.append("<article><strong>").append(step.order()).append(". ").append(escape(step.title())).append("</strong>")
+                    .append("<span>").append(escape(step.risk())).append("</span><p>").append(escape(step.description())).append("</p></article>");
+        }
+        html.append("</div><details><summary>OpenRewrite suggestions YAML</summary><pre><code>")
+                .append(escape(openRewriteYaml))
+                .append("</code></pre></details></section>");
+    }
+
 
     private void appendFindings(StringBuilder html, ArchitectureReviewReport report, boolean alternativesOnly) {
         String id = alternativesOnly ? "alternatives" : "findings";
@@ -273,6 +417,7 @@ public class HtmlReportRenderer implements ReportRenderer {
                 .chips{display:flex;gap:8px;flex-wrap:wrap}.chips b{border-radius:999px;padding:6px 9px;background:rgba(255,255,255,.06)}table{width:100%;border-collapse:collapse}th,td{text-align:left;border-bottom:1px solid var(--border);padding:12px;vertical-align:top}td small{display:block;margin-top:6px;line-height:1.45}
                 .actions,.finding-list,.components{display:grid;gap:14px}.action{display:grid;grid-template-columns:54px 1fr;gap:16px}.action>strong{display:grid;place-items:center;width:54px;height:54px;border-radius:18px;background:rgba(52,211,153,.14);color:#bbf7d0;font-size:22px}
                 .finding{border:1px solid var(--border);border-radius:26px;padding:20px;background:rgba(0,0,0,.18)}.finding header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.finding h3{font-size:24px;margin:8px 0 0}code{color:#bbf7d0}.guidance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}.guidance div{border:1px solid var(--border);border-radius:18px;padding:14px;background:rgba(255,255,255,.04)}.guidance span{color:#bbf7d0;text-transform:uppercase;font-size:12px;font-weight:900;letter-spacing:.08em}.guidance p,.finding p,.gate p,.area p{color:var(--muted);line-height:1.58}.alternative{border-left:4px solid var(--brand);padding-left:12px}.doc{display:inline-flex;margin:4px 0 14px;color:#bbf7d0;text-decoration:none;font-weight:900}.component b,.component span{display:block}.component p{margin-bottom:0}pre{white-space:pre-wrap;overflow:auto;border-radius:16px;padding:14px;background:#020617;border:1px solid rgba(148,163,184,.22);color:#dbeafe}.empty{color:var(--muted);border:1px dashed var(--border);border-radius:18px;padding:18px;background:rgba(255,255,255,.03)}
+                .architect-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}.architect-grid article{border:1px solid var(--border);border-radius:20px;padding:16px;background:rgba(52,211,153,.06)}.architect-grid span,.architect-grid small{display:block;color:var(--muted)}.architect-grid strong{display:block;font-size:30px;margin:6px 0}.maturity-list,.dependency-list,.cycle-list,.checklist,.upgrade-list{display:grid;gap:12px}.maturity-row{display:grid;grid-template-columns:230px 1fr 58px;gap:14px;align-items:center;border:1px solid var(--border);border-radius:18px;padding:14px;background:rgba(0,0,0,.13)}.maturity-row small{display:block;color:var(--muted);margin-top:5px}.maturity-meter{height:10px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}.maturity-meter span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--brand),var(--brand2))}.module-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.module-card{border:1px solid var(--border);border-radius:22px;padding:18px;background:rgba(0,0,0,.16)}.module-card ul{color:var(--warning);line-height:1.5}.dependency-list>div,.cycle-list article,.upgrade-list article{border:1px solid var(--border);border-radius:18px;padding:14px;background:rgba(255,255,255,.04)}.dependency-list span,.dependency-list small,.upgrade-list span{display:block;color:var(--muted);margin-top:5px}.check-item{display:grid;grid-template-columns:26px 1fr;gap:12px;align-items:start;border:1px solid var(--border);border-radius:18px;padding:14px;background:rgba(255,255,255,.045)}.check-item input{width:18px;height:18px;accent-color:var(--brand)}.check-item b,.check-item small,.check-item em,.check-item code{display:block}.check-item small{color:var(--muted);margin:5px 0}.check-item em{font-style:normal;color:#d1fae5}.check-item code{margin-top:8px}
                 @media(max-width:1180px){.sidebar{position:static;width:auto}.content{margin:0;width:100%;padding:18px}.hero,.metrics,.two,.gate-grid,.area-grid,.guidance{grid-template-columns:1fr}}
                 """;
     }

@@ -27,6 +27,7 @@ import java.util.Map;
  * @param recommendedActions prioritized recommended actions
  * @param explanation report reading explanation
  * @param findings findings grouped by rule
+ * @param architectMode Spring Guardian Architect Mode roadmap
  * @author Simone Meneghetti
  */
 public record ArchitectureReviewReport(
@@ -49,6 +50,57 @@ public record ArchitectureReviewReport(
         List<QualityGate> qualityGates,
         List<RecommendedAction> recommendedActions,
         ReportExplanation explanation,
-        List<FindingGroup> findings
+        List<FindingGroup> findings,
+        ArchitectModeReport architectMode
 ) {
+
+    /**
+     * Backward-compatible constructor for integrations created before Architect Mode became part of the report.
+     */
+    public ArchitectureReviewReport(
+            String projectName,
+            Instant scannedAt,
+            String projectRootPath,
+            ProjectProfile profile,
+            ProjectCapabilities capabilities,
+            ReportSummary summary,
+            ReleaseReadiness releaseReadiness,
+            int architectureScore,
+            String riskLevel,
+            long scannedJavaFiles,
+            long scannedPomFiles,
+            int rulesExecuted,
+            Map<Severity, Long> findingsBySeverity,
+            List<CategorySummary> findingsByCategory,
+            List<CategorySummary> findingsByType,
+            List<ArchitectureAreaReport> architectureAreas,
+            List<QualityGate> qualityGates,
+            List<RecommendedAction> recommendedActions,
+            ReportExplanation explanation,
+            List<FindingGroup> findings
+    ) {
+        this(
+                projectName,
+                scannedAt,
+                projectRootPath,
+                profile,
+                capabilities,
+                summary,
+                releaseReadiness,
+                architectureScore,
+                riskLevel,
+                scannedJavaFiles,
+                scannedPomFiles,
+                rulesExecuted,
+                findingsBySeverity,
+                findingsByCategory,
+                findingsByType,
+                architectureAreas,
+                qualityGates,
+                recommendedActions,
+                explanation,
+                findings,
+                null
+        );
+    }
 }
