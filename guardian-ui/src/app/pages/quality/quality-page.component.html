@@ -1,0 +1,32 @@
+<ng-container *ngIf="state.report() as report; else noReport">
+  <sg-page-header
+    eyebrow="Step 05"
+    [title]="state.text('Spring Quality Gates', 'Spring Quality Gates')"
+    [subtitle]="state.text('Solo gate Spring: MVC/API, Security, Data/JPA, Production e Testing.', 'Spring-only gates: MVC/API, Security, Data/JPA, Production and Testing.')"
+  />
+
+  <section class="gate-grid">
+    <article *ngFor="let gate of springGates()" class="gate-card" [class.bad]="gate.status === 'RISK'">
+      <span class="badge" [class.bad]="gate.status === 'RISK'">{{ gate.status }}</span>
+      <h2>{{ gate.name }}</h2>
+      <p>{{ gate.hint }}</p>
+      <a routerLink="/findings" [queryParams]="{ query: gate.query }">{{ state.text('Vedi evidenza', 'View evidence') }}</a>
+    </article>
+  </section>
+
+  <section class="card release-strip">
+    <div>
+      <span class="badge" [class.bad]="!report.releaseReadiness.releasable">{{ report.releaseReadiness.label }}</span>
+      <strong>{{ state.text('Release Spring readiness', 'Spring release readiness') }}</strong>
+      <small>{{ report.releaseReadiness.explanation }}</small>
+    </div>
+    <a class="btn secondary" routerLink="/architect">{{ state.text('Apri piano finale', 'Open final plan') }}</a>
+  </section>
+</ng-container>
+
+<ng-template #noReport>
+  <section class="empty-state">
+    <h2>{{ state.text('Nessuna Spring review disponibile', 'No Spring review available') }}</h2>
+    <a class="btn primary" routerLink="/analyze">{{ state.text('Avvia scan', 'Start scan') }}</a>
+  </section>
+</ng-template>

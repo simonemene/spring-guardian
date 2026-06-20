@@ -1,0 +1,79 @@
+<ng-container *ngIf="state.report(); else noReport">
+  <sg-page-header
+    eyebrow="Action plan · Export"
+    title="Spring Exports"
+    subtitle="Artefatti Spring-centric per CI/CD, architecture review, modernization plan e handoff al team."
+  />
+
+  <section class="card export-guide">
+    <span class="badge info">Scegli export per scenario</span>
+    <h2>Cosa devi fare con la review Spring?</h2>
+    <div class="export-scenarios">
+      <article><b>Presentare al team</b><small>Usa Spring Executive Summary Markdown.</small></article>
+      <article><b>Pianificare refactoring</b><small>Usa Spring Modernization Checklist Markdown/JSON.</small></article>
+      <article><b>Integrare CI/CD</b><small>Usa Spring Architecture Report JSON.</small></article>
+      <article><b>Documentare boundary</b><small>Usa Spring Module Map Mermaid.</small></article>
+      <article><b>Preparare migrazione</b><small>Usa Spring OpenRewrite Suggestions YAML.</small></article>
+    </div>
+  </section>
+
+  <section class="export-grid">
+
+    <article class="card">
+      <span class="badge info">Executive</span>
+      <h2>Spring Executive Summary</h2>
+      <p class="muted">Markdown manageriale/tech-lead con fingerprint Spring, top rischi, top interventi, readiness e upgrade path sintetico.</p>
+      <button type="button" class="secondary" (click)="state.downloadExecutiveSummaryMarkdown()">Scarica Executive Summary</button>
+    </article>
+
+    <article class="card">
+      <span class="badge info">Report</span>
+      <h2>Spring Architecture Report JSON</h2>
+      <p class="muted">Payload completo Spring Guardian prodotto dal backend, utile per integrazioni, archiviazione e debug tecnico.</p>
+      <button type="button" class="secondary" (click)="state.downloadJsonReport()">Scarica report JSON</button>
+    </article>
+
+    <article class="card">
+      <span class="badge info">Checklist</span>
+      <h2>Spring Modernization Checklist</h2>
+      <p class="muted">Checklist con stato, owner, decisione, due date e note di review per il progetto corrente.</p>
+      <div class="actions">
+        <button type="button" class="secondary" (click)="state.downloadChecklistJson()">Checklist JSON</button>
+        <button type="button" class="secondary" (click)="state.downloadChecklistMarkdown()">Checklist Markdown</button>
+      </div>
+    </article>
+
+    <article class="card">
+      <span class="badge info">Architecture Map</span>
+      <h2>Spring Module Map Mermaid</h2>
+      <p class="muted">Export Spring Module Map utile per documentazione, repository wiki e review dei boundary.</p>
+      <button type="button" class="secondary" (click)="state.downloadMermaid()">Scarica Mermaid</button>
+    </article>
+
+    <article class="card">
+      <span class="badge info">OpenRewrite</span>
+      <h2>Spring OpenRewrite Suggestions</h2>
+      <p class="muted">Suggerimenti YAML per automatizzare parti del percorso di modernizzazione. Non modifica codice automaticamente.</p>
+      <button type="button" class="secondary" (click)="state.downloadOpenRewrite()">Scarica YAML</button>
+    </article>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>Mostra JSON grezzo</summary>
+      <pre class="code-panel">{{ json() }}</pre>
+    </details>
+  </section>
+</ng-container>
+<ng-template #noReport>
+  <section class="empty-state">
+    <h2>Nessuno Spring export disponibile</h2>
+    <p>Prima genera una scansione. Poi potrai esportare report JSON, checklist, Mermaid e suggerimenti OpenRewrite.</p>
+    <ol>
+      <li>Vai su Analizza.</li>
+      <li>Carica ZIP/cartella o usa un path backend.</li>
+      <li>Torna qui per scaricare gli artefatti tecnici.</li>
+    </ol>
+    <a class="btn primary" routerLink="/analyze">Avvia scansione</a>
+  </section>
+</ng-template>

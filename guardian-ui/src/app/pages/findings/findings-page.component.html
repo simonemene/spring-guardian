@@ -1,0 +1,112 @@
+<ng-container *ngIf="state.report() as report; else noReport">
+  <sg-page-header
+    eyebrow="Step 03"
+    [title]="state.text('Spring Findings', 'Spring Findings')"
+    [subtitle]="state.text('Problemi Spring nel codice: evidenza, impatto e pattern da applicare.', 'Spring issues in code: evidence, impact and pattern to apply.')"
+  />
+
+  <section class="findings-summary">
+    <strong>{{ findings().length }}</strong>
+    <span>{{ state.text('finding mostrati su', 'findings shown of') }} {{ allFindings().length }}</span>
+    <button *ngIf="hasActiveFilters()" type="button" class="btn ghost" (click)="clearFilters()">
+      {{ state.text('Rimuovi filtri', 'Clear filters') }}
+    </button>
+  </section>
+
+  <section class="filters slim">
+    <input [placeholder]="state.text('Cerca rule, classe, package, evidenza...', 'Search rule, class, package, evidence...')" [ngModel]="query()" (ngModelChange)="updateQuery($event)" />
+    <select [ngModel]="severity()" (ngModelChange)="updateSeverity($event)">
+      <option value="ALL">{{ state.text('Tutte', 'All') }}</option>
+      <option value="CRITICAL">CRITICAL</option>
+      <option value="MAJOR">MAJOR</option>
+      <option value="MINOR">MINOR</option>
+      <option value="INFO">INFO</option>
+    </select>
+  </section>
+
+  <section class="finding-table" *ngIf="findings().length > 0; else noFindingsAfterFilter">
+    <article *ngFor="let finding of findings()" class="finding-row" [class.selected]="selectedFinding()?.ruleId === finding.ruleId">
+      <div class="severity-col">
+        <span class="badge" [class.bad]="finding.severity === 'CRITICAL' || finding.severity === 'MAJOR'" [class.warn]="finding.severity === 'MINOR'">{{ finding.severity }}</span>
+      </div>
+      <div class="finding-main">
+        <strong>{{ finding.title }}</strong>
+        <small>{{ finding.ruleId }} · {{ firstLocation(finding) }}</small>
+        <p>{{ compactImpact(finding) }}</p>
+      </div>
+      <div class="finding-pattern">
+        <span>{{ state.text('Pattern Spring', 'Spring pattern') }}</span>
+        <b>{{ springPattern(finding) }}</b>
+      </div>
+      <button type="button" class="btn secondary" (click)="openFinding(finding)">{{ state.text('Dettaglio', 'Details') }}</button>
+    </article>
+  </section>
+
+  <ng-template #noFindingsAfterFilter>
+    <section class="empty-state compact">
+      <h2>{{ state.text('Nessun finding con questi filtri', 'No finding with these filters') }}</h2>
+      <p>{{ state.text('La scansione contiene finding, ma il filtro corrente li nasconde. Rimuovi i filtri per vedere tutto.', 'The scan contains findings, but the current filter hides them. Clear filters to see everything.') }}</p>
+      <button type="button" class="btn primary" (click)="clearFilters()">{{ state.text('Mostra tutti i finding', 'Show all findings') }}</button>
+    </section>
+  </ng-template>
+
+  <aside class="finding-drawer-backdrop" *ngIf="selectedFinding() as selected" (click)="closeFinding()" role="presentation">
+    <section class="finding-drawer" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="finding-drawer-title">
+      <header>
+        <div>
+          <span class="badge" [class.bad]="selected.severity === 'CRITICAL' || selected.severity === 'MAJOR'">{{ selected.severity }}</span>
+          <span class="rule">{{ selected.ruleId }}</span>
+          <h2 id="finding-drawer-title">{{ selected.title }}</h2>
+        </div>
+        <button type="button" class="close" (click)="closeFinding()" [attr.aria-label]="state.text('Chiudi dettaglio finding', 'Close finding details')">×</button>
+      </header>
+
+      <section>
+        <h3>{{ state.text('Perché conta in Spring', 'Why it matters in Spring') }}</h3>
+        <p>{{ compactImpact(selected) }}</p>
+      </section>
+
+      <section>
+        <h3>{{ state.text('Evidenza', 'Evidence') }}</h3>
+        <div class="evidence-list">
+          <article *ngFor="let component of selected.affectedComponents.slice(0, 6)">
+            <strong>{{ component.name || component.type }}</strong>
+            <code>{{ component.filePath }}{{ component.line ? ':' + component.line : '' }}</code>
+            <small>{{ component.evidence }}</small>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <h3>{{ state.text('Pattern Spring da seguire', 'Spring pattern to follow') }}</h3>
+        <p>{{ springPattern(selected) }}</p>
+        <a *ngIf="selected.guidance.documentationUrl" [href]="selected.guidance.documentationUrl" target="_blank" rel="noopener">
+          {{ state.text('Riferimento ufficiale', 'Official reference') }}
+        </a>
+      </section>
+
+      <section *ngIf="selected.guidance.springAlternative">
+        <h3>{{ state.text('Oggetto Spring consigliato', 'Recommended Spring object') }}</h3>
+        <p>{{ selected.guidance.springAlternative }}</p>
+        <a class="inline-link" routerLink="/alternatives" [queryParams]="{ query: selected.ruleId }">
+          {{ state.text('Vedi in Spring Alternatives', 'Open in Spring Alternatives') }}
+        </a>
+      </section>
+
+      <footer>
+        <a *ngIf="relatedChecklistCount(selected) > 0" class="btn primary" routerLink="/checklist">
+          {{ relatedChecklistCount(selected) }} {{ state.text('azioni checklist', 'checklist actions') }}
+        </a>
+        <a class="btn ghost" routerLink="/architect">{{ state.text('Apri piano Spring', 'Open Spring plan') }}</a>
+      </footer>
+    </section>
+  </aside>
+</ng-container>
+
+<ng-template #noReport>
+  <section class="empty-state">
+    <h2>{{ state.text('Nessuna Spring review disponibile', 'No Spring review available') }}</h2>
+    <p>{{ state.text('Avvia una scansione per vedere finding Spring con evidenza e pattern.', 'Start a scan to see Spring findings with evidence and patterns.') }}</p>
+    <a class="btn primary" routerLink="/analyze">{{ state.text('Avvia scan', 'Start scan') }}</a>
+  </section>
+</ng-template>

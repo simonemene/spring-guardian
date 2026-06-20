@@ -1,0 +1,146 @@
+<ng-container *ngIf="state.architectMode() as architect; else noChecklist">
+  <sg-page-header
+    eyebrow="Step 08"
+    title="Spring Modernization Checklist"
+    subtitle="Ultimo punto del workflow Spring: qui trasformi la review in lavoro eseguibile. Lo stato resta salvato nel browser per questo report anche cambiando schermata."
+  />
+
+  <section class="card checklist-summary">
+    <div>
+      <span class="badge info">Stato persistente per progetto</span>
+      <h2>{{ state.checklistProgress() }}% completato</h2>
+      <p class="muted">
+        Le checkbox sono l'ultimo step operativo della modernization Spring. Lo stato è salvato con una chiave basata sul fingerprint progetto/report,
+        così non si mescola tra applicazioni diverse e non sparisce cambiando pagina.
+      </p>
+    </div>
+    <div class="summary-actions">
+      <button type="button" class="secondary" (click)="state.downloadChecklistJson()">Export JSON</button>
+      <button type="button" class="secondary" (click)="state.downloadChecklistMarkdown()">Export Markdown</button>
+      <label class="import-button">
+        Import stato
+        <input type="file" accept="application/json,.json" (change)="importState($event)" />
+      </label>
+      <button type="button" class="ghost" (click)="resetState()">Reset stato</button>
+    </div>
+  </section>
+
+
+  <section class="card release-plan">
+    <div>
+      <span class="badge info">Spring release plan</span>
+      <h2>Vista per fase di refactoring</h2>
+      <p class="muted">Raggruppa la checklist come piano Spring: stabilizza, correggi i boundary, metti in sicurezza, prepara produzione e poi affronta upgrade.</p>
+    </div>
+    <div class="release-phases">
+      <article *ngFor="let phase of releasePhases">
+        <b>{{ phase }}</b>
+        <span>{{ completedForPhase(phase) }}/{{ itemsForPhase(phase).length }} completati</span>
+      </article>
+    </div>
+  </section>
+
+  <section class="card checklist-guide">
+    <h2>Come usare la Spring Modernization Checklist</h2>
+    <div class="guide-grid">
+      <article><b>To do</b><small>Intervento Spring da pianificare.</small></article>
+      <article><b>In corso</b><small>Refactoring Spring o hardening già preso in carico.</small></article>
+      <article><b>Completato</b><small>Fix chiuso e verificabile nella review Spring.</small></article>
+      <article><b>Ignorato</b><small>Rischio Spring accettato consapevolmente, con decisione e nota salvate nell'export.</small></article>
+      <article><b>Owner / note / due date</b><small>Campi locali utili per review di team: Fix, Rischio accettato o Ignora.</small></article>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="filters">
+      <button type="button" [class.active]="state.checklistFilter() === 'all'" (click)="state.setChecklistFilter('all')">Tutti</button>
+      <button type="button" [class.active]="state.checklistFilter() === 'todo'" (click)="state.setChecklistFilter('todo')">Da fare</button>
+      <button type="button" [class.active]="state.checklistFilter() === 'progress'" (click)="state.setChecklistFilter('progress')">In corso</button>
+      <button type="button" [class.active]="state.checklistFilter() === 'done'" (click)="state.setChecklistFilter('done')">Completati</button>
+      <button type="button" [class.active]="state.checklistFilter() === 'ignored'" (click)="state.setChecklistFilter('ignored')">Ignorati</button>
+    </div>
+
+    <div class="checklist-items">
+      <article *ngFor="let item of state.visibleChecklist()">
+        <div class="item-status">
+          <select [ngModel]="state.statusOf(item.id)" (ngModelChange)="state.updateChecklistStatus(item.id, $event)">
+            <option *ngFor="let status of statuses" [value]="status">{{ statusLabel(status) }}</option>
+          </select>
+        </div>
+        <div class="item-body">
+          <div class="item-header">
+            <div>
+              <span class="badge">{{ phaseOf(item) }}</span>
+              <h3>{{ item.title }}</h3>
+            </div>
+            <span class="priority">P{{ item.priority }}</span>
+          </div>
+          <p>{{ item.whyItMatters }}</p>
+          <div class="item-meta">
+            <span>{{ item.severity }}</span>
+            <span>Effort {{ item.effort }}</span>
+            <span>Impact {{ item.businessImpact }}</span>
+          </div>
+          <div class="details-grid">
+            <div>
+              <b>Spring Alternative ufficiale</b>
+              <small>{{ item.springAlternative }}</small>
+            </div>
+            <div>
+              <b>Modifica suggerita</b>
+              <small>{{ item.suggestedChange }}</small>
+            </div>
+          </div>
+
+          <div class="review-fields">
+            <label>
+              <span>Decisione</span>
+              <select
+                [ngModel]="state.metaOf(item.id).decision || 'fix'"
+                (ngModelChange)="state.updateChecklistMeta(item.id, { decision: $event })"
+              >
+                <option *ngFor="let decision of decisions" [value]="decision">{{ decisionLabel(decision) }}</option>
+              </select>
+            </label>
+            <label>
+              <span>Owner</span>
+              <input
+                type="text"
+                placeholder="es. backend team"
+                [ngModel]="state.metaOf(item.id).owner || ''"
+                (ngModelChange)="state.updateChecklistMeta(item.id, { owner: $event })"
+              />
+            </label>
+            <label>
+              <span>Due date</span>
+              <input
+                type="date"
+                [ngModel]="state.metaOf(item.id).dueDate || ''"
+                (ngModelChange)="state.updateChecklistMeta(item.id, { dueDate: $event })"
+              />
+            </label>
+            <label class="note-field">
+              <span>Nota review</span>
+              <textarea
+                rows="2"
+                placeholder="Motiva fix, rischio accettato o decisione del team"
+                [ngModel]="state.metaOf(item.id).note || ''"
+                (ngModelChange)="state.updateChecklistMeta(item.id, { note: $event })"
+              ></textarea>
+            </label>
+          </div>
+
+          <code *ngIf="item.files.length > 0">{{ item.files.join(', ') }}</code>
+        </div>
+      </article>
+    </div>
+  </section>
+</ng-container>
+
+<ng-template #noChecklist>
+  <section class="empty-state">
+    <h2>Checklist non disponibile</h2>
+    <p>Avvia una scansione con Architect Mode per generare il piano operativo. La checklist sarà l'ultimo step: owner, stato, decisione e note resteranno salvati per fingerprint progetto.</p>
+    <a class="btn primary" routerLink="/analyze">Avvia scansione</a>
+  </section>
+</ng-template>

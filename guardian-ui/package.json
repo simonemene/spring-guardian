@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json",
-    "dev": "ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development"
+    "start": "node ./node_modules/@angular/cli/bin/ng.js serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json",
+    "dev": "node ./node_modules/@angular/cli/bin/ng.js serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json",
+    "build": "node ./node_modules/@angular/cli/bin/ng.js build",
+    "watch": "node ./node_modules/@angular/cli/bin/ng.js build --watch --configuration development",
+    "test": "node scripts/verify-ui-architecture.mjs",
+    "test:build": "node ./node_modules/@angular/cli/bin/ng.js build"
   },
   "dependencies": {
     "@angular/animations": "18.2.13",

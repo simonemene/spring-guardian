@@ -1,0 +1,28 @@
+.gate-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: .8rem;
+}
+.gate-card {
+  padding: .95rem;
+  border-radius: 22px;
+  background: rgba(4,25,22,.62);
+  border: 1px solid rgba(125,211,181,.13);
+}
+.gate-card.bad { border-color: rgba(248,113,113,.3); }
+.gate-card h2 { margin: .6rem 0 .45rem; font-size: 1rem; }
+.gate-card p, .release-strip small { color: #9bbab1; line-height: 1.45; }
+.gate-card a { color: #7dd3b5; font-weight: 800; text-decoration: none; }
+.release-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+.release-strip strong, .release-strip small { display: block; margin-top: .35rem; }
+@media (max-width: 1200px) { .gate-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .gate-grid { grid-template-columns: 1fr; }
+  .release-strip { flex-direction: column; align-items: flex-start; }
+}

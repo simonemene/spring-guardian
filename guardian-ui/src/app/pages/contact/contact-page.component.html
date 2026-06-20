@@ -1,0 +1,53 @@
+<sg-page-header
+  [eyebrow]="state.text('Informazioni progetto', 'Project information')"
+  [title]="state.text('Contatti e contributi', 'Contacts and contributions')"
+  [subtitle]="
+    state.text(
+      'Spring Guardian cresce con contributi reali: rule, frontend, report, fixture enterprise, test e documentazione.',
+      'Spring Guardian grows through real contributions: rules, frontend, reports, enterprise fixtures, tests and documentation.'
+    )
+  "
+/>
+<section class="grid-2">
+  <article class="card">
+    <h2>{{ state.text("Contatto", "Contact") }}</h2>
+
+    <p class="muted">
+      Email:
+      <a href="mailto:s.meneghetti7@gmail.com"> s.meneghetti7&#64;gmail.com </a>
+    </p>
+
+    <p class="muted">
+      LinkedIn:
+      <a
+        href="https://www.linkedin.com/in/simone-meneghetti-28525a15a/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        linkedin.com/in/simone-meneghetti-28525a15a
+      </a>
+    </p>
+
+    <p class="muted">
+      Medium:
+      <a
+        href="https://medium.com/&#64;persolenom"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        medium.com/&#64;persolenom
+      </a>
+    </p>
+  </article>
+  <article class="card">
+    <h2>{{ state.text("Contribuire", "Contribute") }}</h2>
+    <p class="muted">
+      {{
+        state.text(
+          "Se vuoi contribuire, modifica pure il progetto: aggiungi rule Spring-centric, migliora Architect Mode, inserisci test e aggiorna la documentazione.",
+          "Contributions are welcome: change the project, add Spring-centric rules, improve Architect Mode, add tests and update documentation."
+        )
+      }}
+    </p>
+  </article>
+</section>

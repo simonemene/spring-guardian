@@ -1,0 +1,71 @@
+<ng-container *ngIf="state.report(); else noReport">
+  <sg-page-header
+    eyebrow="Step 04"
+    [title]="state.text('Spring Alternatives', 'Spring Alternatives')"
+    [subtitle]="state.text('Catalogo degli oggetti Spring da preferire. Non è una copia dei finding.', 'Catalog of preferred Spring objects. This is not a duplicate of findings.')"
+  />
+
+  <section class="alt-hero">
+    <div>
+      <span class="badge info">{{ state.text('La parte wow', 'The wow part') }}</span>
+      <h2>{{ state.text('Scegli l’alternativa Spring, poi vai ai finding collegati.', 'Pick the Spring alternative, then open related findings.') }}</h2>
+    </div>
+    <strong>{{ catalog().length }}</strong>
+  </section>
+
+  <section class="compact-filters">
+    <input
+      type="search"
+      [placeholder]="state.text('Cerca oggetto Spring...', 'Search Spring object...')"
+      [value]="query()"
+      (input)="query.set($any($event.target).value)"
+    />
+    <select [value]="selectedArea()" (change)="selectedArea.set($any($event.target).value)">
+      <option value="ALL">{{ state.text('Tutte le aree', 'All areas') }}</option>
+      <option *ngFor="let area of areas()" [value]="area">{{ area }}</option>
+    </select>
+  </section>
+
+  <section class="spring-object-grid">
+    <article *ngFor="let item of catalog()" class="spring-object-card">
+      <header>
+        <span class="badge info">{{ item.area }}</span>
+        <h2>{{ item.name }}</h2>
+      </header>
+
+      <dl>
+        <div>
+          <dt>{{ state.text('Quando usarlo', 'Use when') }}</dt>
+          <dd>{{ item.whenUseIt }}</dd>
+        </div>
+        <div>
+          <dt>{{ state.text('Perché migliora', 'Why it helps') }}</dt>
+          <dd>{{ item.whyBetter }}</dd>
+        </div>
+        <div>
+          <dt>{{ state.text('Evita quando', 'Avoid when') }}</dt>
+          <dd>{{ item.avoidWhen }}</dd>
+        </div>
+      </dl>
+
+      <footer>
+        <a [href]="item.docs" target="_blank" rel="noopener">{{ state.text('Doc Spring', 'Spring docs') }}</a>
+        <a routerLink="/findings" [queryParams]="{ query: ruleQuery(item) }">
+          {{ item.relatedFindings.length }} {{ state.text('finding collegati', 'related findings') }}
+        </a>
+      </footer>
+    </article>
+  </section>
+
+  <section class="empty-state compact" *ngIf="catalog().length === 0">
+    <h2>{{ state.text('Nessuna alternativa Spring rilevante', 'No relevant Spring alternative') }}</h2>
+    <p>{{ state.text('I finding generici sono nei Spring Findings. Qui mostriamo solo oggetti e pattern Spring consigliabili.', 'Generic findings are in Spring Findings. This page shows only recommended Spring objects and patterns.') }}</p>
+  </section>
+</ng-container>
+
+<ng-template #noReport>
+  <section class="empty-state">
+    <h2>{{ state.text('Nessuna Spring review disponibile', 'No Spring review available') }}</h2>
+    <a class="btn primary" routerLink="/analyze">{{ state.text('Avvia scan', 'Start scan') }}</a>
+  </section>
+</ng-template>

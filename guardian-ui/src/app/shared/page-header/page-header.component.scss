@@ -1,0 +1,24 @@
+.page-header {
+  margin-bottom: 1.25rem;
+}
+.eyebrow {
+  display: inline-flex;
+  margin-bottom: .45rem;
+  color: #7dd3b5;
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  line-height: 1.05;
+  color: #f2fff9;
+}
+p {
+  max-width: 980px;
+  color: #a9c6bd;
+  line-height: 1.65;
+  margin: .75rem 0 0;
+}

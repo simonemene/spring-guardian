@@ -1,0 +1,127 @@
+<div class="dialog-backdrop" (click)="close()" role="presentation">
+  <section #dialogRoot class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="architecture-dialog-title" tabindex="-1">
+    <header>
+      <div>
+        <span>Spring Layer Map</span>
+        <h2 id="architecture-dialog-title">Grafo classi e violazioni Spring</h2>
+        <p>Rosso = refactoring da fare. Clicca una freccia rossa per vedere evidenza e fix.</p>
+      </div>
+      <button type="button" class="close" (click)="close()" aria-label="Chiudi grafico architetturale">×</button>
+    </header>
+
+    <section class="expected-flow" aria-label="Flusso Spring atteso">
+      <b>&#64;RestController</b>
+      <i>→</i>
+      <b>&#64;Service</b>
+      <i>→</i>
+      <b>&#64;Repository</b>
+      <i>→</i>
+      <b>&#64;Entity</b>
+    </section>
+
+    <section class="class-graph" *ngIf="classGraphEdges().length > 0; else noClassGraph">
+      <div class="graph-nodes">
+        <article *ngFor="let node of classGraphNodes()" class="graph-node" [class]="node.kind">
+          <small>{{ node.kind }}</small>
+          <strong>{{ node.label }}</strong>
+          <span *ngIf="node.filePath">{{ node.filePath }}</span>
+        </article>
+      </div>
+
+      <div class="graph-edges">
+        <button
+          type="button"
+          *ngFor="let edge of classGraphEdges()"
+          class="graph-edge"
+          [class.violation]="edge.severity === 'violation'"
+          [class.warning]="edge.severity === 'warning'"
+          (click)="select(edgeIssue(edge))">
+          <span>{{ edge.from.label }}</span>
+          <i>→</i>
+          <span>{{ edge.to.label }}</span>
+          <b>{{ edge.label }}</b>
+        </button>
+      </div>
+    </section>
+
+    <ng-template #noClassGraph>
+      <section class="no-class-graph">
+        <h3>Nessuna violazione class-level disegnata</h3>
+        <p>La scansione non ha fornito abbastanza evidenza classe-classe. Usa il riepilogo modulo sotto e apri Spring Findings per l’evidenza completa.</p>
+      </section>
+    </ng-template>
+
+    <section class="dialog-grid">
+      <article class="panel compact-panel">
+        <h3>Moduli Spring</h3>
+        <div class="module-card" *ngFor="let module of map.modules">
+          <div class="module-header">
+            <div>
+              <strong>{{ module.name }}</strong>
+              <small>{{ module.basePackage }}</small>
+            </div>
+            <span [class.warn]="module.risks.length > 0 || (module.controllers > 0 && module.services === 0)">
+              {{ module.risks.length + (module.controllers > 0 && module.services === 0 ? 1 : 0) }} issue
+            </span>
+          </div>
+          <div class="counters">
+            <b>{{ module.controllers }} controller</b>
+            <b>{{ module.services }} service</b>
+            <b>{{ module.repositories }} repository</b>
+            <b>{{ module.entities }} entity</b>
+          </div>
+          <button
+            *ngIf="module.controllers > 0 && module.services === 0"
+            type="button"
+            class="module-warning"
+            (click)="select({
+              title: 'Service boundary mancante',
+              severity: 'violation',
+              description: 'Sono presenti controller senza un layer @Service rilevato.',
+              module: module.name,
+              evidence: [module.basePackage, module.controllers + ' controller · 0 service'],
+              fix: ['Creare un @Service applicativo.', 'Spostare use case, accesso repository e @Transactional fuori dal controller.', 'Usare DTO/command come contratto interno.']
+            })">
+            Service boundary mancante
+          </button>
+          <div *ngIf="module.risks.length > 0" class="risk-buttons">
+            <button type="button" *ngFor="let issue of moduleIssues(module)" (click)="select(issue)" [class.danger]="issue.severity === 'violation'">
+              {{ issue.title }}
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel detail-panel">
+        <h3>Dettaglio refactoring</h3>
+        <aside class="issue-detail" *ngIf="selectedIssue() as issue; else selectHint" [class.violation]="issue.severity === 'violation'" [class.cycle]="issue.severity === 'cycle'">
+          <span>{{ issue.severity }}</span>
+          <h4>{{ issue.title }}</h4>
+          <p>{{ issue.description }}</p>
+          <div>
+            <b>Evidenza</b>
+            <ul>
+              <li *ngFor="let evidence of issue.evidence">{{ evidence }}</li>
+            </ul>
+          </div>
+          <div>
+            <b>Fix Spring suggerito</b>
+            <ul>
+              <li *ngFor="let fix of issue.fix">{{ fix }}</li>
+            </ul>
+          </div>
+          <div class="issue-actions">
+            <a class="btn secondary" routerLink="/checklist">Checklist</a>
+            <a class="btn ghost" routerLink="/findings" [queryParams]="{ query: issue.title }">Finding</a>
+          </div>
+        </aside>
+        <ng-template #selectHint>
+          <aside class="issue-detail empty">
+            <h4>Seleziona una freccia rossa</h4>
+            <p>Il dettaglio mostrerà file/classi e refactoring Spring consigliato.</p>
+          </aside>
+        </ng-template>
+      </article>
+    </section>
+  </section>
+</div>
