@@ -2,104 +2,98 @@
   <section #dialogRoot class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="architecture-dialog-title" tabindex="-1">
     <header>
       <div>
-        <span>Spring Layer & Module Map</span>
-        <h2 id="architecture-dialog-title">Flusso Spring atteso, violazioni navigabili e refactoring guidato</h2>
-        <p>Questa vista è pensata per capire cosa correggere: clicca un rischio, una dipendenza o un ciclo per vedere evidenza e fix consigliato.</p>
+        <span>Spring Layer Map</span>
+        <h2 id="architecture-dialog-title">Grafo classi e violazioni Spring</h2>
+        <p>Rosso = refactoring da fare. Clicca una freccia rossa per vedere evidenza e fix.</p>
       </div>
       <button type="button" class="close" (click)="close()" aria-label="Chiudi grafico architetturale">×</button>
     </header>
 
-    <div class="layer-flow">
-      <article class="layer controller">
-        <small>01</small>
-        <strong>&#64;RestController</strong>
-        <span>HTTP boundary, DTO, validation</span>
-      </article>
-      <i class="ok">→</i>
-      <article class="layer service">
-        <small>02</small>
-        <strong>&#64;Service</strong>
-        <span>Use case, transaction boundary</span>
-      </article>
-      <i class="ok">→</i>
-      <article class="layer repository">
-        <small>03</small>
-        <strong>&#64;Repository</strong>
-        <span>Persistence only</span>
-      </article>
-      <i class="ok">→</i>
-      <article class="layer entity">
-        <small>04</small>
-        <strong>&#64;Entity</strong>
-        <span>Persistence model</span>
-      </article>
-    </div>
+    <section class="expected-flow" aria-label="Flusso Spring atteso">
+      <b>&#64;RestController</b>
+      <i>→</i>
+      <b>&#64;Service</b>
+      <i>→</i>
+      <b>&#64;Repository</b>
+      <i>→</i>
+      <b>&#64;Entity</b>
+    </section>
 
-    <div class="legend">
-      <span class="green">Spring expected dependency</span>
-      <span class="yellow">Coupling to review</span>
-      <span class="red">Spring layer violation</span>
-      <span class="blue">{{ issueCount() }} issue navigabili</span>
-    </div>
+    <section class="class-graph" *ngIf="classGraphEdges().length > 0; else noClassGraph">
+      <div class="graph-nodes">
+        <article *ngFor="let node of classGraphNodes()" class="graph-node" [class]="node.kind">
+          <small>{{ node.kind }}</small>
+          <strong>{{ node.label }}</strong>
+          <span *ngIf="node.filePath">{{ node.filePath }}</span>
+        </article>
+      </div>
+
+      <div class="graph-edges">
+        <button
+          type="button"
+          *ngFor="let edge of classGraphEdges()"
+          class="graph-edge"
+          [class.violation]="edge.severity === 'violation'"
+          [class.warning]="edge.severity === 'warning'"
+          (click)="select(edgeIssue(edge))">
+          <span>{{ edge.from.label }}</span>
+          <i>→</i>
+          <span>{{ edge.to.label }}</span>
+          <b>{{ edge.label }}</b>
+        </button>
+      </div>
+    </section>
+
+    <ng-template #noClassGraph>
+      <section class="no-class-graph">
+        <h3>Nessuna violazione class-level disegnata</h3>
+        <p>La scansione non ha fornito abbastanza evidenza classe-classe. Usa il riepilogo modulo sotto e apri Spring Findings per l’evidenza completa.</p>
+      </section>
+    </ng-template>
 
     <section class="dialog-grid">
-      <article class="panel">
-        <h3>Moduli Spring rilevati e rischi</h3>
+      <article class="panel compact-panel">
+        <h3>Moduli Spring</h3>
         <div class="module-card" *ngFor="let module of map.modules">
           <div class="module-header">
             <div>
               <strong>{{ module.name }}</strong>
               <small>{{ module.basePackage }}</small>
             </div>
-            <span [class.warn]="module.risks.length > 0">{{ module.risks.length }} risk</span>
+            <span [class.warn]="module.risks.length > 0 || (module.controllers > 0 && module.services === 0)">
+              {{ module.risks.length + (module.controllers > 0 && module.services === 0 ? 1 : 0) }} issue
+            </span>
           </div>
           <div class="counters">
-            <b>{{ module.controllers }} ctrl</b>
-            <b>{{ module.services }} svc</b>
-            <b>{{ module.repositories }} repo</b>
+            <b>{{ module.controllers }} controller</b>
+            <b>{{ module.services }} service</b>
+            <b>{{ module.repositories }} repository</b>
             <b>{{ module.entities }} entity</b>
-            <b>{{ module.clients }} client</b>
           </div>
-          <div *ngIf="module.risks.length > 0; else healthyModule" class="risk-buttons">
+          <button
+            *ngIf="module.controllers > 0 && module.services === 0"
+            type="button"
+            class="module-warning"
+            (click)="select({
+              title: 'Service boundary mancante',
+              severity: 'violation',
+              description: 'Sono presenti controller senza un layer @Service rilevato.',
+              module: module.name,
+              evidence: [module.basePackage, module.controllers + ' controller · 0 service'],
+              fix: ['Creare un @Service applicativo.', 'Spostare use case, accesso repository e @Transactional fuori dal controller.', 'Usare DTO/command come contratto interno.']
+            })">
+            Service boundary mancante
+          </button>
+          <div *ngIf="module.risks.length > 0" class="risk-buttons">
             <button type="button" *ngFor="let issue of moduleIssues(module)" (click)="select(issue)" [class.danger]="issue.severity === 'violation'">
-              <strong>{{ issue.title }}</strong>
-              <small>{{ issue.description }}</small>
+              {{ issue.title }}
             </button>
           </div>
-          <ng-template #healthyModule>
-            <p class="muted">Nessun rischio specifico rilevato nel modulo. Verifica comunque checklist e finding dettagliati.</p>
-          </ng-template>
         </div>
       </article>
 
-      <article class="panel">
-        <h3>Dipendenze Spring, cicli e dettaglio</h3>
-        <div *ngIf="map.dependencies.length > 0; else noDeps" class="edges">
-          <button type="button" *ngFor="let dep of map.dependencies" (click)="select(dependencyIssue(dep))">
-            <span>{{ dep.fromModule }}</span>
-            <i>→ {{ dep.weight }} import</i>
-            <span>{{ dep.toModule }}</span>
-          </button>
-        </div>
-        <ng-template #noDeps>
-          <p class="muted">Non sono state rilevate dipendenze tra moduli diversi. La review resta utile perché valuta layer interni e service mancanti.</p>
-        </ng-template>
-
-        <div *ngIf="map.cycles.length > 0" class="cycles">
-          <h4>Cicli rilevati</h4>
-          <button type="button" *ngFor="let cycle of map.cycles" class="cycle" (click)="select(cycleIssue(cycle.modules, cycle.remediation))">
-            <b>{{ cycle.modules.join(' → ') }}</b>
-            <small>{{ cycle.remediation }}</small>
-          </button>
-        </div>
-
-        <div *ngIf="map.globalRisks.length > 0" class="global-risks">
-          <h4>Rischi globali</h4>
-          <ul>
-            <li *ngFor="let risk of map.globalRisks">{{ risk }}</li>
-          </ul>
-        </div>
-
+      <article class="panel detail-panel">
+        <h3>Dettaglio refactoring</h3>
         <aside class="issue-detail" *ngIf="selectedIssue() as issue; else selectHint" [class.violation]="issue.severity === 'violation'" [class.cycle]="issue.severity === 'cycle'">
           <span>{{ issue.severity }}</span>
           <h4>{{ issue.title }}</h4>
@@ -111,21 +105,20 @@
             </ul>
           </div>
           <div>
-            <b>Action panel · Refactoring Spring-centric suggerito</b>
+            <b>Fix Spring suggerito</b>
             <ul>
               <li *ngFor="let fix of issue.fix">{{ fix }}</li>
             </ul>
-            <p class="action-hint">Obiettivo: trasformare il rischio in una modifica Spring concreta, ad esempio creare un &#64;Service, spostare accesso repository o introdurre eventi applicativi.</p>
           </div>
           <div class="issue-actions">
-            <a class="btn secondary" routerLink="/checklist">Apri Spring Modernization Checklist</a>
-            <a class="btn ghost" routerLink="/findings" [queryParams]="{ query: issue.title }">Vedi Spring Findings</a>
+            <a class="btn secondary" routerLink="/checklist">Checklist</a>
+            <a class="btn ghost" routerLink="/findings" [queryParams]="{ query: issue.title }">Finding</a>
           </div>
         </aside>
         <ng-template #selectHint>
           <aside class="issue-detail empty">
-            <h4>Seleziona una violazione</h4>
-            <p>Clicca un rischio modulo, una dipendenza o un ciclo per vedere evidenza e remediation concreta.</p>
+            <h4>Seleziona una freccia rossa</h4>
+            <p>Il dettaglio mostrerà file/classi e refactoring Spring consigliato.</p>
           </aside>
         </ng-template>
       </article>

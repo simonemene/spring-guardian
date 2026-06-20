@@ -2,11 +2,19 @@
   <sg-page-header
     eyebrow="Step 03"
     [title]="state.text('Spring Findings', 'Spring Findings')"
-    [subtitle]="state.text('Problemi reali nel codice: evidenza, impatto e pattern Spring da seguire.', 'Real code issues: evidence, impact and Spring pattern to follow.')"
+    [subtitle]="state.text('Problemi Spring nel codice: evidenza, impatto e pattern da applicare.', 'Spring issues in code: evidence, impact and pattern to apply.')"
   />
 
+  <section class="findings-summary">
+    <strong>{{ findings().length }}</strong>
+    <span>{{ state.text('finding mostrati su', 'findings shown of') }} {{ allFindings().length }}</span>
+    <button *ngIf="hasActiveFilters()" type="button" class="btn ghost" (click)="clearFilters()">
+      {{ state.text('Rimuovi filtri', 'Clear filters') }}
+    </button>
+  </section>
+
   <section class="filters slim">
-    <input [placeholder]="state.text('Cerca rule, classe, package...', 'Search rule, class, package...')" [ngModel]="query()" (ngModelChange)="updateQuery($event)" />
+    <input [placeholder]="state.text('Cerca rule, classe, package, evidenza...', 'Search rule, class, package, evidence...')" [ngModel]="query()" (ngModelChange)="updateQuery($event)" />
     <select [ngModel]="severity()" (ngModelChange)="updateSeverity($event)">
       <option value="ALL">{{ state.text('Tutte', 'All') }}</option>
       <option value="CRITICAL">CRITICAL</option>
@@ -16,7 +24,7 @@
     </select>
   </section>
 
-  <section class="finding-table">
+  <section class="finding-table" *ngIf="findings().length > 0; else noFindingsAfterFilter">
     <article *ngFor="let finding of findings()" class="finding-row" [class.selected]="selectedFinding()?.ruleId === finding.ruleId">
       <div class="severity-col">
         <span class="badge" [class.bad]="finding.severity === 'CRITICAL' || finding.severity === 'MAJOR'" [class.warn]="finding.severity === 'MINOR'">{{ finding.severity }}</span>
@@ -24,14 +32,23 @@
       <div class="finding-main">
         <strong>{{ finding.title }}</strong>
         <small>{{ finding.ruleId }} · {{ firstLocation(finding) }}</small>
+        <p>{{ compactImpact(finding) }}</p>
       </div>
       <div class="finding-pattern">
         <span>{{ state.text('Pattern Spring', 'Spring pattern') }}</span>
-        <b>{{ finding.guidance.recommendedApproach || finding.suggestedFix }}</b>
+        <b>{{ springPattern(finding) }}</b>
       </div>
       <button type="button" class="btn secondary" (click)="openFinding(finding)">{{ state.text('Dettaglio', 'Details') }}</button>
     </article>
   </section>
+
+  <ng-template #noFindingsAfterFilter>
+    <section class="empty-state compact">
+      <h2>{{ state.text('Nessun finding con questi filtri', 'No finding with these filters') }}</h2>
+      <p>{{ state.text('La scansione contiene finding, ma il filtro corrente li nasconde. Rimuovi i filtri per vedere tutto.', 'The scan contains findings, but the current filter hides them. Clear filters to see everything.') }}</p>
+      <button type="button" class="btn primary" (click)="clearFilters()">{{ state.text('Mostra tutti i finding', 'Show all findings') }}</button>
+    </section>
+  </ng-template>
 
   <aside class="finding-drawer-backdrop" *ngIf="selectedFinding() as selected" (click)="closeFinding()" role="presentation">
     <section class="finding-drawer" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="finding-drawer-title">
@@ -46,7 +63,7 @@
 
       <section>
         <h3>{{ state.text('Perché conta in Spring', 'Why it matters in Spring') }}</h3>
-        <p>{{ selected.whyItMatters || selected.explanation }}</p>
+        <p>{{ compactImpact(selected) }}</p>
       </section>
 
       <section>
@@ -62,7 +79,7 @@
 
       <section>
         <h3>{{ state.text('Pattern Spring da seguire', 'Spring pattern to follow') }}</h3>
-        <p>{{ selected.guidance.recommendedApproach || selected.suggestedFix }}</p>
+        <p>{{ springPattern(selected) }}</p>
         <a *ngIf="selected.guidance.documentationUrl" [href]="selected.guidance.documentationUrl" target="_blank" rel="noopener">
           {{ state.text('Riferimento ufficiale', 'Official reference') }}
         </a>

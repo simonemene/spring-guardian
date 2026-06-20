@@ -1,3 +1,12 @@
+
+## UI low-noise Spring Review refinement
+
+- Fixed Spring Findings visibility with robust fallback extraction and clear-filter empty state.
+- Simplified Spring Review Plan with only key risks, weak scores, layer map and final upgrade path.
+- Reworked Spring Layer Map dialog into a class-level graph when finding evidence is available.
+- Added inferred missing-service-boundary warnings when controllers exist without services.
+- Reduced wording and clarified Spring Boot Upgrade Path as a final modernization step.
+
 ## 1.1.2 - Calibrated Architect Mode UX and security maturity
 
 - Replaced raw Mermaid-first architecture map with a visual Controller -> Service -> Repository -> Entity graph and an HTML/CSS architecture dialog in UI and HTML reports.

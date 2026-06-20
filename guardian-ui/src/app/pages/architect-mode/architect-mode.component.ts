@@ -213,6 +213,34 @@ export class ArchitectModeComponent {
       .join('') || 'Application';
   }
 
+
+  moduleSummaryLabel(module: any): string {
+    return `${module.controllers} controller · ${module.services} service · ${module.repositories} repository · ${module.entities} entity`;
+  }
+
+  moduleHasLayerGap(module: any): boolean {
+    return (module.controllers ?? 0) > 0 && (module.services ?? 0) === 0;
+  }
+
+  moduleShortAction(module: any): string {
+    if (this.moduleHasLayerGap(module)) {
+      return this.state.text('Service boundary mancante: crea un @Service prima dei repository.', 'Missing service boundary: create a @Service before repositories.');
+    }
+    if ((module.risks?.length ?? 0) > 0) {
+      return this.state.text('Rischi layer: apri il grafico.', 'Layer risks: open the graph.');
+    }
+    return this.state.text('Nessun rischio layer evidente.', 'No obvious layer risk.');
+  }
+
+  upgradeShortTitle(step: UpgradeStep): string {
+    const title = step.title || '';
+    return title
+      .replace('Adopt modern Spring Boot testing, logging and client APIs', this.state.text('Modernizza API Spring Boot', 'Modernize Spring Boot APIs'))
+      .replace('Modernize the API boundary', this.state.text('Modernizza boundary API', 'Modernize API boundary'))
+      .replace('Modernize authorization ownership', this.state.text('Modernizza autorizzazione', 'Modernize authorization'))
+      .replace('Add production observability', this.state.text('Aggiungi osservabilità', 'Add observability'));
+  }
+
   private areaKeywords(area: SpringMaturityAreaScore): string[] {
     const text = `${area.code} ${area.name}`.toLowerCase();
     if (text.includes('security')) {

@@ -209,3 +209,21 @@ Spring Guardian non deve diventare un altro analyzer generico. Ogni pagina deve 
 - L’app è osservabile con Actuator/Micrometer?
 - Esiste un piano di modernizzazione Spring chiaro?
 
+
+## UX low-noise Spring Review
+
+La UI separa tre ruoli:
+
+- **Spring Findings**: problemi reali nel codice con evidenza, impatto e pattern Spring da applicare.
+- **Spring Alternatives**: catalogo degli oggetti Spring consigliati, non una copia dei finding.
+- **Spring Review Plan**: vista finale sintetica con i rischi nevralgici, layer map, readiness e upgrade path.
+
+La Spring Layer Map mostra prima il flusso atteso:
+
+```text
+@RestController -> @Service -> @Repository -> @Entity
+```
+
+Nel dialog grafico le frecce rosse indicano refactoring Spring da fare. Se il backend non fornisce abbastanza evidenza classe-classe, la UI lo dichiara e rimanda ai finding dettagliati.
+
+Spring Findings ora include filtri robusti, ricerca su evidenza/file/classi e pulsante per ripristinare tutti i finding quando un filtro nasconde i risultati.

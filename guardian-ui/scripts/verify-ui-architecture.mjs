@@ -69,7 +69,7 @@ if (dashboard.includes('Architect Mode')) {
 }
 
 const architect = read('src/app/pages/architect-mode/architect-mode.component.html') + read('src/app/pages/architect-mode/architect-mode.component.ts');
-for (const expected of ['Spring Review Plan', 'Primo impatto', 'keyRiskCards', 'Spring Maturity Score', 'Spring Layer Map', 'Spring Boot Production Readiness', 'Spring Boot Upgrade Path', 'Roadmap minima']) {
+for (const expected of ['Spring Review Plan', 'Primo impatto', 'keyRiskCards', 'Spring Maturity Score', 'Spring Layer Map', 'Spring Boot Production Readiness', 'Spring Boot Upgrade Path', 'Prossime mosse']) {
   if (!architect.includes(expected)) {
     console.error(`Unified Spring Review Plan missing: ${expected}`);
     process.exit(1);
@@ -93,7 +93,7 @@ if (alternatives.includes('Generic findings are intentionally hidden')) {
 }
 
 const findings = read('src/app/pages/findings/findings-page.component.html') + read('src/app/pages/findings/findings-page.component.ts');
-for (const expected of ['Pattern Spring', 'Perché conta in Spring', 'Oggetto Spring consigliato', 'finding-drawer']) {
+for (const expected of ['Pattern Spring', 'Perché conta in Spring', 'Oggetto Spring consigliato', 'finding-drawer', 'allFindings()', 'clearFilters()', 'findingText']) {
   if (!findings.includes(expected)) {
     console.error(`Spring Findings role is unclear. Missing: ${expected}`);
     process.exit(1);
@@ -110,7 +110,7 @@ for (const expected of ['Spring MVC/API boundary', 'Spring Security', 'Spring Da
 
 const dialog = read('src/app/pages/architect-mode/architecture-graph-dialog/architecture-graph-dialog.component.html') +
   read('src/app/pages/architect-mode/architecture-graph-dialog/architecture-graph-dialog.component.ts');
-for (const expected of ['aria-modal="true"', 'aria-labelledby="architecture-dialog-title"', 'onDialogKeydown']) {
+for (const expected of ['aria-modal="true"', 'aria-labelledby="architecture-dialog-title"', 'onDialogKeydown', 'Grafo classi', 'classGraphEdges', 'graph-edge', 'Service boundary mancante']) {
   if (!dialog.includes(expected)) {
     console.error(`Accessible Architecture Map dialog missing: ${expected}`);
     process.exit(1);

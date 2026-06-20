@@ -23,7 +23,7 @@ export class FindingsPageComponent {
       const rule = params.get('rule');
       const query = params.get('query');
       const severity = params.get('severity') as 'ALL' | Severity | null;
-      if (query) {
+      if (query !== null) {
         this.query.set(query);
       }
       if (severity && ['ALL', 'CRITICAL', 'MAJOR', 'MINOR', 'INFO'].includes(severity)) {
@@ -32,7 +32,7 @@ export class FindingsPageComponent {
       if (rule) {
         this.query.set(rule);
         setTimeout(() => {
-          const match = this.findings().find((finding) => finding.ruleId === rule);
+          const match = this.allFindings().find((finding) => finding.ruleId === rule);
           if (match) {
             this.selectedFinding.set(match);
           }
@@ -40,6 +40,32 @@ export class FindingsPageComponent {
       }
       this.persistFilters();
     });
+  }
+
+  allFindings(): FindingGroup[] {
+    const report = this.state.report() as any;
+    const findings = report?.findings ?? report?.findingGroups ?? report?.groups ?? [];
+    return Array.isArray(findings) ? findings : [];
+  }
+
+  findings(): FindingGroup[] {
+    const query = this.normalize(this.query());
+    const severity = this.severity();
+    return this.allFindings().filter((finding) => {
+      const matchesSeverity = severity === 'ALL' || finding.severity === severity;
+      const haystack = this.findingText(finding);
+      return matchesSeverity && (!query || haystack.includes(query));
+    });
+  }
+
+  hasActiveFilters(): boolean {
+    return this.severity() !== 'ALL' || this.query().trim().length > 0;
+  }
+
+  clearFilters(): void {
+    this.query.set('');
+    this.severity.set('ALL');
+    this.persistFilters();
   }
 
   updateSeverity(value: 'ALL' | Severity): void {
@@ -50,6 +76,68 @@ export class FindingsPageComponent {
   updateQuery(value: string): void {
     this.query.set(value);
     this.persistFilters();
+  }
+
+  relatedChecklistCount(finding: FindingGroup): number {
+    return this.state.checklistItemsForFinding(finding.ruleId).length;
+  }
+
+  firstLocation(finding: FindingGroup): string {
+    const first = finding.affectedComponents?.[0];
+    if (!first) {
+      return this.state.text('Nessuna location disponibile', 'No location available');
+    }
+    return `${first.filePath}${first.line ? ':' + first.line : ''}`;
+  }
+
+  compactImpact(finding: FindingGroup): string {
+    return finding.guidance?.riskImpact || finding.whyItMatters || finding.explanation || finding.category;
+  }
+
+  springPattern(finding: FindingGroup): string {
+    return finding.guidance?.recommendedApproach || finding.suggestedFix || this.state.text('Segui il boundary Spring indicato dalla rule.', 'Follow the Spring boundary suggested by the rule.');
+  }
+
+  openFinding(finding: FindingGroup): void {
+    this.selectedFinding.set(finding);
+  }
+
+  closeFinding(): void {
+    this.selectedFinding.set(null);
+  }
+
+  private findingText(finding: FindingGroup): string {
+    return this.normalize([
+      finding.ruleId,
+      finding.title,
+      finding.category,
+      finding.findingType,
+      finding.findingTypeLabel,
+      finding.suggestedFix,
+      finding.whyItMatters,
+      finding.explanation,
+      finding.guidance?.detectedProblem,
+      finding.guidance?.riskImpact,
+      finding.guidance?.recommendedApproach,
+      finding.guidance?.springAlternative,
+      finding.guidance?.documentationUrl,
+      ...(finding.affectedComponents ?? []).map((component) => [
+        component.type,
+        component.name,
+        component.filePath,
+        component.evidence,
+        component.codeSnippet,
+      ].join(' ')),
+    ].join(' '));
+  }
+
+  private normalize(value: string): string {
+    return (value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9_@./:-]+/g, ' ')
+      .trim();
   }
 
   private persistFilters(): void {
@@ -82,33 +170,5 @@ export class FindingsPageComponent {
     } catch {
       return '';
     }
-  }
-
-  findings(): FindingGroup[] {
-    const query = this.query().trim().toLowerCase();
-    const severity = this.severity();
-    return (this.state.report()?.findings ?? []).filter((finding) => {
-      const matchesSeverity = severity === 'ALL' || finding.severity === severity;
-      const haystack = `${finding.ruleId} ${finding.title} ${finding.category} ${finding.suggestedFix}`.toLowerCase();
-      return matchesSeverity && (!query || haystack.includes(query));
-    });
-  }
-
-  relatedChecklistCount(finding: FindingGroup): number {
-    return this.state.checklistItemsForFinding(finding.ruleId).length;
-  }
-
-  firstLocation(finding: FindingGroup): string {
-    const first = finding.affectedComponents?.[0];
-    if (!first) return 'Nessuna location disponibile';
-    return `${first.filePath}${first.line ? ':' + first.line : ''}`;
-  }
-
-  openFinding(finding: FindingGroup): void {
-    this.selectedFinding.set(finding);
-  }
-
-  closeFinding(): void {
-    this.selectedFinding.set(null);
   }
 }

@@ -1,3 +1,24 @@
+
+.findings-summary {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  margin-bottom: .8rem;
+  padding: .75rem .9rem;
+  border-radius: 18px;
+  background: rgba(4,25,22,.58);
+  border: 1px solid rgba(125,211,181,.12);
+}
+.findings-summary strong {
+  color: #d8fff0;
+  font-size: 1.4rem;
+}
+.findings-summary span {
+  color: #9bbab1;
+}
+.findings-summary .btn {
+  margin-left: auto;
+}
 .filters.slim {
   display: flex;
   gap: .65rem;
@@ -26,6 +47,12 @@
 .finding-main strong, .finding-main small,
 .finding-pattern span, .finding-pattern b { display: block; }
 .finding-main small, .finding-pattern span { color: #91afa7; margin-top: .25rem; }
+.finding-main p {
+  margin: .35rem 0 0;
+  color: #b7d4cb;
+  line-height: 1.35;
+  font-size: .9rem;
+}
 .finding-pattern b { color: #d8fff0; font-weight: 700; line-height: 1.35; }
 .finding-drawer-backdrop {
   position: fixed;
