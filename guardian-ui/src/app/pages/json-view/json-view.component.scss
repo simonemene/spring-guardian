@@ -1,0 +1,55 @@
+
+.export-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.export-grid h2 {
+  margin: .55rem 0;
+}
+.export-grid p {
+  min-height: 3rem;
+}
+.actions {
+  display: flex;
+  gap: .55rem;
+  flex-wrap: wrap;
+}
+details summary {
+  cursor: pointer;
+  color: #dff9ee;
+  font-weight: 900;
+  margin-bottom: .8rem;
+}
+@media (max-width: 850px) {
+  .export-grid { grid-template-columns: 1fr; }
+}
+
+.export-guide {
+  margin-bottom: 1rem;
+}
+
+.export-scenarios {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: .75rem;
+  margin-top: 1rem;
+}
+
+.export-scenarios article {
+  padding: .9rem;
+  border-radius: 18px;
+  border: 1px solid rgba(125, 211, 181, .14);
+  background: rgba(8, 36, 31, .58);
+}
+
+.export-scenarios b,
+.export-scenarios small {
+  display: block;
+}
+
+.export-scenarios small {
+  color: #9abbb1;
+  margin-top: .35rem;
+  line-height: 1.45;
+}

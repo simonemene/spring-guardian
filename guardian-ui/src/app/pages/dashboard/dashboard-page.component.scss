@@ -1,0 +1,59 @@
+.hero-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.2rem;
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(20,83,45,.34), rgba(4,25,22,.88));
+  border: 1px solid rgba(125,211,181,.18);
+  margin-bottom: 1rem;
+}
+.hero-card h2 { margin: .5rem 0; font-size: clamp(1.35rem, 2.6vw, 2.1rem); max-width: 980px; }
+.hero-card p, .muted, small { color: #9bbab1; line-height: 1.45; }
+.hero-actions { display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; }
+.metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .8rem;
+  margin-bottom: 1rem;
+}
+.compact-card header, .severity-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .8rem;
+}
+.compact-card h2 { margin: 0; font-size: 1.05rem; }
+.area-mini-list, .finding-mini-list { display: grid; gap: .55rem; margin: .8rem 0; }
+.area-mini-list div, .finding-mini-list div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .6rem;
+  align-items: center;
+  padding: .72rem;
+  border-radius: 16px;
+  background: rgba(4,25,22,.55);
+  border: 1px solid rgba(125,211,181,.1);
+}
+.finding-mini-list div { grid-template-columns: auto 1fr auto; }
+.area-mini-list b { color: #d8fff0; }
+.inline-link { color: #7dd3b5; font-weight: 800; text-decoration: none; }
+.severity-card { margin-top: 1rem; flex-wrap: wrap; }
+.severity-card div {
+  flex: 1 1 120px;
+  padding: .85rem;
+  border-radius: 18px;
+  background: rgba(4,25,22,.55);
+  border: 1px solid rgba(125,211,181,.1);
+}
+.severity-card span, .severity-card strong { display: block; }
+.severity-card strong { color: #f3fff8; font-size: 1.6rem; margin-top: .25rem; }
+.severity-card .bad { border-color: rgba(248,113,113,.35); }
+.severity-card .warn { border-color: rgba(253,224,71,.26); }
+@media (max-width: 1000px) {
+  .hero-card { flex-direction: column; }
+  .metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .metric-strip, .finding-mini-list div { grid-template-columns: 1fr; }
+}

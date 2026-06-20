@@ -1,0 +1,62 @@
+<ng-container *ngIf="state.report() as report; else noReport">
+  <sg-page-header
+    eyebrow="Step 04 · Spring Risk Inbox"
+    [title]="state.text('Punti nevralgici Spring', 'Key Spring risk points')"
+    [subtitle]="state.text('Vista sintetica: mostra solo i rischi Spring che meritano attenzione immediata. La lista completa resta in Spring Findings.', 'Focused view: shows only the Spring risks that deserve immediate attention. The full list remains in Spring Findings.')"
+  />
+
+  <section class="card inbox-summary">
+    <div>
+      <span class="badge info">{{ state.text('Review senza rumore', 'Low-noise review') }}</span>
+      <h2>{{ state.text('Guarda prima questi punti, poi vai al dettaglio', 'Check these points first, then drill down') }}</h2>
+    </div>
+    <div class="summary-actions">
+      <a class="btn primary" routerLink="/checklist">{{ state.text('Apri checklist', 'Open checklist') }}</a>
+      <a class="btn secondary" routerLink="/findings">{{ state.text('Tutti i findings', 'All findings') }}</a>
+    </div>
+  </section>
+
+  <section class="key-risk-list" aria-label="Key Spring risks">
+    <article *ngFor="let risk of keyRisks(); let index = index" class="card key-risk" [class.hot]="risk.severity === 'High attention'">
+      <span class="risk-index">{{ index + 1 }}</span>
+      <div class="risk-content">
+        <header>
+          <strong>{{ risk.area }}</strong>
+          <span class="badge" [class.bad]="risk.severity === 'High attention'" [class.warn]="risk.severity === 'Review'">{{ risk.severity }}</span>
+        </header>
+        <h2>{{ risk.title }}</h2>
+        <p>{{ risk.description }}</p>
+        <small>{{ risk.findings.length }} {{ state.text('finding prioritari', 'priority findings') }} · {{ risk.checklistItems }} {{ state.text('azioni checklist', 'checklist actions') }}</small>
+      </div>
+      <div class="risk-actions">
+        <a class="btn secondary" [routerLink]="risk.route" [queryParams]="risk.query ? { query: risk.query } : null">Drill-down</a>
+        <a class="btn ghost" routerLink="/checklist">{{ state.text('Azioni', 'Actions') }}</a>
+      </div>
+    </article>
+  </section>
+
+  <section class="card compact-actions">
+    <header>
+      <span class="badge info">{{ state.text('Da assegnare', 'To assign') }}</span>
+      <h2>{{ state.text('Prime azioni Spring', 'First Spring actions') }}</h2>
+    </header>
+    <div class="action-list">
+      <article *ngFor="let item of topChecklist()">
+        <span>{{ item.priority }}</span>
+        <div>
+          <strong>{{ item.title }}</strong>
+          <small>{{ item.springAlternative }}</small>
+        </div>
+        <a routerLink="/checklist">{{ state.text('Apri', 'Open') }}</a>
+      </article>
+    </div>
+  </section>
+</ng-container>
+
+<ng-template #noReport>
+  <section class="empty-state">
+    <h2>{{ state.text('Nessuna Spring Risk Inbox disponibile', 'No Spring Risk Inbox available') }}</h2>
+    <p>{{ state.text('Avvia una Spring scan per vedere solo i rischi nevralgici: Security, MVC/API, Data/JPA, Production Readiness e Upgrade.', 'Start a Spring scan to see only the key risks: Security, MVC/API, Data/JPA, Production and Upgrade.') }}</p>
+    <a class="btn primary" routerLink="/analyze">{{ state.text('Avvia Spring scan', 'Start Spring scan') }}</a>
+  </section>
+</ng-template>

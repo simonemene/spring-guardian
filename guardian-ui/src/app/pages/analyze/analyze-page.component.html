@@ -1,0 +1,56 @@
+<sg-page-header
+  eyebrow="Step 01"
+  [title]="state.text('Analizza un progetto Spring', 'Analyze a Spring project')"
+  [subtitle]="state.text('Carica uno ZIP, una cartella o usa un path backend. La scansione genera overview, finding, alternative Spring, piano finale e checklist.', 'Upload a ZIP/folder or use a backend path. The scan generates overview, findings, Spring alternatives, final plan and checklist.')"
+/>
+
+<div class="grid-2">
+  <section class="card">
+    <h2>{{ state.text('Input progetto', 'Project input') }}</h2>
+    <p class="muted">{{ state.text('Scegli la modalità più adatta. In CI/CD usa percorso backend o CLI.', 'Choose the best input mode. In CI/CD use backend path or CLI.') }}</p>
+
+    <div class="mode-switch">
+      <button type="button" [class.active]="state.uploadMode() === 'zip'" (click)="state.selectUploadMode('zip')">ZIP</button>
+      <button type="button" [class.active]="state.uploadMode() === 'folder'" (click)="state.selectUploadMode('folder')">{{ state.text('Cartella', 'Folder') }}</button>
+      <button type="button" [class.active]="state.uploadMode() === 'local'" (click)="state.selectUploadMode('local')">Backend path</button>
+    </div>
+
+    <div *ngIf="state.uploadMode() === 'zip'" class="form-row">
+      <label>File ZIP</label>
+      <input type="file" accept=".zip" (change)="onZipSelected($event)" />
+      <small *ngIf="state.selectedZip()">{{ state.text('Selezionato', 'Selected') }}: {{ state.selectedZip()?.name }}</small>
+    </div>
+
+    <div *ngIf="state.uploadMode() === 'folder'" class="form-row">
+      <label>{{ state.text('Cartella progetto', 'Project folder') }}</label>
+      <input type="file" webkitdirectory directory multiple (change)="onFolderSelected($event)" />
+      <small>{{ state.selectedFolderFiles().length }} {{ state.text('file selezionati', 'selected files') }}</small>
+    </div>
+
+    <div *ngIf="state.uploadMode() === 'local'" class="form-row">
+      <label>{{ state.text('Percorso visibile dal backend', 'Path visible from backend') }}</label>
+      <input [ngModel]="state.localPath()" (ngModelChange)="state.setLocalPath($event)" placeholder="/scan/my-project" />
+    </div>
+
+    <div class="actions">
+      <button type="button" class="primary" [disabled]="state.loading()" (click)="state.scan()">
+        {{ state.loading() ? state.text('Scansione in corso…', 'Scan running…') : state.text('Avvia scansione', 'Start scan') }}
+      </button>
+      <a *ngIf="state.hasReport()" class="btn secondary" routerLink="/dashboard">{{ state.text('Apri overview', 'Open overview') }}</a>
+    </div>
+
+    <p *ngIf="state.error()" class="error">{{ state.error() }}</p>
+  </section>
+
+  <section class="card guide">
+    <h2>{{ state.text('Come leggere il risultato', 'How to read the result') }}</h2>
+    <ol>
+      <li><b>Spring Overview</b>: {{ state.text('sintesi e priorità.', 'summary and priorities.') }}</li>
+      <li><b>Spring Findings</b>: {{ state.text('problemi reali e pattern Spring.', 'real issues and Spring patterns.') }}</li>
+      <li><b>Spring Alternatives</b>: {{ state.text('oggetti Spring da preferire.', 'preferred Spring objects.') }}</li>
+      <li><b>Spring Review Plan</b>: {{ state.text('rischi nevralgici, score e roadmap finale.', 'key risks, score and final roadmap.') }}</li>
+      <li><b>Spring Modernization Checklist</b>: {{ state.text('ultimo step operativo.', 'final action step.') }}</li>
+    </ol>
+    <p class="muted">{{ state.text('Spring Guardian non replica SonarQube: trasforma finding Spring in roadmap di modernizzazione.', 'Spring Guardian does not duplicate SonarQube: it turns Spring findings into a modernization roadmap.') }}</p>
+  </section>
+</div>

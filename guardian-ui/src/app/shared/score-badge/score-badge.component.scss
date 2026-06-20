@@ -1,0 +1,15 @@
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  padding: 0.45rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 211, 181, 0.28);
+  background: rgba(5, 30, 26, 0.9);
+  color: #d5fbe9;
+  font-weight: 800;
+}
+.score-badge.good { color: #b7f7c9; border-color: rgba(103, 232, 149, .35); }
+.score-badge.warn { color: #fde68a; border-color: rgba(253, 224, 71, .35); }
+.score-badge.bad { color: #fecaca; border-color: rgba(248, 113, 113, .35); }

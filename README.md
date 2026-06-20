@@ -21,6 +21,20 @@ Its goal is not to produce a noisy list of generic static-analysis warnings. Its
 
 Spring Guardian is complementary to tools such as SonarQube. It focuses on Spring architecture, framework usage, modernization opportunities, cloud readiness, maintainability and release-readiness patterns.
 
+
+## UI review flow
+
+The web UI is intentionally low-noise and Spring-centric:
+
+1. **Spring Overview** gives the first impact: project type, weak Spring areas and top findings.
+2. **Spring Findings** lists real code problems with evidence and the Spring pattern to follow.
+3. **Spring Alternatives** is not a duplicate of findings: it recommends Spring objects and capabilities to adopt, such as `SecurityFilterChain`, DTO + Bean Validation, `@ConfigurationProperties`, `RestClient`, `Actuator`, Micrometer and Spring Modulith.
+4. **Spring Quality Gates** shows only Spring-specific gates: MVC/API, Security, Data/JPA, Production and Testing.
+5. **Spring Review Plan** merges Architect Mode and Risk Inbox into a final concise plan with key risks, maturity score, layer map, production readiness and upgrade path.
+6. **Spring Modernization Checklist** is the final operational artifact for team review and remediation ownership.
+
+This keeps the dashboard readable: first impact first, details only on drill-down.
+
 ## Spring Guardian Architect Mode
 
 Architect Mode turns a scan into a Spring modernization roadmap:
@@ -1182,6 +1196,20 @@ guardian-ui      Angular dashboard for interactive scans
 
 The HTML report contains overview, score, severity metrics, release readiness, quality gates, impacted architecture areas, recommended actions, findings and Spring Alternatives. It is designed to be shareable with developers, tech leads and enterprise governance stakeholders.
 
+
+
+## UI review flow
+
+The web UI is intentionally low-noise and Spring-centric:
+
+1. **Spring Overview** gives the first impact: project type, weak Spring areas and top findings.
+2. **Spring Findings** lists real code problems with evidence and the Spring pattern to follow.
+3. **Spring Alternatives** is not a duplicate of findings: it recommends Spring objects and capabilities to adopt, such as `SecurityFilterChain`, DTO + Bean Validation, `@ConfigurationProperties`, `RestClient`, `Actuator`, Micrometer and Spring Modulith.
+4. **Spring Quality Gates** shows only Spring-specific gates: MVC/API, Security, Data/JPA, Production and Testing.
+5. **Spring Review Plan** merges Architect Mode and Risk Inbox into a final concise plan with key risks, maturity score, layer map, production readiness and upgrade path.
+6. **Spring Modernization Checklist** is the final operational artifact for team review and remediation ownership.
+
+This keeps the dashboard readable: first impact first, details only on drill-down.
 
 ## Spring Guardian Architect Mode
 

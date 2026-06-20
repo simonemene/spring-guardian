@@ -1,0 +1,221 @@
+.checklist-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.checklist-summary h2 {
+  margin: .55rem 0 .35rem;
+  font-size: 2.5rem;
+}
+.summary-actions, .filters {
+  display: flex;
+  gap: .55rem;
+  flex-wrap: wrap;
+}
+.filters {
+  margin-bottom: 1rem;
+}
+.filters button {
+  border: 1px solid rgba(125,211,181,.16);
+  border-radius: 999px;
+  padding: .5rem .8rem;
+  background: transparent;
+  color: #a8c8bd;
+  font-weight: 800;
+}
+.filters button.active {
+  background: #7dd3b5;
+  color: #032019;
+}
+.checklist-items {
+  display: grid;
+  gap: 1rem;
+}
+.checklist-items article {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 24px;
+  background: rgba(4,25,22,.58);
+  border: 1px solid rgba(125,211,181,.13);
+}
+.item-status select {
+  position: sticky;
+  top: 88px;
+}
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+}
+.item-header h3 {
+  margin: .55rem 0;
+}
+.priority {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  background: #7dd3b5;
+  color: #032019;
+  font-weight: 900;
+}
+.item-body p, .item-body small {
+  color: #a9c6bd;
+  line-height: 1.55;
+}
+.item-meta {
+  display: flex;
+  gap: .45rem;
+  flex-wrap: wrap;
+  margin: .8rem 0;
+}
+.item-meta span {
+  padding: .3rem .5rem;
+  border-radius: 999px;
+  background: rgba(125,211,181,.09);
+  color: #d8fff0;
+  font-size: .78rem;
+  font-weight: 800;
+}
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: .8rem;
+}
+.details-grid div {
+  padding: .75rem;
+  border-radius: 16px;
+  background: rgba(3, 18, 16, .72);
+}
+.details-grid b, .details-grid small { display: block; }
+code {
+  display: block;
+  margin-top: .8rem;
+  white-space: normal;
+}
+@media (max-width: 850px) {
+  .checklist-summary, .item-header { flex-direction: column; }
+  .checklist-items article, .details-grid { grid-template-columns: 1fr; }
+}
+
+.import-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 14px;
+  padding: .75rem 1rem;
+  color: #dff9ee;
+  background: rgba(125,211,181,.12);
+  border: 1px solid rgba(125,211,181,.2);
+  font-weight: 800;
+  cursor: pointer;
+}
+.import-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.checklist-guide {
+  margin-bottom: 1rem;
+}
+.guide-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .75rem;
+}
+.guide-grid article {
+  padding: .8rem;
+  border-radius: 18px;
+  background: rgba(4,25,22,.58);
+  border: 1px solid rgba(125,211,181,.12);
+}
+.guide-grid b,
+.guide-grid small {
+  display: block;
+}
+.guide-grid small {
+  color: #9bbab1;
+  margin-top: .25rem;
+}
+@media (max-width: 850px) {
+  .guide-grid { grid-template-columns: 1fr; }
+}
+
+
+.review-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .75rem;
+  margin-top: .9rem;
+  padding: .85rem;
+  border-radius: 18px;
+  background: rgba(3, 18, 16, .58);
+  border: 1px solid rgba(125,211,181,.12);
+}
+.review-fields label {
+  display: grid;
+  gap: .35rem;
+}
+.review-fields span {
+  color: #9bbab1;
+  font-size: .78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.review-fields input,
+.review-fields select,
+.review-fields textarea {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(125,211,181,.18);
+  background: rgba(4,25,22,.86);
+  color: #f3fff8;
+  padding: .7rem .75rem;
+}
+.note-field {
+  grid-column: 1 / -1;
+}
+@media (max-width: 850px) {
+  .review-fields { grid-template-columns: 1fr; }
+}
+
+.release-plan {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+.release-phases {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: .65rem;
+}
+.release-phases article {
+  padding: .85rem;
+  border-radius: 18px;
+  background: rgba(4,25,22,.58);
+  border: 1px solid rgba(125,211,181,.12);
+}
+.release-phases b,
+.release-phases span {
+  display: block;
+}
+.release-phases span {
+  color: #9bbab1;
+  margin-top: .3rem;
+  font-size: .82rem;
+}
+@media (max-width: 1100px) {
+  .release-plan,
+  .release-phases {
+    grid-template-columns: 1fr;
+  }
+}

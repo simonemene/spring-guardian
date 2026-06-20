@@ -1,0 +1,122 @@
+<ng-container *ngIf="state.architectMode() as architect; else noArchitect">
+  <sg-page-header
+    eyebrow="Step 06"
+    [title]="state.text('Spring Review Plan', 'Spring Review Plan')"
+    [subtitle]="state.text('Vista finale e sintetica: rischi nevralgici, score, roadmap e upgrade. Non sostituisce Findings e Alternatives.', 'Final focused view: key risks, score, roadmap and upgrade. It does not replace Findings and Alternatives.')"
+  />
+
+  <section class="plan-hero">
+    <div>
+      <span class="badge info">{{ state.text('Primo impatto', 'First look') }}</span>
+      <h2>{{ architect.fingerprint.summary }}</h2>
+      <p>{{ state.text('Leggi solo questi blocchi: rischi, score, piano. I dettagli stanno nelle pagine dedicate.', 'Read only these blocks: risks, score, plan. Details are in dedicated pages.') }}</p>
+    </div>
+    <sg-score-badge [score]="architect.maturityScore.overallScore" />
+  </section>
+
+  <section class="key-risk-grid">
+    <article *ngFor="let risk of keyRiskCards()" class="risk-card">
+      <span class="badge" [class.bad]="risk.severity.includes('alta') || risk.severity.includes('High')">{{ risk.severity }}</span>
+      <h3>{{ risk.area }}</h3>
+      <strong>{{ risk.count }}</strong>
+      <p>{{ risk.title }}</p>
+      <a routerLink="/findings" [queryParams]="{ query: risk.query }">{{ state.text('Vedi finding', 'View findings') }}</a>
+    </article>
+  </section>
+
+  <section class="grid-2">
+    <article class="card">
+      <header class="compact-head">
+        <div>
+          <h2>{{ state.text('Spring Maturity Score', 'Spring Maturity Score') }}</h2>
+          <p class="muted">{{ state.text('Score per area Spring. Clicca sui finding per verificare.', 'Score by Spring area. Open findings to verify.') }}</p>
+        </div>
+      </header>
+      <div class="score-table">
+        <div *ngFor="let area of architect.maturityScore.areas.slice(0, 7)">
+          <span>{{ area.name }}</span>
+          <i><b [style.width.%]="area.score"></b></i>
+          <strong>{{ area.score }}</strong>
+          <a routerLink="/findings" [queryParams]="{ query: area.name }">{{ state.text('finding', 'findings') }}</a>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <header class="compact-head">
+        <div>
+          <h2>{{ state.text('Spring Layer Map', 'Spring Layer Map') }}</h2>
+          <p class="muted">&#64;RestController → &#64;Service → &#64;Repository → &#64;Entity</p>
+        </div>
+        <button type="button" class="btn secondary" (click)="graphOpen.set(true)">{{ state.text('Apri grafico', 'Open graph') }}</button>
+      </header>
+      <div class="module-mini-list">
+        <div *ngFor="let module of architect.architectureMap.modules.slice(0, 4)" [class.risky]="module.risks.length > 0">
+          <b>{{ module.name }}</b>
+          <span>{{ module.controllers }}C · {{ module.services }}S · {{ module.repositories }}R · {{ module.entities }}E</span>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="grid-2">
+    <article class="card">
+      <h2>{{ state.text('Spring Boot Production Readiness', 'Spring Boot Production Readiness') }}</h2>
+      <div class="readiness-score">
+        <strong>{{ architect.productionReadiness.score }}/100</strong>
+        <span>{{ architect.productionReadiness.status }}</span>
+      </div>
+      <ul class="short-list">
+        <li *ngFor="let risk of architect.productionReadiness.risks.slice(0, 4)">{{ risk }}</li>
+        <li *ngIf="architect.productionReadiness.risks.length === 0">{{ state.text('Nessun blocker produzione evidente.', 'No obvious production blocker.') }}</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <h2>{{ state.text('Roadmap minima', 'Minimal roadmap') }}</h2>
+      <div class="roadmap-mini">
+        <a *ngFor="let step of roadmapSteps()" [routerLink]="step.route">
+          <b>{{ step.title }}</b>
+          <small>{{ step.hint }}</small>
+        </a>
+      </div>
+    </article>
+  </section>
+
+  <section class="card upgrade-compact">
+    <header>
+      <h2>{{ state.text('Spring Boot Upgrade Path', 'Spring Boot Upgrade Path') }}</h2>
+      <p class="muted">{{ state.text('Ultimo step: aggiorna dopo aver ridotto rischi API, Security, Data e produzione.', 'Last step: upgrade after reducing API, Security, Data and production risks.') }}</p>
+    </header>
+    <details *ngFor="let step of architect.upgradePath.steps.slice(0, 5)">
+      <summary>
+        <span>{{ step.order }}</span>
+        <b>{{ step.title }}</b>
+        <em>{{ step.risk }} · {{ step.effort }}</em>
+      </summary>
+      <p>{{ upgradeExplanation(step) }}</p>
+      <ul>
+        <li *ngFor="let action of step.actions.slice(0, 4)">{{ action }}</li>
+      </ul>
+    </details>
+  </section>
+
+  <section class="final-cta">
+    <a class="btn primary" routerLink="/checklist">{{ state.text('Apri Spring Modernization Checklist', 'Open Spring Modernization Checklist') }}</a>
+    <a class="btn secondary" routerLink="/export">{{ state.text('Esporta summary', 'Export summary') }}</a>
+  </section>
+
+  <sg-architecture-graph-dialog
+    *ngIf="graphOpen()"
+    [map]="architect.architectureMap"
+    (closed)="graphOpen.set(false)"
+  />
+</ng-container>
+
+<ng-template #noArchitect>
+  <section class="empty-state">
+    <h2>{{ state.text('Nessun piano Spring disponibile', 'No Spring plan available') }}</h2>
+    <p>{{ state.text('Avvia una scansione per generare score, rischi e roadmap.', 'Start a scan to generate score, risks and roadmap.') }}</p>
+    <a class="btn primary" routerLink="/analyze">{{ state.text('Avvia scan', 'Start scan') }}</a>
+  </section>
+</ng-template>

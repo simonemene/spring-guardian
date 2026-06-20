@@ -1,0 +1,72 @@
+<ng-container *ngIf="state.report() as report; else noReport">
+  <sg-page-header
+    eyebrow="Step 02"
+    [title]="state.text('Spring Overview', 'Spring Overview')"
+    [subtitle]="state.text('Primo impatto: stato Spring, aree deboli e prossima azione.', 'First look: Spring status, weak areas and next action.')"
+  />
+
+  <section class="hero-card">
+    <div>
+      <span class="badge info">{{ state.text('Diagnosi rapida', 'Quick diagnosis') }}</span>
+      <h2>{{ oneLineDiagnosis() }}</h2>
+      <p>{{ state.text('Non leggere tutto: guarda score, top finding e poi vai al piano finale.', 'Do not read everything: check the score, top findings and then open the final plan.') }}</p>
+    </div>
+    <div class="hero-actions">
+      <a class="btn primary" routerLink="/findings">{{ state.text('Vedi finding', 'View findings') }}</a>
+      <a class="btn secondary" routerLink="/architect">{{ state.text('Apri piano', 'Open plan') }}</a>
+    </div>
+  </section>
+
+  <section class="metric-strip">
+    <sg-metric-card label="Spring score" [value]="report.architectMode?.maturityScore?.overallScore || report.architectureScore" hint="/100" />
+    <sg-metric-card label="Critical/Major" [value]="severityCount('CRITICAL') + severityCount('MAJOR')" [hint]="state.text('da guardare subito', 'needs attention')" />
+    <sg-metric-card label="Spring alternatives" [value]="report.findings.length" [hint]="state.text('filtrate nella pagina dedicata', 'filtered in the dedicated page')" />
+    <sg-metric-card label="Checklist" [value]="state.checklist().length" [hint]="state.text('azioni finali', 'final actions')" />
+  </section>
+
+  <section class="grid-2">
+    <article class="card compact-card">
+      <header>
+        <h2>{{ state.text('Aree Spring deboli', 'Weak Spring areas') }}</h2>
+        <sg-score-badge *ngIf="report.architectMode" [score]="report.architectMode.maturityScore.overallScore" />
+      </header>
+      <div class="area-mini-list">
+        <div *ngFor="let area of weakAreas()">
+          <span>{{ area.name }}</span>
+          <b>{{ area.score }}/100</b>
+        </div>
+      </div>
+      <a class="inline-link" routerLink="/architect">{{ state.text('Vedi score e piano', 'View score and plan') }}</a>
+    </article>
+
+    <article class="card compact-card">
+      <header>
+        <h2>{{ state.text('Top finding Spring', 'Top Spring findings') }}</h2>
+        <a class="inline-link" routerLink="/findings">{{ state.text('Tutti', 'All') }}</a>
+      </header>
+      <div class="finding-mini-list">
+        <div *ngFor="let finding of topPriorities()">
+          <span class="badge" [class.bad]="finding.severity === 'CRITICAL' || finding.severity === 'MAJOR'">{{ finding.severity }}</span>
+          <b>{{ finding.title }}</b>
+          <small>{{ finding.ruleId }}</small>
+        </div>
+        <p class="muted" *ngIf="topPriorities().length === 0">{{ state.text('Nessun finding ad alta priorità.', 'No high priority finding.') }}</p>
+      </div>
+    </article>
+  </section>
+
+  <section class="card severity-card">
+    <div *ngFor="let severity of severities" [class]="severityClass(severity)">
+      <span>{{ severity }}</span>
+      <strong>{{ severityCount(severity) }}</strong>
+    </div>
+  </section>
+</ng-container>
+
+<ng-template #noReport>
+  <section class="empty-state">
+    <h2>{{ state.text('Nessuna Spring review disponibile', 'No Spring review available') }}</h2>
+    <p>{{ state.text('Avvia una scansione per vedere subito score, finding e piano Spring.', 'Start a scan to see score, findings and Spring plan.') }}</p>
+    <a class="btn primary" routerLink="/analyze">{{ state.text('Avvia scan', 'Start scan') }}</a>
+  </section>
+</ng-template>
