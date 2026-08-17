@@ -8,7 +8,12 @@ Spring Guardian rules are deterministic and Spring-centric.
 - `ARCH###` layering, DDD, hexagonal and bounded-context checks.
 - `CAP###` missing Spring capability checks such as Validation, OpenAPI and Actuator.
 - `ADV###` legacy-compatible Spring Alternative Advisor checks for manual Java/low-level patterns.
-- `SPR_ALT###` enterprise Spring Alternatives focused on Security, Web/API, JPA, transactions, configuration and observability.
+- `SPR_ALT###` enterprise Spring Alternatives focused on Security, Web/API, JPA, transactions, configuration, observability and modernization.
+- `TX###` high-confidence transaction-boundary risks.
+- `ASYNC###` `@Async`, scheduling and proxy/concurrency contracts.
+- `JPA###` persistence performance/mapping risks that need JPA context.
+- `CFG###` dangerous or weak runtime configuration switches.
+- `WEB###`, `SEC###`, `OBS###`, `BAT###` focused Web, Security, observability and Spring Batch checks.
 
 ## Finding contract
 
@@ -40,7 +45,7 @@ Every grouped finding should provide:
 
 ## Enterprise Spring Alternatives
 
-The unified advisor catalog now exposes `SPR_ALT001`-`SPR_ALT023`.
+The advisor catalog now includes `SPR_ALT001`-`SPR_ALT045` plus contextual advisors `SPR_ALT049` and `SPR_ALT050`.
 These rules are advisory by design: they point to concrete Spring-native remediations and are grouped under **Spring Alternative Advisor** in reports.
 
 | ID | Detects | Spring alternative |
@@ -68,3 +73,45 @@ These rules are advisory by design: they point to concrete Spring-native remedia
 | `SPR_ALT021_MANUAL_PRINCIPAL_SECURITY_CHECK` | `Principal` / `Authentication` null checks used as authorization | `@PreAuthorize`, `SecurityFilterChain`, `@AuthenticationPrincipal` or authorization service |
 | `SPR_ALT022_SECURITY_CONTEXT_HOLDER_IN_BUSINESS_CODE` | `SecurityContextHolder` read from service/domain code | security adapter plus explicit authenticated identity/use-case parameter |
 | `SPR_ALT023_MANUAL_ROLE_STRING_CHECK` | scattered `ROLE_*` string comparisons | method security, `AuthorizationManager` or typed domain permission service |
+
+## Advanced high-signal expansion
+
+The advanced catalog adds **69 deterministic checks/advisors**. It deliberately favors AST correlation or narrowly scoped configuration/source evidence instead of broad regex-only style checks.
+
+### Transaction and concurrency
+
+| ID | Detects | Severity |
+|---|---|---|
+| `TX101_REMOTE_CALL_INSIDE_TRANSACTION` | HTTP/Feign call from an effective `@Transactional` method | `MAJOR` |
+| `TX102_READ_ONLY_TRANSACTION_WRITES` | persistence write in `readOnly=true` transaction | `MAJOR` |
+| `TX103_TRANSACTIONAL_EXCEPTION_SWALLOWED` | broad exception swallowed inside a transaction | `MAJOR` |
+| `ASYNC101_INVALID_ASYNC_METHOD` | non-proxyable/unsupported `@Async` method contract | `CRITICAL`/`MAJOR` |
+| `ASYNC102_SCHEDULED_METHOD_HAS_PARAMETERS` | `@Scheduled` method with parameters | `CRITICAL` |
+
+### Web, persistence, security and observability
+
+| ID | Detects | Severity |
+|---|---|---|
+| `ARCH101_CONTROLLER_CALLS_CONTROLLER` | endpoint/controller invoking another controller instead of an application service | `MAJOR` |
+| `WEB101_GET_WITH_REQUEST_BODY` | GET endpoint accepting `@RequestBody` | `MAJOR` |
+| `JPA101_FIND_ALL_FILTER_IN_MEMORY` | `findAll().stream().filter(...)` | `MINOR` |
+| `JPA102_FLUSH_INSIDE_LOOP` | persistence flush/saveAndFlush in iteration | `MAJOR` |
+| `JPA103_ENTITY_LOMBOK_DATA` | JPA entity annotated with Lombok `@Data` | `MINOR` |
+| `JPA104_MANY_TO_MANY_CASCADE_ALL` | `@ManyToMany` with `CascadeType.ALL` | `MAJOR` |
+| `ARCH102_ENTITY_INJECTS_SPRING_BEAN` | JPA entity injecting Spring collaborators | `MAJOR` |
+| `OBS101_SENSITIVE_DATA_LOGGED` | token/password/secret-like values passed to logger | `CRITICAL` |
+| `OBS102_MDC_WITHOUT_CLEANUP` | `MDC.put` without local cleanup evidence | `MINOR` |
+| `SEC101_NOOP_PASSWORD_ENCODER` | NoOp password encoder | `CRITICAL` |
+| `SEC102_DEFAULT_PASSWORD_ENCODER` | insecure/default password encoder declaration | `MAJOR` |
+| `SEC103_HARDCODED_SIGNING_SECRET` | hardcoded JWT/HMAC signing secret | `CRITICAL` |
+| `SEC104_BCRYPT_LOW_STRENGTH` | explicitly weak BCrypt strength | `MAJOR` |
+
+### Spring Batch
+
+New Batch rules cover restart state, `RunIdIncrementer`, random identifying parameters, manual `BatchStatus` mutation, schema initialization, cursor readers in multi-threaded steps, scope/partitioning interaction, append semantics, update assertions, retry without backoff and `JobParameter` access without a Batch scope.
+
+### Modernization advisor
+
+The expanded advisor recognizes legacy APIs such as `WebSecurityConfigurerAdapter`, old Security matcher DSLs, `WebMvcConfigurerAdapter`, `HandlerInterceptorAdapter`, Spring Batch builder factories, `SimpleJobLauncher`, old in-memory `JobRepository`, Springfox, Sleuth and Hystrix. It also highlights contextual alternatives such as `@Async` + `@Transactional`, custom `/health` controllers, direct `HttpServletResponse` writing, blocking Reactor calls and untyped controller responses.
+
+Advisor findings remain informational; hard runtime/architecture findings retain their own severity and quality-gate impact.

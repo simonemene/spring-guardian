@@ -697,6 +697,26 @@ final class RuleTextCatalog {
                     ? "L'osservabilità rilevata è insufficiente o non centralizzata. Senza log, metriche, health check e correlazione affidabili, diagnosi e gestione operativa diventano più lente."
                     : "Usa Actuator, Micrometer, logging strutturato, ID di correlazione e HealthIndicator dedicati. Evita log manuali o non governati e centralizza la raccolta delle informazioni operative.";
         }
+        if (id.startsWith("TX")) {
+            return part == TextPart.WHY
+                    ? "Il finding riguarda il confine transazionale: proxy, rollback, readOnly e chiamate remote devono restare coerenti per evitare commit parziali, lock lunghi o semantiche diverse da quelle attese."
+                    : "Mantieni @Transactional nel service applicativo, separa gli effetti remoti dalla transazione DB quando possibile e rendi esplicite propagazione, rollback e operazioni di sola lettura.";
+        }
+        if (id.startsWith("ASYNC")) {
+            return part == TextPart.WHY
+                    ? "@Async e @Scheduled dipendono dal ciclo di vita e dai proxy Spring. Firma, visibilità del metodo e gestione dell'executor influenzano direttamente l'esecuzione reale e la propagazione degli errori."
+                    : "Usa metodi compatibili con il proxy Spring, executor gestiti e contratti asincroni espliciti; evita self-invocation e firme non supportate.";
+        }
+        if (id.startsWith("JPA")) {
+            return part == TextPart.WHY
+                    ? "Il pattern di persistenza rilevato può generare query inutili, flush troppo frequenti, mapping fragili o accoppiamento tra entity e infrastruttura applicativa."
+                    : "Mantieni l'accesso ai dati nei repository/service, usa query/fetch plan mirati e verifica batching, cascade e mapping delle entity in base al caso d'uso.";
+        }
+        if (id.startsWith("CFG")) {
+            return part == TextPart.WHY
+                    ? "La configurazione abilita un comportamento runtime rischioso o poco governabile, con possibili effetti diversi tra ambienti o operazioni distruttive non intenzionali."
+                    : "Mantieni default sicuri, separa le eccezioni per ambiente e governa esplicitamente migrazioni, inizializzazione, bean wiring e diagnostica tramite configurazione esterna.";
+        }
         if (id.startsWith("POM")) {
             return part == TextPart.WHY
                     ? "Il POM Maven mostra una configurazione che può rendere build, versioni, plugin o dipendenze meno governabili. Nei progetti Spring Boot la gestione delle dipendenze è parte dell'architettura applicativa."
@@ -737,6 +757,75 @@ final class RuleTextCatalog {
             case "SPR_ALT021" -> "Controllo manuale Principal";
             case "SPR_ALT022" -> "SecurityContextHolder nel codice business";
             case "SPR_ALT023" -> "Controllo ruoli manuale";
+            case "SPR_ALT024" -> "Configurazione WebSecurityConfigurerAdapter legacy";
+            case "SPR_ALT025" -> "Abilitazione method security legacy";
+            case "SPR_ALT026" -> "DSL authorizeRequests legacy";
+            case "SPR_ALT027" -> "Matcher Spring Security legacy";
+            case "SPR_ALT028" -> "WebMvcConfigurerAdapter legacy";
+            case "SPR_ALT029" -> "HandlerInterceptorAdapter legacy";
+            case "SPR_ALT030" -> "JobBuilderFactory legacy";
+            case "SPR_ALT031" -> "StepBuilderFactory legacy";
+            case "SPR_ALT032" -> "@EnableBatchProcessing da rivalutare";
+            case "SPR_ALT033" -> "REQUIRES_NEW da rivalutare";
+            case "SPR_ALT034" -> "Endpoint health custom da rivalutare";
+            case "SPR_ALT035" -> "Scrittura manuale della risposta HTTP";
+            case "SPR_ALT036" -> "Chiamata bloccante in flusso Reactor";
+            case "SPR_ALT037" -> "Dipendenza opzionale con @Autowired(required=false)";
+            case "SPR_ALT038" -> "Springfox da modernizzare";
+            case "SPR_ALT039" -> "Spring Cloud Sleuth da modernizzare";
+            case "SPR_ALT040" -> "Hystrix da modernizzare";
+            case "SPR_ALT041" -> "@Async e @Transactional sullo stesso metodo";
+            case "SPR_ALT042" -> "@ConstructorBinding da rivalutare";
+            case "SPR_ALT043" -> "throttleLimit Batch legacy";
+            case "SPR_ALT044" -> "SimpleJobLauncher legacy";
+            case "SPR_ALT045" -> "JobRepository Batch in-memory legacy";
+            case "SPR_ALT049" -> "Risposta controller non tipizzata";
+            case "SPR_ALT050" -> "Evento pubblicato dentro una transazione";
+            case "ARCH101" -> "Controller che richiama un altro controller";
+            case "ARCH102" -> "Entity dipendente da bean Spring";
+            case "TX101" -> "Chiamata remota dentro una transazione";
+            case "TX102" -> "Scrittura dentro transazione readOnly";
+            case "TX103" -> "Eccezione inghiottita dentro @Transactional";
+            case "ASYNC101" -> "Firma @Async non compatibile con il proxy";
+            case "ASYNC102" -> "Metodo @Scheduled con parametri";
+            case "WEB101" -> "Endpoint GET con request body";
+            case "JPA101" -> "findAll seguito da filtro in memoria";
+            case "JPA102" -> "Flush della persistenza dentro un ciclo";
+            case "JPA103" -> "@Data di Lombok su entity JPA";
+            case "JPA104" -> "ManyToMany con CascadeType.ALL";
+            case "JPA105" -> "show-sql JPA abilitato";
+            case "OBS101" -> "Possibile dato sensibile scritto nei log";
+            case "OBS102" -> "MDC senza cleanup evidente";
+            case "OBS103" -> "Root logger impostato a DEBUG/TRACE";
+            case "OBS104" -> "Messaggio eccezione loggato senza throwable";
+            case "SEC101" -> "PasswordEncoder NoOp";
+            case "SEC102" -> "PasswordEncoder con default insicuro";
+            case "SEC103" -> "Segreto di firma JWT hardcoded";
+            case "SEC104" -> "BCrypt con strength troppo bassa";
+            case "SEC105" -> "Debug Spring Security abilitato";
+            case "SEC106" -> "CSRF ignorato su tutte le rotte";
+            case "SEC107" -> "Cookie di sessione esplicitamente non secure";
+            case "CFG101" -> "Riferimenti circolari Spring abilitati";
+            case "CFG102" -> "Override delle bean definition abilitato";
+            case "CFG103" -> "Flyway clean abilitato";
+            case "CFG104" -> "Liquibase drop-first abilitato";
+            case "CFG105" -> "Inizializzazione SQL forzata";
+            case "BAT041" -> "Persistenza dello stato Batch disabilitata";
+            case "BAT042" -> "RunIdIncrementer da rivalutare";
+            case "BAT043" -> "JobParameter casuale o basato sul tempo";
+            case "BAT044" -> "Stato Batch modificato manualmente";
+            case "BAT045" -> "Schema Batch inizializzato sempre";
+            case "BAT046" -> "Cursor reader con step multi-thread";
+            case "BAT047" -> "@JobScope con partitioning/concorrenza";
+            case "BAT048" -> "FlatFileItemWriter in append";
+            case "BAT049" -> "Assert update JDBC disabilitato";
+            case "BAT051" -> "Retry Batch senza backoff";
+            case "BAT052" -> "JobParameter usato senza scope Batch";
+            case "WEB102" -> "Stack trace sempre incluso negli errori HTTP";
+            case "WEB103" -> "Messaggi eccezione sempre inclusi negli errori HTTP";
+            case "WEB104" -> "Policy @CrossOrigin wildcard";
+            case "POM041" -> "Repository Maven su HTTP non cifrato";
+            case "POM042" -> "Range di versione Maven dinamico";
             case "BAT004" -> "Dimensione chunk da rendere configurabile";
             case "BAT008" -> "DataSource creato manualmente nel batch";
             case "BAT012" -> "Retry su eccezione troppo generica";
@@ -821,7 +910,7 @@ final class RuleTextCatalog {
         if (ruleId == null) {
             return "";
         }
-        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("^(SPR_ALT|SPR|SEC|WEB|BAT|CLD|OBS|POM|ADV|ARCH)\\d+").matcher(ruleId);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("^(SPR_ALT|SPR|SEC|WEB|BAT|CLD|OBS|POM|ADV|ARCH|TX|ASYNC|JPA|CFG)\\d+").matcher(ruleId);
         return matcher.find() ? matcher.group() : ruleId;
     }
 

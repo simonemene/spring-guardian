@@ -103,6 +103,8 @@ public class TextReportRenderer implements ReportRenderer {
                     .append(group.title()).append("\n");
             builder.append("  Category: ").append(group.category()).append("\n");
             builder.append("  Type: ").append(group.findingTypeLabel()).append("\n");
+            builder.append("  Confidence: ").append(group.confidenceScore()).append("% (")
+                    .append(group.confidence()).append(", ").append(group.detectionType()).append(")\n");
             builder.append("  Occurrences: ").append(group.occurrences()).append("\n");
             builder.append("  Why: ").append(group.whyItMatters()).append("\n");
             builder.append("  Fix: ").append(group.suggestedFix()).append("\n");

@@ -329,6 +329,8 @@ public class ProjectScanService {
                 case "ARCHITECTURE" -> "Layer direction, DDD, hexagonal and modular boundaries.";
                 case "CLOUD_READINESS" -> "12-factor and cloud readiness issues around config, state, paths and runtime neutrality.";
                 case "OBSERVABILITY" -> "Actuator, metrics, logs, correlation and operational diagnostics.";
+                case "TRANSACTIONS" -> "Transaction boundaries, propagation, rollback behavior and interactions with remote side effects.";
+                case "ASYNC_CONCURRENCY" -> "@Async, scheduling, executor and concurrency contracts that depend on Spring lifecycle/proxy semantics.";
                 case "DEPENDENCY_INJECTION" -> "Constructor injection, immutable dependencies and collaborator wiring.";
                 case "RUNTIME_CODE" -> "Runtime correctness risks such as exception handling, null handling and unsafe blocking.";
                 default -> "General Java source code structure and maintainability.";
@@ -348,6 +350,8 @@ public class ProjectScanService {
             case "ARCHITECTURE" -> "Direzione dei layer, DDD, architettura esagonale e confini modulari.";
             case "CLOUD_READINESS" -> "Problemi 12-factor e di prontezza cloud relativi a configurazione, stato, percorsi e neutralità runtime.";
             case "OBSERVABILITY" -> "Actuator, metriche, log, correlazione e diagnostica operativa.";
+            case "TRANSACTIONS" -> "Confini transazionali, propagazione, rollback e interazioni con effetti remoti.";
+            case "ASYNC_CONCURRENCY" -> "@Async, scheduling, executor e contratti concorrenti che dipendono dal ciclo di vita e dai proxy Spring.";
             case "DEPENDENCY_INJECTION" -> "Iniezione tramite costruttore, dipendenze immutabili e cablaggio dei collaboratori.";
             case "RUNTIME_CODE" -> "Rischi di correttezza runtime legati a eccezioni, gestione dei null e blocchi non sicuri.";
             default -> "Struttura e manutenibilità generale del codice Java.";
@@ -389,6 +393,7 @@ public class ProjectScanService {
                     String localizedWhy = RuleTextCatalog.why(first.ruleId(), first.whyItMatters(), language);
                     String localizedFix = RuleTextCatalog.fix(first.ruleId(), first.suggestedFix(), language);
                     RuleGuidance guidance = RuleGuidanceCatalog.guidance(first, localizedTitle, localizedWhy, localizedFix, language);
+                    RuleAssessmentCatalog.Assessment assessment = RuleAssessmentCatalog.assessment(first);
                     groups.add(new FindingGroup(
                             first.ruleId(),
                             first.severity(),
@@ -401,6 +406,9 @@ public class ProjectScanService {
                             localizedWhy,
                             localizedFix,
                             groupExplanation(first, ruleFindings.size(), language, guidance),
+                            assessment.confidence(),
+                            assessment.score(),
+                            assessment.detectionType(),
                             guidance
                     ));
                 });
@@ -455,6 +463,18 @@ public class ProjectScanService {
         if (matches(ruleId, "OBS")) {
             return "OBSERVABILITY";
         }
+        if (matches(ruleId, "TX")) {
+            return "TRANSACTIONS";
+        }
+        if (matches(ruleId, "ASYNC")) {
+            return "ASYNC_CONCURRENCY";
+        }
+        if (matches(ruleId, "JPA")) {
+            return "JPA";
+        }
+        if (matches(ruleId, "CFG")) {
+            return "CONFIGURATION";
+        }
         if (matches(ruleId, "POM")) {
             return "DEPENDENCIES";
         }
@@ -507,6 +527,8 @@ public class ProjectScanService {
                 case "ARCHITECTURE" -> "Architecture and boundaries";
                 case "CLOUD_READINESS" -> "Cloud readiness";
                 case "OBSERVABILITY" -> "Observability";
+                case "TRANSACTIONS" -> "Transactions";
+                case "ASYNC_CONCURRENCY" -> "Async and concurrency";
                 case "DEPENDENCY_INJECTION" -> "Dependency injection";
                 case "RUNTIME_CODE" -> "Runtime code";
                 default -> "Java code";
@@ -526,6 +548,8 @@ public class ProjectScanService {
             case "ARCHITECTURE" -> "Architettura e confini";
             case "CLOUD_READINESS" -> "Prontezza cloud";
             case "OBSERVABILITY" -> "Osservabilità";
+            case "TRANSACTIONS" -> "Transazioni";
+            case "ASYNC_CONCURRENCY" -> "Async e concorrenza";
             case "DEPENDENCY_INJECTION" -> "Iniezione delle dipendenze";
             case "RUNTIME_CODE" -> "Codice runtime";
             default -> "Codice Java";
@@ -880,13 +904,15 @@ public class ProjectScanService {
                 new AreaDefinition("DEPENDENCY_INJECTION", "Iniezione delle dipendenze", "Iniezione da costruttore, iniezione su campo, dipendenze immutabili e cablaggio dei componenti Spring.", List.of("SPR002", "SPR029", "SPR061", "SPR062")),
                 new AreaDefinition("WEB_LAYER", "Layer web e contratti API", "Confini dei controller, DTO, validazione, versionamento, semantica HTTP e documentazione OpenAPI.", List.of("SPR003", "SPR004", "SPR006", "SPR010", "SPR013", "SPR014", "SPR019", "SPR023", "SPR024", "SPR050", "SPR051", "SPR056", "SPR060", "SPR063", "WEB")),
                 new AreaDefinition("SECURITY", "Sicurezza", "Spring Security, segreti, esposizione actuator, CSRF, CORS, autorizzazione e gestione password.", List.of("SPR037", "SPR039", "SPR040", "SPR041", "SPR042", "SPR046", "SPR058", "SPR059", "SEC")),
-                new AreaDefinition("JPA_PERSISTENCE", "JPA e persistenza", "Mappatura delle entity, transazioni, chiamate ai repository, piani di fetch, sicurezza dello schema e confini di persistenza.", List.of("SPR009", "SPR017", "SPR038", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057", "SPR096")),
+                new AreaDefinition("JPA_PERSISTENCE", "JPA e persistenza", "Mappatura delle entity, transazioni, chiamate ai repository, piani di fetch, sicurezza dello schema e confini di persistenza.", List.of("JPA", "SPR009", "SPR017", "SPR038", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057", "SPR096")),
+                new AreaDefinition("TRANSACTIONS", "Transazioni", "Confini @Transactional, propagazione, rollback e interazioni con chiamate remote o operazioni di scrittura.", List.of("TX")),
+                new AreaDefinition("ASYNC_CONCURRENCY", "Async e concorrenza", "@Async, @Scheduled, thread/executor e correttezza dei confini concorrenti gestiti da Spring.", List.of("ASYNC")),
                 new AreaDefinition("SPRING_BATCH", "Spring Batch", "Riavviabilità, dimensione dei chunk, reader, writer, skip/retry e sicurezza operativa dei batch.", List.of("BAT")),
                 new AreaDefinition("ARCHITECTURE_BOUNDARIES", "Architettura e confini", "Direzione dei layer, confini DDD o esagonali, struttura dei pacchetti e responsabilità delle classi.", List.of("SPR005", "SPR007", "SPR008", "SPR018", "SPR027", "SPR028", "SPR030", "SPR031", "SPR055", "ARCH")),
                 new AreaDefinition("RUNTIME_CORRECTNESS", "Correttezza runtime", "Gestione delle eccezioni, null-safety, Optional, effetti nascosti dei proxy e modifiche di stato non sicure.", List.of("SPR011", "SPR020", "SPR025", "SPR047")),
                 new AreaDefinition("TESTS", "Test", "Presenza test, assert, slice test, uso del contesto Spring e fragilità temporale.", List.of("SPR012", "SPR043", "SPR044", "SPR045", "SPR052")),
                 new AreaDefinition("DEPENDENCY_GOVERNANCE", "Governo dipendenze", "Gestione delle dipendenze Maven, allineamento al BOM Spring Boot, scope, plugin e build riproducibili.", List.of("POM", "SPR093", "SPR094", "SPR095")),
-                new AreaDefinition("BUILD_CONFIG", "Build e configurazione", "Esternalizzazione della configurazione, profili, valori scritti nel codice e manutenibilità della build.", List.of("SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036", "SPR091", "SPR092")),
+                new AreaDefinition("BUILD_CONFIG", "Build e configurazione", "Esternalizzazione della configurazione, profili, valori scritti nel codice e manutenibilità della build.", List.of("CFG", "SPR001", "SPR015", "SPR016", "SPR021", "SPR022", "SPR032", "SPR033", "SPR036", "SPR091", "SPR092")),
                 new AreaDefinition("CLOUD_READINESS", "Prontezza cloud", "Neutralità a runtime secondo i principi 12-factor, configurazione esterna, stato locale, comportamento operativo e rilasciabilità.", List.of("CLD")),
                 new AreaDefinition("OBSERVABILITY", "Osservabilità", "Actuator, Micrometer, log, correlazione, stato di salute e diagnostica operativa.", List.of("OBS")),
                 new AreaDefinition("SPRING_ALTERNATIVE_ADVISOR", "Advisor Spring", "Oggetti Java creati manualmente, API di basso livello e alternative Spring più integrate da valutare.", List.of("SPR_ALT", "SPR064", "SPR065", "SPR066", "SPR067", "SPR068", "SPR069", "SPR070", "SPR071", "SPR072", "SPR073", "SPR074", "SPR075", "SPR076", "SPR077", "SPR078", "SPR079", "SPR080", "SPR081", "SPR082", "SPR083", "SPR084", "SPR085", "SPR086", "SPR088", "SPR089", "SPR090", "ADV")),
@@ -916,6 +942,18 @@ public class ProjectScanService {
         }
         if (matches(ruleId, "OBS")) {
             return language == ReportLanguage.ENGLISH ? "Observability" : "Osservabilità";
+        }
+        if (matches(ruleId, "TX")) {
+            return language == ReportLanguage.ENGLISH ? "Transactions" : "Transazioni";
+        }
+        if (matches(ruleId, "ASYNC")) {
+            return language == ReportLanguage.ENGLISH ? "Async and concurrency" : "Async e concorrenza";
+        }
+        if (matches(ruleId, "JPA")) {
+            return language == ReportLanguage.ENGLISH ? "JPA, persistence and integrations" : "JPA, persistenza e integrazioni";
+        }
+        if (matches(ruleId, "CFG")) {
+            return language == ReportLanguage.ENGLISH ? "Configuration and maintainability" : "Configurazione e manutenibilità";
         }
         if (matches(ruleId, "SPR_ALT", "ADV")) {
             return "Spring Alternative Advisor";
@@ -978,6 +1016,8 @@ public class ProjectScanService {
                 case "Dependency governance" -> "Maven dependency management, Spring Boot BOM alignment, scopes, plugins and build reproducibility.";
                 case "Cloud readiness" -> "12-factor and cloud-readiness checks on configuration, local state, paths, deployability and runtime neutrality.";
                 case "Observability" -> "Checks on Actuator, Micrometer, logs, correlation, health exposure and operational diagnostics.";
+                case "Transactions" -> "Checks on transaction boundaries, rollback behavior, propagation and expensive/remote work performed while transactions are open.";
+                case "Async and concurrency" -> "Checks on @Async, @Scheduled, proxy interception and concurrency contracts managed by Spring.";
                 case "Web layer and REST contracts" -> "Quality of the REST boundary: DTOs, validation, versioning, HTTP semantics, OpenAPI and stable response contracts.";
                 case "Runtime correctness" -> "Patterns that may generate wrong behavior, hidden errors or ineffective Spring proxies.";
                 case "JPA, persistence and integrations" -> "Risks on databases and external integrations: transactions, entity design, fetch plans, repeated calls and manually created clients.";
@@ -997,6 +1037,8 @@ public class ProjectScanService {
             case "Governo dipendenze" -> "Gestione delle dipendenze Maven, allineamento al BOM Spring Boot, scope, plugin e build riproducibili.";
             case "Prontezza cloud" -> "Controlli 12-factor e di prontezza cloud su configurazione, stato locale, percorsi, rilasciabilità e neutralità a runtime.";
             case "Osservabilità" -> "Controlli su Actuator, Micrometer, log, correlazione, health e diagnostica operativa.";
+            case "Transazioni" -> "Controlli su confini transazionali, rollback, propagazione e lavoro remoto/costoso eseguito mentre la transazione è aperta.";
+            case "Async e concorrenza" -> "Controlli su @Async, @Scheduled, intercettazione tramite proxy e contratti concorrenti gestiti da Spring.";
             case "Layer web e contratti REST" -> "Qualità del bordo REST: DTO, validazione, versionamento, semantica HTTP, OpenAPI e contratti di risposta stabili.";
             case "Correttezza runtime" -> "Pattern che possono generare comportamenti errati, errori nascosti o proxy Spring inefficaci.";
             case "JPA, persistenza e integrazioni" -> "Rischi su database e integrazioni esterne: transazioni, progettazione delle entity, piani di fetch, chiamate ripetute e client creati manualmente.";

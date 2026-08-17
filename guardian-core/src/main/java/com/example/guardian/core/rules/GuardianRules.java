@@ -99,6 +99,7 @@ public final class GuardianRules {
         baseRules.addAll(WebBatchRuleCatalog.sharedReadinessRules());
         baseRules.add(new MissingSpringCapabilityRule());
         baseRules.addAll(SpringAlternativeRulesCatalog.rules());
+        baseRules.addAll(AdvancedSpringRuleCatalog.rules());
         return uniqueById(baseRules);
     }
 

@@ -32,6 +32,7 @@
       <div class="finding-main">
         <strong>{{ finding.title }}</strong>
         <small>{{ finding.ruleId }} · {{ firstLocation(finding) }}</small>
+        <small class="confidence" *ngIf="finding.confidenceScore">{{ state.text('Confidenza', 'Confidence') }} {{ finding.confidenceScore }}% · {{ detectionLabel(finding) }}</small>
         <p>{{ compactImpact(finding) }}</p>
       </div>
       <div class="finding-pattern">
@@ -56,10 +57,16 @@
         <div>
           <span class="badge" [class.bad]="selected.severity === 'CRITICAL' || selected.severity === 'MAJOR'">{{ selected.severity }}</span>
           <span class="rule">{{ selected.ruleId }}</span>
+          <span class="confidence-pill" *ngIf="selected.confidenceScore">{{ state.text('Confidenza', 'Confidence') }} {{ selected.confidenceScore }}%</span>
           <h2 id="finding-drawer-title">{{ selected.title }}</h2>
         </div>
         <button type="button" class="close" (click)="closeFinding()" [attr.aria-label]="state.text('Chiudi dettaglio finding', 'Close finding details')">×</button>
       </header>
+
+      <section *ngIf="selected.detectionType">
+        <h3>{{ state.text('Qualità della rilevazione', 'Detection quality') }}</h3>
+        <p>{{ detectionLabel(selected) }} · {{ state.text('confidenza', 'confidence') }} {{ selected.confidenceScore || 0 }}%. {{ confidenceExplanation(selected) }}</p>
+      </section>
 
       <section>
         <h3>{{ state.text('Perché conta in Spring', 'Why it matters in Spring') }}</h3>

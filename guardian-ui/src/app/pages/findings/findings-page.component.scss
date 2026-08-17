@@ -105,3 +105,19 @@
   .finding-row { grid-template-columns: 1fr; }
   .filters.slim { flex-direction: column; }
 }
+
+.confidence {
+  display: block;
+  margin-top: 0.25rem;
+  opacity: 0.82;
+}
+
+.confidence-pill {
+  display: inline-flex;
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  opacity: 0.9;
+}

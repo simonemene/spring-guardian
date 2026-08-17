@@ -16,6 +16,9 @@ import java.util.List;
  * @param whyItMatters localized risk explanation
  * @param suggestedFix localized remediation
  * @param explanation localized group explanation
+ * @param confidence detection confidence, independent from severity
+ * @param confidenceScore confidence percentage used by reports/UI
+ * @param detectionType mechanism used to detect the finding
  * @param guidance action-oriented guidance used by the UI
  * @author Simone Meneghetti
  */
@@ -31,6 +34,9 @@ public record FindingGroup(
         String whyItMatters,
         String suggestedFix,
         String explanation,
+        RuleConfidence confidence,
+        int confidenceScore,
+        DetectionType detectionType,
         RuleGuidance guidance
 ) {
 
@@ -75,6 +81,9 @@ public record FindingGroup(
                 whyItMatters,
                 suggestedFix,
                 explanation,
+                RuleConfidence.HIGH,
+                85,
+                DetectionType.PROJECT_CONTEXT,
                 null
         );
     }

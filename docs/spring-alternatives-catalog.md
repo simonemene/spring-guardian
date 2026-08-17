@@ -21,7 +21,7 @@ Each alternative should explain when to use it, when to avoid it, expected remed
 
 ## Unified advisor catalog
 
-Spring alternatives are now produced by a single backend catalog: `SpringAlternativeRulesCatalog`.
+Spring alternatives are produced by `SpringAlternativeRulesCatalog` plus the high-signal modernization additions in `AdvancedSpringRuleCatalog`.
 
 The catalog keeps compatibility with existing `ADV###` ids, keeps non-duplicated `SPR067`-`SPR090` advisors that were not previously wired consistently, and adds the `SPR_ALT###` enterprise alternatives.
 
@@ -54,3 +54,9 @@ Spring Guardian now detects manual authorization signals that should be owned by
 | `SPR_ALT023_MANUAL_ROLE_STRING_CHECK` | scattered `ROLE_*` string checks | `@PreAuthorize`, `AuthorizationManager` or a typed domain permission service |
 
 These findings also reduce the Security and Production Readiness maturity scores because authorization ownership is not fully centralized.
+
+## Modernization additions
+
+The advisor now also covers: modern component-based Spring Security (`SecurityFilterChain`, `@EnableMethodSecurity`, `authorizeHttpRequests`, `requestMatchers`); modern MVC extension points; Spring Batch 5 builder/infrastructure migration; Micrometer Tracing instead of Sleuth; supported circuit-breaker infrastructure instead of Hystrix; springdoc-openapi instead of Springfox; controlled reactive boundaries instead of arbitrary `.block()`; and Spring-managed HTTP/health/response contracts instead of servlet-level/manual infrastructure.
+
+These are **advisors, not dogma**: Spring Guardian keeps them at `INFO` unless a separate deterministic rule proves a runtime, security, data-integrity or architecture risk.

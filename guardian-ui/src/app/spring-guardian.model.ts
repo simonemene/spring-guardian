@@ -149,6 +149,9 @@ export interface FindingGroup {
   whyItMatters: string;
   suggestedFix: string;
   explanation: string;
+  confidence?: 'VERY_HIGH' | 'HIGH' | 'MEDIUM';
+  confidenceScore?: number;
+  detectionType?: 'AST_CORRELATION' | 'SOURCE_PATTERN' | 'PROJECT_CONTEXT' | 'CAPABILITY_INFERENCE' | 'ARCHITECTURE_ANALYSIS';
   guidance: RuleGuidance;
 }
 

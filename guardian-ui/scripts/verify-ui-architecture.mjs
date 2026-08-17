@@ -102,7 +102,7 @@ if (alternatives.includes('Generic findings are intentionally hidden')) {
 }
 
 const findings = read('src/app/pages/findings/findings-page.component.html') + read('src/app/pages/findings/findings-page.component.ts');
-for (const expected of ['Pattern Spring', 'Perché conta in Spring', 'Oggetto Spring consigliato', 'finding-drawer', 'allFindings()', 'clearFilters()', 'findingText']) {
+for (const expected of ['Pattern Spring', 'Perché conta in Spring', 'Oggetto Spring consigliato', 'Qualità della rilevazione', 'confidenceScore', 'detectionLabel', 'finding-drawer', 'allFindings()', 'clearFilters()', 'findingText']) {
   if (!findings.includes(expected)) {
     console.error(`Spring Findings role is unclear. Missing: ${expected}`);
     process.exit(1);

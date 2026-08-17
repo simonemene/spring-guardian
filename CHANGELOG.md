@@ -1,4 +1,13 @@
-## Unreleased - Local integrity and scan reliability hardening
+## 2026-08-17 - Advanced Spring rule expansion
+
+- Added 69 high-signal rules/advisors across transactions, async/scheduling, Web, JPA, Security, observability, configuration, Maven and Spring Batch.
+- Added AST-correlated checks for controller-to-controller calls, remote calls in transactions, read-only transaction writes, swallowed transactional exceptions, invalid `@Async`/`@Scheduled` contracts, in-memory repository filtering and JPA flushes in loops.
+- Added security checks for NoOp/default password encoders, hardcoded JWT/HMAC secrets, weak BCrypt strength and sensitive values passed to logs.
+- Expanded Spring Alternatives for modern Spring Security, MVC, Spring Batch 5, springdoc-openapi, Micrometer Tracing, circuit breakers and reactive/HTTP boundaries.
+- Added dedicated transaction, async/concurrency and Batch maturity inputs to Architect Mode and report categorization.
+- Added regression fixtures for the advanced rules and improved Italian labels/fallback guidance for the new rule families.
+
+## 2026-08-17 - Local integrity and scan reliability hardening
 
 - Enforced loopback-only defaults for standalone backend/frontend and removed backend host publication from Docker Compose.
 - Added centralized secret redaction for finding evidence, snippets and diagnostic messages.

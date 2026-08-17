@@ -230,13 +230,13 @@ public class SpringArchitectModePlanner {
                 map.modules().stream()
                         .flatMap(module -> module.risks().stream().map(risk -> module.name() + ": " + risk))
                         .toList(),
-                findTitles(findings, "ARCH", "SPR005", "SPR007", "SPR027", "SPR028", "SPR055", "SPR056", "SPR057", "SPR_ALT016")
+                findTitles(findings, "ARCH", "ASYNC", "SPR005", "SPR007", "SPR027", "SPR028", "SPR055", "SPR056", "SPR057", "SPR_ALT016")
         );
         areas.add(area(
                 "ARCHITECTURE",
                 "Architecture",
                 100
-                        - weightedPenalty(findings, 9, 2, "ARCH", "SPR005", "SPR007", "SPR027", "SPR028", "SPR055", "SPR056", "SPR057", "SPR_ALT016")
+                        - weightedPenalty(findings, 9, 2, "ARCH", "ASYNC", "SPR005", "SPR007", "SPR027", "SPR028", "SPR055", "SPR056", "SPR057", "SPR_ALT016")
                         - (map.cycles().isEmpty() ? 0 : Math.min(30, 16 + map.cycles().size() * 4))
                         - Math.min(28, architectureRiskCount * 6),
                 architectureDrivers,
@@ -282,17 +282,17 @@ public class SpringArchitectModePlanner {
                 "PERSISTENCE",
                 "Persistence",
                 100
-                        - weightedPenalty(findings, 8, 2, "SPR009", "SPR017", "SPR018", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057", "SPR096", "SPR_ALT010", "SPR_ALT011", "SPR_ALT012", "SPR_ALT013", "SPR_ALT014")
+                        - weightedPenalty(findings, 8, 2, "JPA", "TX", "SPR009", "SPR017", "SPR018", "SPR048", "SPR049", "SPR053", "SPR054", "SPR057", "SPR096", "SPR_ALT010", "SPR_ALT011", "SPR_ALT012", "SPR_ALT013", "SPR_ALT014")
                         - (context.capabilities().usesJpa() && hasFinding(findings, "SPR006", "SPR_ALT006") ? 8 : 0),
-                findTitles(findings, "SPR009", "SPR017", "SPR018", "SPR048", "SPR049", "SPR053", "SPR054", "SPR096", "SPR_ALT010", "SPR_ALT011", "SPR_ALT012", "SPR_ALT013", "SPR_ALT014"),
+                findTitles(findings, "JPA", "TX", "SPR009", "SPR017", "SPR018", "SPR048", "SPR049", "SPR053", "SPR054", "SPR096", "SPR_ALT010", "SPR_ALT011", "SPR_ALT012", "SPR_ALT013", "SPR_ALT014"),
                 List.of("Keep transactions in service layer, disable OSIV and use DTO/projection fetch plans.", "Avoid concatenated queries and repository business logic.")
         ));
 
         areas.add(area(
                 "CONFIGURATION",
                 "Configuration",
-                100 - weightedPenalty(findings, 7, 2, "SPR001", "SPR015", "SPR036", "SPR037", "SPR091", "SPR092", "SPR_ALT018", "SPR_ALT019", "CLD003", "CLD013", "CLD014", "CLD018", "CLD023", "CLD024"),
-                findTitles(findings, "SPR001", "SPR036", "SPR037", "SPR091", "SPR092", "SPR_ALT018", "SPR_ALT019", "CLD003", "CLD013", "CLD014", "CLD023", "CLD024"),
+                100 - weightedPenalty(findings, 7, 2, "CFG", "SPR001", "SPR015", "SPR036", "SPR037", "SPR091", "SPR092", "SPR_ALT018", "SPR_ALT019", "CLD003", "CLD013", "CLD014", "CLD018", "CLD023", "CLD024"),
+                findTitles(findings, "CFG", "SPR001", "SPR036", "SPR037", "SPR091", "SPR092", "SPR_ALT018", "SPR_ALT019", "CLD003", "CLD013", "CLD014", "CLD023", "CLD024"),
                 List.of("Externalize secrets and validate @ConfigurationProperties.", "Keep runtime environment choices outside versioned application files.")
         ));
 
@@ -322,14 +322,27 @@ public class SpringArchitectModePlanner {
                 List.of("Use focused Spring slice tests and keep a smoke context test.", "Modernize legacy test annotations when upgrading Spring Boot.")
         ));
 
+        if (context.capabilities().usesSpringBatch()) {
+            areas.add(area(
+                    "SPRING_BATCH",
+                    "Spring Batch",
+                    100 - weightedPenalty(findings, 8, 2, "BAT"),
+                    findTitles(findings, "BAT"),
+                    List.of(
+                            "Keep JobParameters business-stable so failed JobInstances can be restarted instead of recreated.",
+                            "Keep reader/writer state and thread-safety explicit when using retry, partitioning or multi-threaded steps."
+                    )
+            ));
+        }
+
         areas.add(area(
                 "PRODUCTION_READINESS",
                 "Production Readiness",
                 100
-                        - weightedPenalty(findings, 7, 2, "CLD", "OBS", "SPR038", "SPR039", "SPR040", "SPR091", "POM037", "POM038", "SPR_ALT004", "SPR_ALT005", "SPR_ALT019", "SPR_ALT020", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023")
+                        - weightedPenalty(findings, 7, 2, "CLD", "OBS", "CFG", "SEC", "SPR038", "SPR039", "SPR040", "SPR091", "POM037", "POM038", "SPR_ALT004", "SPR_ALT005", "SPR_ALT019", "SPR_ALT020", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023")
                         - (context.capabilities().usesActuator() ? 0 : 16),
                 combineDrivers(6,
-                        findTitles(findings, "CLD", "OBS", "SPR039", "SPR038", "POM037", "POM038", "SPR_ALT004", "SPR_ALT005", "SPR_ALT019", "SPR_ALT020", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023"),
+                        findTitles(findings, "CLD", "OBS", "CFG", "SEC", "SPR039", "SPR038", "POM037", "POM038", "SPR_ALT004", "SPR_ALT005", "SPR_ALT019", "SPR_ALT020", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023"),
                         context.capabilities().usesActuator() ? List.of() : List.of("Actuator is missing or not evident for production operations.")
                 ),
                 List.of("Lock down management endpoints, externalize runtime config and add production diagnostics.", "Remove manual security and logging shortcuts before release.")
@@ -425,14 +438,14 @@ public class SpringArchitectModePlanner {
         String javaVersion = fingerprint.javaVersion();
         String bootVersion = fingerprint.springBootVersion();
 
-        if (hasFinding(findings, "SPR039", "SPR_ALT004", "OBS025", "CLD015", "SPR037", "CLD003", "SPR_ALT019", "SPR091")) {
+        if (hasFinding(findings, "CFG", "SEC", "SPR039", "SPR_ALT004", "OBS025", "CLD015", "SPR037", "CLD003", "SPR_ALT019", "SPR091")) {
             steps.add(upgradeStep(
                     steps.size() + 1,
                     "Stabilize production configuration before framework upgrades",
                     "Fix management endpoint exposure, health details, secrets and externalized configuration first. A safer runtime baseline reduces risk before dependency or framework changes.",
                     "LOW",
                     "Actuator protected exposure + externalized configuration",
-                    matchingRuleIds(findings, "SPR039", "SPR_ALT004", "OBS025", "CLD015", "SPR037", "CLD003", "SPR_ALT019", "SPR091"),
+                    matchingRuleIds(findings, "CFG", "SEC", "SPR039", "SPR_ALT004", "OBS025", "CLD015", "SPR037", "CLD003", "SPR_ALT019", "SPR091"),
                     "The scan found production-readiness findings that should be handled before a larger Spring upgrade.",
                     List.of(
                             "Restrict management.endpoints.web.exposure.include to the endpoints really needed.",
@@ -445,14 +458,14 @@ public class SpringArchitectModePlanner {
             ));
         }
 
-        if (hasFinding(findings, "SPR006", "SPR_ALT006", "SPR_ALT007", "SPR023", "SPR_ALT008", "SPR010", "SPR_ALT009", "SPR060", "CAP001", "CAP002")) {
+        if (hasFinding(findings, "WEB", "SPR006", "SPR_ALT006", "SPR_ALT007", "SPR023", "SPR_ALT008", "SPR010", "SPR_ALT009", "SPR060", "CAP001", "CAP002")) {
             steps.add(upgradeStep(
                     steps.size() + 1,
                     "Modernize the API boundary",
                     "Stabilize REST contracts before deeper refactoring: DTOs, Bean Validation and centralized errors make later service and persistence changes safer.",
                     "MEDIUM",
                     "DTO + Bean Validation + @RestControllerAdvice + ProblemDetail",
-                    matchingRuleIds(findings, "SPR006", "SPR_ALT006", "SPR_ALT007", "SPR023", "SPR_ALT008", "SPR010", "SPR_ALT009", "SPR060", "CAP001", "CAP002"),
+                    matchingRuleIds(findings, "WEB", "SPR006", "SPR_ALT006", "SPR_ALT007", "SPR023", "SPR_ALT008", "SPR010", "SPR_ALT009", "SPR060", "CAP001", "CAP002"),
                     "The scan found REST/API findings such as entity exposure, missing validation, missing OpenAPI metadata or missing controller advice.",
                     List.of(
                             "Introduce request/response DTOs for controllers that expose or accept entities.",
@@ -465,14 +478,14 @@ public class SpringArchitectModePlanner {
             ));
         }
 
-        if (hasFinding(findings, "SPR003", "SPR005", "SPR017", "SPR_ALT011", "SPR_ALT013", "SPR_ALT016", "SPR_ALT017", "SPR096", "SPR_ALT010")) {
+        if (hasFinding(findings, "TX", "ARCH101", "SPR003", "SPR005", "SPR017", "SPR_ALT011", "SPR_ALT013", "SPR_ALT016", "SPR_ALT017", "SPR096", "SPR_ALT010")) {
             steps.add(upgradeStep(
                     steps.size() + 1,
                     "Rebuild service and transaction boundaries",
                     "Move business use cases and transactions to service/application boundaries before large persistence or module changes.",
                     "MEDIUM",
                     "Application service layer + @Transactional boundaries + DTO/projection loading",
-                    matchingRuleIds(findings, "SPR003", "SPR005", "SPR017", "SPR_ALT011", "SPR_ALT013", "SPR_ALT016", "SPR_ALT017", "SPR096", "SPR_ALT010"),
+                    matchingRuleIds(findings, "TX", "ARCH101", "SPR003", "SPR005", "SPR017", "SPR_ALT011", "SPR_ALT013", "SPR_ALT016", "SPR_ALT017", "SPR096", "SPR_ALT010"),
                     "The scan found controller/repository coupling, transactional boundary issues, repository business logic or Open Session in View.",
                     List.of(
                             "Create service/application methods for each use case currently implemented in controllers or repositories.",
@@ -485,14 +498,14 @@ public class SpringArchitectModePlanner {
             ));
         }
 
-        if (hasFinding(findings, "SPR040", "SPR041", "SPR058", "SPR059", "SPR_ALT002", "SPR_ALT003", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023")) {
+        if (hasFinding(findings, "SEC", "SPR040", "SPR041", "SPR058", "SPR059", "SPR_ALT002", "SPR_ALT003", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023", "SPR_ALT024", "SPR_ALT025", "SPR_ALT026", "SPR_ALT027")) {
             steps.add(upgradeStep(
                     steps.size() + 1,
                     "Modernize authorization ownership",
                     "Replace scattered manual checks with explicit Spring Security policies so authorization is audit-ready and testable.",
                     "MEDIUM",
                     "SecurityFilterChain + method security + AuthorizationManager",
-                    matchingRuleIds(findings, "SPR040", "SPR041", "SPR058", "SPR059", "SPR_ALT002", "SPR_ALT003", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023"),
+                    matchingRuleIds(findings, "SEC", "SPR040", "SPR041", "SPR058", "SPR059", "SPR_ALT002", "SPR_ALT003", "SPR_ALT021", "SPR_ALT022", "SPR_ALT023", "SPR_ALT024", "SPR_ALT025", "SPR_ALT026", "SPR_ALT027"),
                     "The scan found broad security rules, CSRF/stateless ambiguity or manual Principal/SecurityContext/ROLE checks.",
                     List.of(
                             "Make SecurityFilterChain explicit and default to authenticated access.",
@@ -522,6 +535,26 @@ public class SpringArchitectModePlanner {
                     ),
                     "SMALL",
                     List.of("org.openrewrite.java.spring.boot3.UpgradeSpringBoot_3_5")
+            ));
+        }
+
+        if (context.capabilities().usesSpringBatch() && hasFinding(findings, "BAT", "SPR_ALT030", "SPR_ALT031", "SPR_ALT032", "SPR_ALT043", "SPR_ALT044", "SPR_ALT045")) {
+            steps.add(upgradeStep(
+                    steps.size() + 1,
+                    "Harden Spring Batch restartability and infrastructure",
+                    "Make JobInstance identity, execution state and concurrency semantics explicit before modernizing Batch infrastructure.",
+                    "MEDIUM",
+                    "Business JobParameters + restartable state + explicit JobRepository/StepBuilder infrastructure",
+                    matchingRuleIds(findings, "BAT", "SPR_ALT030", "SPR_ALT031", "SPR_ALT032", "SPR_ALT043", "SPR_ALT044", "SPR_ALT045"),
+                    "The scan found Batch restartability, state, concurrency or legacy-builder signals.",
+                    List.of(
+                            "Use stable identifying JobParameters instead of timestamps/UUIDs used only to force a new instance.",
+                            "Keep late-bound execution values in @StepScope/@JobScope and preserve reader/writer state where restart is required.",
+                            "Verify thread-safety before using taskExecutor/partitioning and prefer step-scoped worker components.",
+                            "On Spring Batch 5+, replace JobBuilderFactory/StepBuilderFactory and legacy launch/repository infrastructure with the supported explicit builders."
+                    ),
+                    "MEDIUM",
+                    List.of()
             ));
         }
 
@@ -1096,6 +1129,9 @@ public class SpringArchitectModePlanner {
             case "SECURITY" -> "Security";
             case "WEB_LAYER" -> "API layer";
             case "JPA" -> "Persistence";
+            case "TRANSACTIONS" -> "Transactions";
+            case "ASYNC_CONCURRENCY" -> "Async/concurrency";
+            case "SPRING_BATCH" -> "Spring Batch";
             case "OBSERVABILITY", "CLOUD_READINESS" -> "Production readiness";
             case "ARCHITECTURE" -> "Architecture";
             case "TEST" -> "Testing";
@@ -1114,7 +1150,7 @@ public class SpringArchitectModePlanner {
     }
 
     private BusinessImpact impactFor(FindingGroup group) {
-        if (group.severity() == Severity.CRITICAL || startsWithAny(group.ruleId(), "SPR039", "SPR040", "SPR037", "SPR006", "SPR017", "CLD", "OBS")) {
+        if (group.severity() == Severity.CRITICAL || startsWithAny(group.ruleId(), "SEC", "SPR039", "SPR040", "SPR037", "SPR006", "SPR017", "CLD", "OBS")) {
             return BusinessImpact.HIGH;
         }
         if (group.severity() == Severity.MAJOR || group.findingType() != null && group.findingType().equals("SPRING_ALTERNATIVE")) {
@@ -1210,7 +1246,8 @@ public class SpringArchitectModePlanner {
                 "OBSERVABILITY", 10,
                 "TESTING", 9,
                 "PRODUCTION_READINESS", 12,
-                "SPRING_MODERNITY", 6
+                "SPRING_MODERNITY", 6,
+                "SPRING_BATCH", 10
         );
         int totalWeight = 0;
         int total = 0;

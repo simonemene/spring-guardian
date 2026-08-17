@@ -1234,3 +1234,7 @@ Architect Mode adds:
 
 The core remains deterministic, local-first and CI-friendly: no AI calls and no automatic source modification.
 
+
+### Advanced Spring architecture rules
+
+The scanner includes correlated rules for transaction boundaries, Spring proxy semantics, async/scheduling contracts, JPA performance/mapping, Security, observability, configuration and Spring Batch restartability. The Spring Alternative Advisor also recognizes legacy Spring Security/MVC/Batch APIs and suggests modern Spring-native alternatives without treating every advisory as a release blocker. See `docs/rule-catalog.md` and `docs/spring-alternatives-catalog.md`.

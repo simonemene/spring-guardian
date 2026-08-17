@@ -415,12 +415,16 @@ public class HtmlReportRenderer implements ReportRenderer {
                     .append("<header><div><span class=\"severity ").append(css(group.severity().name())).append("\">")
                     .append(group.severity()).append("</span> <code>").append(escape(group.ruleId())).append("</code>")
                     .append("<h3>").append(escape(group.title())).append("</h3></div>")
-                    .append("<span class=\"pill\">").append(group.occurrences()).append(" occurrence(s)</span></header>")
+                    .append("<div><span class=\"pill\">").append(group.occurrences()).append(" occurrence(s)</span>")
+                    .append(" <span class=\"pill\">confidence ").append(group.confidenceScore()).append("%</span></div></header>")
                     .append("<div class=\"guidance\">")
                     .append("<div><span>Detected</span><p>").append(escape(guidanceValue(group, "detected"))).append("</p></div>")
                     .append("<div><span>Impact</span><p>").append(escape(guidanceValue(group, "risk"))).append("</p></div>")
                     .append("<div><span>Remediation</span><p>").append(escape(guidanceValue(group, "fix"))).append("</p></div>")
-                    .append("</div>");
+                    .append("</div>")
+                    .append("<p class=\"meta\"><b>Detection:</b> ").append(escape(String.valueOf(group.detectionType())))
+                    .append(" · <b>Confidence:</b> ").append(group.confidenceScore()).append("% (")
+                    .append(escape(String.valueOf(group.confidence()))).append(")</p>");
             if (group.guidance() != null && group.guidance().springAlternative() != null && !group.guidance().springAlternative().isBlank()) {
                 html.append("<p class=\"alternative\"><b>Spring alternative:</b> ").append(escape(group.guidance().springAlternative())).append("</p>");
             }

@@ -98,6 +98,30 @@ export class FindingsPageComponent {
     return finding.guidance?.recommendedApproach || finding.suggestedFix || this.state.text('Segui il boundary Spring indicato dalla rule.', 'Follow the Spring boundary suggested by the rule.');
   }
 
+
+  detectionLabel(finding: FindingGroup): string {
+    const labels: Record<string, [string, string]> = {
+      AST_CORRELATION: ['Correlazione AST', 'AST correlation'],
+      SOURCE_PATTERN: ['Pattern sorgente/config', 'Source/config pattern'],
+      PROJECT_CONTEXT: ['Contesto progetto', 'Project context'],
+      CAPABILITY_INFERENCE: ['Inferenza capability', 'Capability inference'],
+      ARCHITECTURE_ANALYSIS: ['Analisi architetturale', 'Architecture analysis'],
+    };
+    const pair = labels[finding.detectionType || 'PROJECT_CONTEXT'] || labels['PROJECT_CONTEXT'];
+    return this.state.text(pair[0], pair[1]);
+  }
+
+  confidenceExplanation(finding: FindingGroup): string {
+    switch (finding.confidence) {
+      case 'VERY_HIGH':
+        return this.state.text('L'evidenza è strutturale e il rischio di falso positivo è molto basso.', 'The evidence is structural and the false-positive risk is very low.');
+      case 'HIGH':
+        return this.state.text('Il pattern è forte, ma va comunque letto nel contesto del progetto.', 'The pattern is strong, but should still be read in project context.');
+      default:
+        return this.state.text('È un advisor contestuale: valuta l'alternativa prima di modificare il codice.', 'This is a contextual advisor: evaluate the alternative before changing code.');
+    }
+  }
+
   openFinding(finding: FindingGroup): void {
     this.selectedFinding.set(finding);
   }
@@ -116,6 +140,9 @@ export class FindingsPageComponent {
       finding.suggestedFix,
       finding.whyItMatters,
       finding.explanation,
+      finding.confidence,
+      String(finding.confidenceScore || ''),
+      finding.detectionType,
       finding.guidance?.detectedProblem,
       finding.guidance?.riskImpact,
       finding.guidance?.recommendedApproach,
