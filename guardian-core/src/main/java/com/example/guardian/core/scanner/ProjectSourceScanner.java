@@ -4,6 +4,7 @@ import com.example.guardian.core.model.JavaSourceFile;
 import com.example.guardian.core.model.ProjectCapabilities;
 import com.example.guardian.core.model.ProjectProfile;
 import com.example.guardian.core.model.ProjectScanContext;
+import com.example.guardian.core.security.SensitiveDataRedactor;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -12,6 +13,7 @@ import com.github.javaparser.ast.nodeTypes.NodeWithAnnotations;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -52,7 +54,7 @@ public class ProjectSourceScanner {
             List<Path> allFiles;
             try (Stream<Path> stream = Files.walk(root)) {
                 allFiles = stream
-                        .filter(Files::isRegularFile)
+                        .filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
                         .filter(path -> !isIgnored(root, path))
                         .toList();
             }
@@ -82,13 +84,39 @@ public class ProjectSourceScanner {
 
     private JavaSourceFile parseJavaFile(Path root, Path path) {
         String relativePath = root.relativize(path).toString();
-        String content = readSafely(path);
+        final String content;
+        try {
+            content = Files.readString(path, StandardCharsets.UTF_8);
+        } catch (IOException | RuntimeException exception) {
+            return new JavaSourceFile(path, relativePath, "", new CompilationUnit(),
+                    safeDiagnosticMessage("Unable to read Java source", exception));
+        }
+
         try {
             CompilationUnit cu = StaticJavaParser.parse(content);
-            return new JavaSourceFile(path, relativePath, content, cu);
-        } catch (Exception e) {
-            return new JavaSourceFile(path, relativePath, content, new CompilationUnit());
+            return new JavaSourceFile(path, relativePath, content, cu, null);
+        } catch (RuntimeException exception) {
+            return new JavaSourceFile(path, relativePath, content, new CompilationUnit(),
+                    safeDiagnosticMessage("JavaParser could not parse the source", exception));
         }
+    }
+
+    private String safeDiagnosticMessage(String prefix, RuntimeException exception) {
+        String detail = exception.getMessage();
+        if (detail == null || detail.isBlank()) {
+            detail = exception.getClass().getSimpleName();
+        }
+        String message = SensitiveDataRedactor.redact(prefix + ": " + detail);
+        return message.length() <= 500 ? message : message.substring(0, 497) + "...";
+    }
+
+    private String safeDiagnosticMessage(String prefix, IOException exception) {
+        String detail = exception.getMessage();
+        if (detail == null || detail.isBlank()) {
+            detail = exception.getClass().getSimpleName();
+        }
+        String message = SensitiveDataRedactor.redact(prefix + ": " + detail);
+        return message.length() <= 500 ? message : message.substring(0, 497) + "...";
     }
 
     private Set<String> findAnnotatedClassNames(List<JavaSourceFile> files, String annotation) {

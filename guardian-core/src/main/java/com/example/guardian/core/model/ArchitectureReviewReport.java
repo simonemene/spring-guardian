@@ -28,6 +28,7 @@ import java.util.Map;
  * @param explanation report reading explanation
  * @param findings findings grouped by rule
  * @param architectMode Spring Guardian Architect Mode roadmap
+ * @param scanDiagnostics scan integrity and coverage diagnostics
  * @author Simone Meneghetti
  */
 public record ArchitectureReviewReport(
@@ -51,8 +52,43 @@ public record ArchitectureReviewReport(
         List<RecommendedAction> recommendedActions,
         ReportExplanation explanation,
         List<FindingGroup> findings,
-        ArchitectModeReport architectMode
+        ArchitectModeReport architectMode,
+        ScanDiagnostics scanDiagnostics
 ) {
+
+    /**
+     * Backward-compatible constructor for integrations created before scan integrity diagnostics were added.
+     */
+    public ArchitectureReviewReport(
+            String projectName,
+            Instant scannedAt,
+            String projectRootPath,
+            ProjectProfile profile,
+            ProjectCapabilities capabilities,
+            ReportSummary summary,
+            ReleaseReadiness releaseReadiness,
+            int architectureScore,
+            String riskLevel,
+            long scannedJavaFiles,
+            long scannedPomFiles,
+            int rulesExecuted,
+            Map<Severity, Long> findingsBySeverity,
+            List<CategorySummary> findingsByCategory,
+            List<CategorySummary> findingsByType,
+            List<ArchitectureAreaReport> architectureAreas,
+            List<QualityGate> qualityGates,
+            List<RecommendedAction> recommendedActions,
+            ReportExplanation explanation,
+            List<FindingGroup> findings,
+            ArchitectModeReport architectMode
+    ) {
+        this(
+                projectName, scannedAt, projectRootPath, profile, capabilities, summary, releaseReadiness,
+                architectureScore, riskLevel, scannedJavaFiles, scannedPomFiles, rulesExecuted, findingsBySeverity,
+                findingsByCategory, findingsByType, architectureAreas, qualityGates, recommendedActions, explanation,
+                findings, architectMode, defaultDiagnostics(scannedJavaFiles, rulesExecuted)
+        );
+    }
 
     /**
      * Backward-compatible constructor for integrations created before Architect Mode became part of the report.
@@ -100,7 +136,13 @@ public record ArchitectureReviewReport(
                 recommendedActions,
                 explanation,
                 findings,
-                null
+                null,
+                defaultDiagnostics(scannedJavaFiles, rulesExecuted)
         );
+    }
+
+    private static ScanDiagnostics defaultDiagnostics(long scannedJavaFiles, int rulesExecuted) {
+        int javaFiles = scannedJavaFiles > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) scannedJavaFiles;
+        return new ScanDiagnostics(javaFiles, javaFiles, 0, rulesExecuted, rulesExecuted, 0, List.of());
     }
 }

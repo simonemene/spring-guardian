@@ -41,6 +41,7 @@ public class HtmlReportRenderer implements ReportRenderer {
                 .append("<a href=\"#maturity\">Maturity Score</a>")
                 .append("<a href=\"#architecture-map\">Architecture Map</a>")
                 .append("<a href=\"#roadmap\">Modernization Roadmap</a>")
+                .append("<a href=\"#integrity\">Scan Integrity</a>")
                 .append("<a href=\"#gates\">Quality Gates</a>")
                 .append("<a href=\"#areas\">Architecture Areas</a>")
                 .append("<a href=\"#actions\">Actions</a>")
@@ -75,6 +76,7 @@ public class HtmlReportRenderer implements ReportRenderer {
         html.append("</section>");
 
         appendArchitectMode(html, report);
+        appendScanIntegrity(html, report);
 
         html.append("<section id=\"gates\" class=\"card\"><div class=\"section-title\"><div><p class=\"eyebrow\">Governance</p><h2>Quality gates</h2></div>")
                 .append("<span class=\"readiness ").append(css(report.releaseReadiness().status())).append("\">")
@@ -132,6 +134,27 @@ public class HtmlReportRenderer implements ReportRenderer {
         return html.toString();
     }
 
+
+    private void appendScanIntegrity(StringBuilder html, ArchitectureReviewReport report) {
+        if (report.scanDiagnostics() == null) {
+            return;
+        }
+        var diagnostics = report.scanDiagnostics();
+        String status = diagnostics.complete() ? "PASS" : "WARNING";
+        html.append("<section id=\"integrity\" class=\"card\"><div class=\"section-title\"><div><p class=\"eyebrow\">Reliability</p><h2>Scan integrity</h2></div>")
+                .append("<span class=\"readiness ").append(css(status)).append("\">").append(status).append("</span></div>")
+                .append("<p>Java parse coverage: <b>").append(diagnostics.parsedJavaFiles()).append("/").append(diagnostics.totalJavaFiles()).append("</b>. ")
+                .append("Rules completed: <b>").append(diagnostics.rulesSucceeded()).append("/").append(diagnostics.rulesAttempted()).append("</b>.</p>");
+        if (!diagnostics.complete()) {
+            html.append("<p class=\"empty\">A clean score must be interpreted with caution until these diagnostics are resolved.</p><div class=\"actions\">");
+            diagnostics.issues().stream().limit(20).forEach(issue -> html.append("<article class=\"action\"><strong>!</strong><div>")
+                    .append("<span class=\"severity warning\">").append(escape(issue.type())).append("</span>")
+                    .append("<h3>").append(escape(issue.filePath() == null ? issue.source() : issue.filePath())).append("</h3>")
+                    .append("<p>").append(escape(issue.message())).append("</p></div></article>"));
+            html.append("</div>");
+        }
+        html.append("</section>");
+    }
 
     private void appendArchitectMode(StringBuilder html, ArchitectureReviewReport report) {
         if (report.architectMode() == null) {

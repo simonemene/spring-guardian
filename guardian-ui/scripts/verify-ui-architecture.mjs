@@ -55,9 +55,18 @@ for (const expected of ['text(it: string, en: string)', 'downloadExecutiveSummar
     process.exit(1);
   }
 }
+if (!state.includes("error.error?.detail ?? error.error?.message")) {
+  console.error('ProblemDetail.detail must be surfaced by the UI error handler.');
+  process.exit(1);
+}
+const storageKeyBody = state.slice(state.indexOf('private storageKey'), state.indexOf('private hash'));
+if (storageKeyBody.includes('projectRootPath')) {
+  console.error('Checklist identity must not depend on temporary/local projectRootPath.');
+  process.exit(1);
+}
 
 const dashboard = read('src/app/pages/dashboard/dashboard-page.component.html') + read('src/app/pages/dashboard/dashboard-page.component.ts');
-for (const expected of ['Primo impatto', 'Diagnosi rapida', 'Top Spring findings', 'Aree Spring deboli']) {
+for (const expected of ['Primo impatto', 'Diagnosi rapida', 'Top Spring findings', 'Aree Spring deboli', 'Scan coverage']) {
   if (!dashboard.includes(expected)) {
     console.error(`Dashboard must be low-noise and first-impact. Missing: ${expected}`);
     process.exit(1);

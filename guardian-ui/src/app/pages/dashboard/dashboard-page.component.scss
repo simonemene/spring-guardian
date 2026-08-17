@@ -57,3 +57,14 @@
 @media (max-width: 640px) {
   .metric-strip, .finding-mini-list div { grid-template-columns: 1fr; }
 }
+
+.scan-integrity-warning {
+  display: grid;
+  gap: .25rem;
+  margin-bottom: 1rem;
+  padding: .9rem 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(253,224,71,.35);
+  background: rgba(113,63,18,.16);
+}
+.scan-integrity-warning span { color: #d7cfa4; }

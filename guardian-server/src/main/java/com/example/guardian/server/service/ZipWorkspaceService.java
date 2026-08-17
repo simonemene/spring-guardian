@@ -31,9 +31,9 @@ public class ZipWorkspaceService {
      * Extracts a ZIP archive into a safe temporary workspace.
      *
      * @param file uploaded ZIP file
-     * @return workspace root
+     * @return closeable prepared workspace
      */
-    public Path extractZip(MultipartFile file) {
+    public PreparedWorkspace extractZip(MultipartFile file) {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Il file ZIP caricato è vuoto.");
         }
@@ -76,8 +76,12 @@ public class ZipWorkspaceService {
                     }
                 }
             }
-            return resolveProjectRoot(workspace);
-        } catch (IOException e) {
+            return new PreparedWorkspace(workspace, resolveProjectRoot(workspace));
+        } catch (IOException | RuntimeException e) {
+            deleteFailedWorkspace(workspace);
+            if (e instanceof IllegalArgumentException illegalArgumentException) {
+                throw illegalArgumentException;
+            }
             throw new IllegalStateException("Impossibile estrarre il file ZIP.", e);
         }
     }
@@ -86,9 +90,9 @@ public class ZipWorkspaceService {
      * Copies files selected from a browser folder upload into a safe temporary workspace.
      *
      * @param files uploaded project files
-     * @return workspace root
+     * @return closeable prepared workspace
      */
-    public Path copyUploadedFolder(List<MultipartFile> files) {
+    public PreparedWorkspace copyUploadedFolder(List<MultipartFile> files) {
         if (files == null || files.isEmpty()) {
             throw new IllegalArgumentException("La cartella caricata non contiene file.");
         }
@@ -123,9 +127,20 @@ public class ZipWorkspaceService {
                 Files.createDirectories(target.getParent());
                 file.transferTo(target);
             }
-            return resolveProjectRoot(workspace);
-        } catch (IOException e) {
+            return new PreparedWorkspace(workspace, resolveProjectRoot(workspace));
+        } catch (IOException | RuntimeException e) {
+            deleteFailedWorkspace(workspace);
+            if (e instanceof IllegalArgumentException illegalArgumentException) {
+                throw illegalArgumentException;
+            }
             throw new IllegalStateException("Impossibile copiare la cartella caricata.", e);
+        }
+    }
+
+
+    private void deleteFailedWorkspace(Path workspace) {
+        try (PreparedWorkspace prepared = new PreparedWorkspace(workspace, workspace)) {
+            // close performs cleanup
         }
     }
 

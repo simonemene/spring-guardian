@@ -68,11 +68,7 @@ UI:
 http://localhost:3000
 ```
 
-Backend:
-
-```text
-http://localhost:8080/api/v1/health
-```
+Il backend Docker resta raggiungibile solo dalla rete interna del compose; dall'host si usa la UI su `127.0.0.1:3000`.
 
 ## Nota registry npm
 

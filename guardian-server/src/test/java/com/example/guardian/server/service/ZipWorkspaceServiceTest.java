@@ -21,9 +21,12 @@ class ZipWorkspaceServiceTest {
     void extractZipCreatesWorkspaceFiles() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "project.zip", "application/zip", zipBytes("demo/pom.xml", "<project/>").toByteArray());
 
-        Path workspace = service.extractZip(file);
-
-        assertTrue(Files.exists(workspace.resolve("pom.xml")));
+        Path extractionRoot;
+        try (PreparedWorkspace workspace = service.extractZip(file)) {
+            extractionRoot = workspace.workspaceRoot();
+            assertTrue(Files.exists(workspace.projectRoot().resolve("pom.xml")));
+        }
+        org.junit.jupiter.api.Assertions.assertFalse(Files.exists(extractionRoot));
     }
 
     @Test
@@ -37,9 +40,9 @@ class ZipWorkspaceServiceTest {
     void copyUploadedFolderPreservesRelativePath() throws Exception {
         MockMultipartFile file = new MockMultipartFile("files", "demo/src/main/java/App.java", "text/plain", "class App {}".getBytes());
 
-        Path workspace = service.copyUploadedFolder(List.of(file));
-
-        assertTrue(Files.exists(workspace.resolve("src/main/java/App.java")));
+        try (PreparedWorkspace workspace = service.copyUploadedFolder(List.of(file))) {
+            assertTrue(Files.exists(workspace.projectRoot().resolve("src/main/java/App.java")));
+        }
     }
 
 
@@ -55,12 +58,16 @@ class ZipWorkspaceServiceTest {
         }
         MockMultipartFile file = new MockMultipartFile("file", "project.zip", "application/zip", output.toByteArray());
 
-        Path workspace = service.extractZip(file);
-
-        assertTrue(Files.exists(workspace.resolve("pom.xml")));
-        org.junit.jupiter.api.Assertions.assertFalse(Files.exists(workspace.resolve("target/classes/App.class")));
-        org.junit.jupiter.api.Assertions.assertFalse(Files.exists(workspace.resolve("node_modules/lib/index.js")));
-        org.junit.jupiter.api.Assertions.assertFalse(Files.exists(workspace.resolve(".git/config")));
+        Path extractionRoot;
+        try (PreparedWorkspace workspace = service.extractZip(file)) {
+            extractionRoot = workspace.workspaceRoot();
+            Path projectRoot = workspace.projectRoot();
+            assertTrue(Files.exists(projectRoot.resolve("pom.xml")));
+            org.junit.jupiter.api.Assertions.assertFalse(Files.exists(projectRoot.resolve("target/classes/App.class")));
+            org.junit.jupiter.api.Assertions.assertFalse(Files.exists(projectRoot.resolve("node_modules/lib/index.js")));
+            org.junit.jupiter.api.Assertions.assertFalse(Files.exists(projectRoot.resolve(".git/config")));
+        }
+        org.junit.jupiter.api.Assertions.assertFalse(Files.exists(extractionRoot));
     }
 
     private ByteArrayOutputStream zipBytes(String name, String content) throws Exception {

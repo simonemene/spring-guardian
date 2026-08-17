@@ -321,6 +321,12 @@ Source evidence for each finding
 
 Every scan is stateless. The selected profile calibrates only the current request and never hides findings. Security findings remain blocking even when legacy baseline mode is active.
 
+## Local-only network model
+
+Spring Guardian is designed as a local workstation tool. The standalone backend binds to `127.0.0.1` by default and the Angular dev server also binds to loopback. In Docker Compose the backend is not published on the host at all; only the UI is published as `127.0.0.1:3000`, while Nginx reaches the backend through the private Compose network.
+
+Remote/LAN exposure therefore requires an explicit configuration change and is not the default execution model.
+
 ## Start the backend
 
 Recommended on Windows / PowerShell:
@@ -344,7 +350,6 @@ mvn -pl guardian-server -am spring-boot:run
 Endpoints:
 
 ```text
-Health       http://localhost:8080/api/v1/health
 Swagger UI   http://localhost:8080/swagger-ui/index.html
 OpenAPI JSON http://localhost:8080/v3/api-docs
 ```
@@ -386,8 +391,8 @@ http://localhost:3000
 Docker services:
 
 ```text
-spring-guardian-server -> port 8080
-spring-guardian-ui    -> port 3000
+spring-guardian-server -> internal Compose port 8080 (not published on the host)
+spring-guardian-ui    -> 127.0.0.1:3000
 ```
 
 You can mount projects under `./sample-projects` and scan them inside the container from `/scan`.
@@ -645,12 +650,6 @@ spring.datasource.password=${DB_PASSWORD}
 
 ## API
 
-Health:
-
-```http
-GET /api/v1/health
-```
-
 Upload ZIP:
 
 ```http
@@ -901,7 +900,6 @@ mvn -pl guardian-server -am spring-boot:run
 Endpoint:
 
 ```text
-Health       http://localhost:8080/api/v1/health
 Swagger UI   http://localhost:8080/swagger-ui/index.html
 OpenAPI JSON http://localhost:8080/v3/api-docs
 ```
@@ -1121,12 +1119,6 @@ spring.datasource.password=${DB_PASSWORD}
 ```
 
 ## API principali
-
-Health:
-
-```http
-GET /api/v1/health
-```
 
 Scan ZIP:
 

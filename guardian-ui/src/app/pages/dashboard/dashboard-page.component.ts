@@ -50,6 +50,26 @@ export class DashboardPageComponent {
       .map((area) => ({ name: area.name, score: area.score })) ?? [];
   }
 
+
+  scanCoverage(): number {
+    const diagnostics = this.state.report()?.scanDiagnostics;
+    if (!diagnostics || diagnostics.totalJavaFiles === 0) {
+      return 100;
+    }
+    return Math.round((diagnostics.parsedJavaFiles / diagnostics.totalJavaFiles) * 100);
+  }
+
+  scanIntegrityWarning(): string {
+    const diagnostics = this.state.report()?.scanDiagnostics;
+    if (!diagnostics || (diagnostics.parseFailures === 0 && diagnostics.ruleFailures === 0)) {
+      return '';
+    }
+    return this.state.text(
+      `Scansione incompleta: ${diagnostics.parseFailures} file Java non analizzati e ${diagnostics.ruleFailures} regole fallite.`,
+      `Incomplete scan: ${diagnostics.parseFailures} Java files could not be analyzed and ${diagnostics.ruleFailures} rules failed.`
+    );
+  }
+
   severityCount(severity: Severity): number {
     return this.state.report()?.findingsBySeverity?.[severity] ?? 0;
   }

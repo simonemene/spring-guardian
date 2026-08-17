@@ -7,6 +7,7 @@ import com.example.guardian.core.model.Severity;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,12 +32,12 @@ public class OpenEntityManagerInViewEnabledRule implements SpringRule {
     public List<Finding> evaluate(ProjectScanContext context) {
         List<Finding> findings = new ArrayList<>();
         try (var stream = Files.walk(context.root())) {
-            stream.filter(Files::isRegularFile)
+            stream.filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
                     .filter(this::isApplicationConfiguration)
                     .filter(path -> !isIgnored(context.root(), path))
                     .forEach(path -> inspect(context, path, findings));
-        } catch (IOException ignored) {
-            return List.of();
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to walk Spring configuration files", exception);
         }
         return findings;
     }
@@ -60,7 +61,8 @@ public class OpenEntityManagerInViewEnabledRule implements SpringRule {
                     ));
                 }
             }
-        } catch (IOException ignored) {
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to inspect configuration file " + path, exception);
         }
     }
 

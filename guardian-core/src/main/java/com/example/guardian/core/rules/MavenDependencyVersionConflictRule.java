@@ -5,7 +5,6 @@ import com.example.guardian.core.model.ProjectScanContext;
 import com.example.guardian.core.model.Severity;
 import org.w3c.dom.Node;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -33,7 +32,7 @@ public class MavenDependencyVersionConflictRule implements SpringRule {
 
         for (Path pom : context.pomFiles()) {
             try {
-                var document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(pom.toFile());
+                var document = SecureXmlParser.parse(pom);
                 var dependencies = document.getElementsByTagName("dependency");
                 String relative = context.root().relativize(pom).toString();
                 for (int i = 0; i < dependencies.getLength(); i++) {
@@ -48,7 +47,8 @@ public class MavenDependencyVersionConflictRule implements SpringRule {
                     versionsByDependency.computeIfAbsent(key, ignored -> new LinkedHashSet<>()).add(version);
                     firstLocationByDependency.putIfAbsent(key, relative);
                 }
-            } catch (Exception ignored) {
+            } catch (Exception exception) {
+                throw new IllegalStateException("Unable to inspect Maven POM " + pom, exception);
             }
         }
 

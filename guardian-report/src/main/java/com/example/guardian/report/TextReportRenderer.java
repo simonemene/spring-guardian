@@ -35,9 +35,24 @@ public class TextReportRenderer implements ReportRenderer {
         builder.append("Java files: ").append(report.scannedJavaFiles()).append("\n");
         builder.append("POM files: ").append(report.scannedPomFiles()).append("\n");
         builder.append("Rules executed: ").append(report.rulesExecuted()).append("\n");
+        if (report.scanDiagnostics() != null) {
+            builder.append("Java parse coverage: ").append(report.scanDiagnostics().parsedJavaFiles())
+                    .append("/").append(report.scanDiagnostics().totalJavaFiles()).append("\n");
+            builder.append("Rule failures: ").append(report.scanDiagnostics().ruleFailures()).append("\n");
+        }
         builder.append("Issue groups: ").append(report.findings().size()).append("\n");
         builder.append("Occurrences: ").append(report.summary().totalFindings()).append("\n");
         builder.append("Summary: ").append(report.summary().executiveSummary()).append("\n\n");
+
+        if (report.scanDiagnostics() != null && !report.scanDiagnostics().complete()) {
+            builder.append("Scan integrity warnings\n");
+            builder.append("-----------------------\n");
+            report.scanDiagnostics().issues().stream().limit(20).forEach(issue -> builder
+                    .append("- [").append(issue.type()).append("] ")
+                    .append(issue.filePath() == null ? issue.source() : issue.filePath())
+                    .append(": ").append(issue.message()).append("\n"));
+            builder.append("\n");
+        }
 
         report.findingsBySeverity().entrySet().stream()
                 .sorted(Comparator.comparing(e -> e.getKey().ordinal()))

@@ -4,10 +4,12 @@ import com.example.guardian.core.model.Finding;
 import com.example.guardian.core.model.JavaSourceFile;
 import com.example.guardian.core.model.ProjectScanContext;
 import com.example.guardian.core.model.Severity;
+import com.example.guardian.core.security.SensitiveDataRedactor;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -93,12 +95,12 @@ public class CatalogPatternRule implements SpringRule {
     private List<Finding> evaluateFiles(ProjectScanContext context, Predicate<Path> filePredicate) {
         List<Finding> findings = new ArrayList<>();
         try (Stream<Path> stream = Files.walk(context.root())) {
-            stream.filter(Files::isRegularFile)
+            stream.filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
                     .filter(path -> !ignored(context.root(), path))
                     .filter(filePredicate)
                     .forEach(path -> inspectPath(context, path, findings));
-        } catch (IOException ignored) {
-            return List.of();
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to walk project files for rule " + id(), exception);
         }
         return findings;
     }
@@ -108,7 +110,8 @@ public class CatalogPatternRule implements SpringRule {
             String relative = context.root().relativize(path).toString();
             String content = Files.readString(path, StandardCharsets.UTF_8);
             inspectContent(relative, content, findings);
-        } catch (Exception ignored) {
+        } catch (IOException | RuntimeException exception) {
+            throw new IllegalStateException("Unable to inspect " + path + " for rule " + id(), exception);
         }
     }
 
@@ -225,7 +228,7 @@ public class CatalogPatternRule implements SpringRule {
     }
 
     private String evidence(String line) {
-        String compact = line == null ? "" : line.strip();
+        String compact = line == null ? "" : SensitiveDataRedactor.redact(line.strip());
         if (compact.length() <= 220) {
             return compact;
         }

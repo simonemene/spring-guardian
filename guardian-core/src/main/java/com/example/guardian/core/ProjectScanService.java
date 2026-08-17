@@ -1,6 +1,7 @@
 package com.example.guardian.core;
 
 import com.example.guardian.core.config.GuardianSettings;
+import com.example.guardian.core.execution.RuleExecutionEngine;
 import com.example.guardian.core.model.AffectedComponent;
 import com.example.guardian.core.model.ArchitectModeReport;
 import com.example.guardian.core.model.ArchitectureAreaReport;
@@ -20,13 +21,11 @@ import com.example.guardian.core.model.ReportLanguage;
 import com.example.guardian.core.model.ReportSummary;
 import com.example.guardian.core.model.RuleGuidance;
 import com.example.guardian.core.model.Severity;
+import com.example.guardian.core.model.ScanDiagnostic;
+import com.example.guardian.core.model.ScanDiagnostics;
 import com.example.guardian.core.rules.GuardianRules;
-import com.example.guardian.core.rules.SpringRule;
 import com.example.guardian.core.scanner.ProjectSourceScanner;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -44,7 +43,9 @@ import java.util.stream.Collectors;
 public class ProjectScanService {
 
     private final ProjectSourceScanner scanner;
-    private final List<SpringRule> rules;
+    private final RuleExecutionEngine ruleExecutionEngine;
+    private final SourceEvidenceExtractor evidenceExtractor;
+    private final SpringArchitectModePlanner architectModePlanner;
 
     /**
      * Creates a scan service using the configured rule thresholds.
@@ -53,7 +54,9 @@ public class ProjectScanService {
      */
     public ProjectScanService(GuardianSettings settings) {
         this.scanner = new ProjectSourceScanner();
-        this.rules = GuardianRules.defaultRules(settings);
+        this.ruleExecutionEngine = new RuleExecutionEngine(GuardianRules.defaultRules(settings));
+        this.evidenceExtractor = new SourceEvidenceExtractor();
+        this.architectModePlanner = new SpringArchitectModePlanner();
     }
 
     /**
@@ -89,15 +92,9 @@ public class ProjectScanService {
         ReportLanguage resolvedLanguage = language == null ? ReportLanguage.ITALIAN : language;
         ProjectProfile resolvedProfile = profile == null ? ProjectProfile.defaults() : profile;
         ProjectScanContext context = scanner.scan(root, resolvedProfile);
-
-        List<Finding> findings = rules.stream()
-                .flatMap(rule -> rule.evaluate(context).stream())
-                .sorted(Comparator
-                        .comparing(Finding::severity)
-                        .thenComparing(Finding::ruleId)
-                        .thenComparing(finding -> finding.filePath() == null ? "" : finding.filePath())
-                        .thenComparing(finding -> finding.line() == null ? 0 : finding.line()))
-                .toList();
+        RuleExecutionEngine.RuleExecutionResult ruleExecution = ruleExecutionEngine.execute(context);
+        List<Finding> findings = ruleExecution.findings();
+        ScanDiagnostics scanDiagnostics = buildScanDiagnostics(context, ruleExecution);
 
         Map<Severity, Long> bySeverity = findings.stream()
                 .collect(Collectors.groupingBy(Finding::severity, LinkedHashMap::new, Collectors.counting()));
@@ -110,9 +107,9 @@ public class ProjectScanService {
         String riskLevel = calculateRiskLevel(score, bySeverity);
         List<FindingGroup> groupedFindings = buildFindingGroups(findings, resolvedLanguage, context);
         List<ArchitectureAreaReport> architectureAreas = buildArchitectureAreas(findings, resolvedLanguage);
-        List<QualityGate> qualityGates = buildQualityGates(findings, architectureAreas, context, resolvedLanguage);
+        List<QualityGate> qualityGates = buildQualityGates(findings, architectureAreas, context, scanDiagnostics, resolvedLanguage);
         ReleaseReadiness releaseReadiness = buildReleaseReadiness(qualityGates, findings, resolvedProfile, resolvedLanguage);
-        ArchitectModeReport architectMode = new SpringArchitectModePlanner().plan(context, groupedFindings);
+        ArchitectModeReport architectMode = architectModePlanner.plan(context, groupedFindings);
 
         return new ArchitectureReviewReport(
                 root.getFileName() == null ? root.toString() : root.getFileName().toString(),
@@ -126,7 +123,7 @@ public class ProjectScanService {
                 riskLevel,
                 context.javaFiles().size(),
                 context.pomFiles().size(),
-                rules.size(),
+                ruleExecution.attempted(),
                 bySeverity,
                 buildCategorySummaries(findings, resolvedLanguage),
                 buildFindingTypeSummaries(findings, resolvedLanguage),
@@ -135,7 +132,33 @@ public class ProjectScanService {
                 buildRecommendedActions(groupedFindings, resolvedLanguage),
                 buildExplanation(resolvedLanguage),
                 groupedFindings,
-                architectMode
+                architectMode,
+                scanDiagnostics
+        );
+    }
+
+    private ScanDiagnostics buildScanDiagnostics(ProjectScanContext context, RuleExecutionEngine.RuleExecutionResult ruleExecution) {
+        List<ScanDiagnostic> issues = new ArrayList<>();
+        context.javaFiles().stream()
+                .filter(file -> !file.parsedSuccessfully())
+                .forEach(file -> issues.add(new ScanDiagnostic(
+                        "PARSE_ERROR",
+                        "JAVA_PARSER",
+                        file.relativePath().replace("\\", "/"),
+                        file.parseError()
+                )));
+        issues.addAll(ruleExecution.diagnostics());
+
+        int totalJavaFiles = context.javaFiles().size();
+        int parseFailures = (int) context.javaFiles().stream().filter(file -> !file.parsedSuccessfully()).count();
+        return new ScanDiagnostics(
+                totalJavaFiles,
+                totalJavaFiles - parseFailures,
+                parseFailures,
+                ruleExecution.attempted(),
+                ruleExecution.succeeded(),
+                ruleExecution.failed(),
+                issues
         );
     }
 
@@ -400,52 +423,9 @@ public class ProjectScanService {
                 componentNameOf(finding),
                 finding.filePath(),
                 finding.line(),
-                finding.evidence(),
-                codeSnippetOf(finding, context)
+                evidenceExtractor.safeEvidence(finding),
+                evidenceExtractor.codeSnippetOf(finding, context)
         );
-    }
-
-    private String codeSnippetOf(Finding finding, ProjectScanContext context) {
-        if (finding.filePath() == null || finding.filePath().isBlank() || finding.line() == null || finding.line() <= 0) {
-            return finding.evidence();
-        }
-        String content = sourceContentFor(finding, context);
-        if (content == null || content.isBlank()) {
-            return finding.evidence();
-        }
-        String[] lines = content.split("\\R", -1);
-        int index = finding.line() - 1;
-        if (index < 0 || index >= lines.length) {
-            return finding.evidence();
-        }
-        int from = Math.max(0, index - 1);
-        int to = Math.min(lines.length - 1, index + 1);
-        StringBuilder snippet = new StringBuilder();
-        for (int i = from; i <= to; i++) {
-            if (snippet.length() > 0) {
-                snippet.append(System.lineSeparator());
-            }
-            snippet.append(String.format("%4d | %s", i + 1, lines[i]));
-        }
-        return snippet.toString();
-    }
-
-    private String sourceContentFor(Finding finding, ProjectScanContext context) {
-        String normalizedFindingPath = finding.filePath().replace("\\", "/");
-        for (var javaFile : context.javaFiles()) {
-            if (javaFile.relativePath().replace("\\", "/").equals(normalizedFindingPath)) {
-                return javaFile.content();
-            }
-        }
-        try {
-            Path path = context.root().resolve(finding.filePath()).normalize();
-            if (Files.isRegularFile(path) && path.startsWith(context.root().normalize())) {
-                return Files.readString(path, StandardCharsets.UTF_8);
-            }
-        } catch (IOException | RuntimeException ignored) {
-            return null;
-        }
-        return null;
     }
 
     private String findingTypeFor(Finding finding) {
@@ -686,7 +666,7 @@ public class ProjectScanService {
         return reports;
     }
 
-    private List<QualityGate> buildQualityGates(List<Finding> findings, List<ArchitectureAreaReport> areas, ProjectScanContext context, ReportLanguage language) {
+    private List<QualityGate> buildQualityGates(List<Finding> findings, List<ArchitectureAreaReport> areas, ProjectScanContext context, ScanDiagnostics diagnostics, ReportLanguage language) {
         List<QualityGate> gates = new ArrayList<>();
         gates.add(gate("GATE_SECURITY", language, area(areas, "SECURITY"), true));
         gates.add(gate("GATE_WEB_LAYER", language, area(areas, "WEB_LAYER"), context.capabilities().usesSpringWeb()));
@@ -702,6 +682,14 @@ public class ProjectScanService {
         gates.add(gate("GATE_SPRING_ALTERNATIVE_ADVISOR", language, area(areas, "SPRING_ALTERNATIVE_ADVISOR"), false));
         gates.add(gate("GATE_SPRING_CAPABILITIES", language, area(areas, "SPRING_CAPABILITIES"), false));
         gates.add(new QualityGate(
+                "GATE_SCAN_INTEGRITY",
+                gateName("GATE_SCAN_INTEGRITY", language),
+                diagnostics.complete() ? "PASS" : "WARNING",
+                scanIntegrityExplanation(diagnostics, language),
+                false,
+                diagnostics.parseFailures() + diagnostics.ruleFailures()
+        ));
+        gates.add(new QualityGate(
                 "GATE_PROFILE_ALIGNMENT",
                 gateName("GATE_PROFILE_ALIGNMENT", language),
                 profileAlignmentStatus(context),
@@ -710,6 +698,17 @@ public class ProjectScanService {
                 profileAlignmentStatus(context).equals("FAIL") ? 1 : 0
         ));
         return gates;
+    }
+
+    private String scanIntegrityExplanation(ScanDiagnostics diagnostics, ReportLanguage language) {
+        if (diagnostics.complete()) {
+            return language == ReportLanguage.ENGLISH
+                    ? "All discovered Java sources were parsed and every deterministic rule completed."
+                    : "Tutti i sorgenti Java rilevati sono stati analizzati e tutte le regole deterministiche sono terminate correttamente.";
+        }
+        return language == ReportLanguage.ENGLISH
+                ? "Scan coverage is incomplete: " + diagnostics.parseFailures() + " Java file(s) could not be parsed and " + diagnostics.ruleFailures() + " rule(s) failed. Review scan diagnostics before trusting a clean result."
+                : "Copertura della scansione incompleta: " + diagnostics.parseFailures() + " file Java non analizzato/i e " + diagnostics.ruleFailures() + " regola/e fallita/e. Controlla la diagnostica prima di considerare affidabile un risultato pulito.";
     }
 
     private QualityGate gate(String code, ReportLanguage language, ArchitectureAreaReport area, boolean required) {
@@ -750,7 +749,7 @@ public class ProjectScanService {
     }
 
     private boolean strictMajorBlocks(QualityGate gate, ProjectProfile profile) {
-        if (!gate.status().equals("WARNING")) {
+        if (!gate.required() || !gate.status().equals("WARNING")) {
             return false;
         }
         if (profile.releaseTarget() == ReleaseTarget.INTERNAL || profile.releaseTarget() == ReleaseTarget.LEGACY_BASELINE || profile.knownIssuesAccepted()) {
@@ -826,6 +825,7 @@ public class ProjectScanService {
                 case "GATE_SPRING_ALTERNATIVE_ADVISOR" -> "Spring Alternative Advisor";
                 case "GATE_SPRING_CAPABILITIES" -> "Spring capabilities";
                 case "GATE_PROFILE_ALIGNMENT" -> "Profile alignment";
+                case "GATE_SCAN_INTEGRITY" -> "Scan integrity";
                 default -> code;
             };
         }
@@ -844,6 +844,7 @@ public class ProjectScanService {
             case "GATE_SPRING_ALTERNATIVE_ADVISOR" -> "Spring Alternative Advisor";
             case "GATE_SPRING_CAPABILITIES" -> "Capability Spring";
             case "GATE_PROFILE_ALIGNMENT" -> "Coerenza profilo";
+            case "GATE_SCAN_INTEGRITY" -> "Integrità scansione";
             default -> code;
         };
     }

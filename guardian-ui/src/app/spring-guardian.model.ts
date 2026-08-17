@@ -33,6 +33,24 @@ export interface ArchitectureReviewReport {
   explanation: ReportExplanation;
   findings: FindingGroup[];
   architectMode?: ArchitectModeReport | null;
+  scanDiagnostics?: ScanDiagnostics;
+}
+
+export interface ScanDiagnostics {
+  totalJavaFiles: number;
+  parsedJavaFiles: number;
+  parseFailures: number;
+  rulesAttempted: number;
+  rulesSucceeded: number;
+  ruleFailures: number;
+  issues: ScanDiagnostic[];
+}
+
+export interface ScanDiagnostic {
+  type: 'PARSE_ERROR' | 'RULE_ERROR' | string;
+  source: string;
+  filePath?: string | null;
+  message: string;
 }
 
 export interface ProjectCapabilities {

@@ -1,3 +1,13 @@
+## Unreleased - Local integrity and scan reliability hardening
+
+- Enforced loopback-only defaults for standalone backend/frontend and removed backend host publication from Docker Compose.
+- Added centralized secret redaction for finding evidence, snippets and diagnostic messages.
+- Added explicit Java parse coverage and per-rule failure diagnostics so incomplete scans cannot look silently clean.
+- Added deterministic cleanup for temporary ZIP/folder workspaces.
+- Hardened Maven XML parsing against DTD/XXE resolution and stopped source traversal from following symlinked files.
+- Stabilized checklist persistence across repeated ZIP scans and surfaced Spring `ProblemDetail.detail` messages in the UI.
+- Extracted rule execution, source evidence and project fingerprint responsibilities from core orchestration hotspots.
+- Removed superseded rule/advisor catalogs and refreshed local-only/health endpoint documentation.
 
 ## UI low-noise Spring Review refinement
 

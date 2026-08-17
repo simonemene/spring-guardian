@@ -6,6 +6,7 @@ import com.example.guardian.core.model.Severity;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
@@ -49,7 +50,7 @@ public class StructuredLoggingAdvisorRule implements SpringRule {
     private boolean hasStructuredLoggingConfiguration(ProjectScanContext context) {
         try (Stream<Path> paths = Files.walk(context.root())) {
             return paths
-                    .filter(Files::isRegularFile)
+                    .filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
                     .filter(path -> !isIgnored(path))
                     .filter(path -> path.getFileName().toString().startsWith("application"))
                     .map(this::read)

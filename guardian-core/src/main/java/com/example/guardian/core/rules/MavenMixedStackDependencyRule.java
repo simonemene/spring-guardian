@@ -49,7 +49,8 @@ public class MavenMixedStackDependencyRule implements SpringRule {
             if ((xml.contains("log4j-core") || xml.contains("log4j-slf4j")) && xml.contains("spring-boot-starter-logging")) {
                 findings.add(finding(relative, "Log4j dependencies are declared together with Spring Boot default logging.", "Multiple logging stacks detected"));
             }
-        } catch (Exception ignored) {
+        } catch (Exception exception) {
+            throw new IllegalStateException("Unable to inspect Maven POM " + pom, exception);
         }
     }
 

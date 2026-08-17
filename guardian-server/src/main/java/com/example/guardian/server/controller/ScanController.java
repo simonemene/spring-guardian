@@ -5,6 +5,7 @@ import com.example.guardian.core.model.ArchitectureReviewReport;
 import com.example.guardian.core.model.ProjectProfile;
 import com.example.guardian.core.model.ReportLanguage;
 import com.example.guardian.server.dto.LocalScanRequest;
+import com.example.guardian.server.service.PreparedWorkspace;
 import com.example.guardian.server.service.ZipWorkspaceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -82,8 +83,9 @@ public class ScanController {
             @RequestParam(defaultValue = "PRODUCTION") String releaseTarget,
             @Parameter(description = "Use true for a legacy baseline scan with known issues.", example = "false")
             @RequestParam(defaultValue = "false") boolean knownIssuesAccepted) {
-        Path workspace = zipWorkspaceService.extractZip(file);
-        return projectScanService.scan(workspace, ReportLanguage.from(language), profile(projectType, architectureStyle, releaseTarget, knownIssuesAccepted));
+        try (PreparedWorkspace workspace = zipWorkspaceService.extractZip(file)) {
+            return projectScanService.scan(workspace.projectRoot(), ReportLanguage.from(language), profile(projectType, architectureStyle, releaseTarget, knownIssuesAccepted));
+        }
     }
 
     /**
@@ -117,8 +119,9 @@ public class ScanController {
             @RequestParam(defaultValue = "PRODUCTION") String releaseTarget,
             @Parameter(description = "Use true for a legacy baseline scan with known issues.", example = "false")
             @RequestParam(defaultValue = "false") boolean knownIssuesAccepted) {
-        Path workspace = zipWorkspaceService.copyUploadedFolder(files);
-        return projectScanService.scan(workspace, ReportLanguage.from(language), profile(projectType, architectureStyle, releaseTarget, knownIssuesAccepted));
+        try (PreparedWorkspace workspace = zipWorkspaceService.copyUploadedFolder(files)) {
+            return projectScanService.scan(workspace.projectRoot(), ReportLanguage.from(language), profile(projectType, architectureStyle, releaseTarget, knownIssuesAccepted));
+        }
     }
 
     /**

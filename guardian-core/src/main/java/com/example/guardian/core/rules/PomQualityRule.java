@@ -2,10 +2,7 @@ package com.example.guardian.core.rules;
 
 import com.example.guardian.core.model.*;
 import org.w3c.dom.Document;
-import org.xml.sax.InputSource;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,8 +28,7 @@ public class PomQualityRule implements SpringRule {
         for (Path pom : context.pomFiles()) {
             try {
                 String xml = Files.readString(pom, StandardCharsets.UTF_8);
-                Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-                        .parse(new InputSource(new StringReader(xml)));
+                Document document = SecureXmlParser.parse(xml);
 
                 int dependencyVersions = document.getElementsByTagName("dependency").getLength() == 0
                         ? 0
@@ -68,7 +64,8 @@ public class PomQualityRule implements SpringRule {
                             "Add Maven profiles only if build-time differences are needed; otherwise document that runtime Spring profiles are used."
                     ));
                 }
-            } catch (Exception ignored) {
+            } catch (Exception exception) {
+                throw new IllegalStateException("Unable to inspect Maven POM " + pom, exception);
             }
         }
 

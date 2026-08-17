@@ -5,13 +5,12 @@ services:
       dockerfile: guardian-server/Dockerfile
     container_name: spring-guardian-server
     environment:
+      SERVER_ADDRESS: 0.0.0.0
       SPRING_GUARDIAN_API_PREFIX: /api/v1
       SPRING_GUARDIAN_MAX_CONTROLLER_LINES: 35
       SPRING_GUARDIAN_MAX_CONTROLLER_BRANCHES: 8
     volumes:
       - ./sample-projects:/scan:ro
-    ports:
-      - "8080:8080"
 
   spring-guardian-ui:
     build:
@@ -21,4 +20,4 @@ services:
     depends_on:
       - spring-guardian-server
     ports:
-      - "3000:80"
+      - "127.0.0.1:3000:80"

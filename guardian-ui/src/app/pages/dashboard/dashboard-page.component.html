@@ -17,11 +17,16 @@
     </div>
   </section>
 
+  <section class="scan-integrity-warning" *ngIf="report.scanDiagnostics && (report.scanDiagnostics.parseFailures > 0 || report.scanDiagnostics.ruleFailures > 0)">
+    <strong>{{ state.text('Copertura scansione', 'Scan coverage') }}: {{ scanCoverage() }}%</strong>
+    <span>{{ scanIntegrityWarning() }}</span>
+  </section>
+
   <section class="metric-strip">
     <sg-metric-card label="Spring score" [value]="report.architectMode?.maturityScore?.overallScore || report.architectureScore" hint="/100" />
     <sg-metric-card label="Critical/Major" [value]="severityCount('CRITICAL') + severityCount('MAJOR')" [hint]="state.text('da guardare subito', 'needs attention')" />
     <sg-metric-card label="Spring alternatives" [value]="report.findings.length" [hint]="state.text('filtrate nella pagina dedicata', 'filtered in the dedicated page')" />
-    <sg-metric-card label="Checklist" [value]="state.checklist().length" [hint]="state.text('azioni finali', 'final actions')" />
+    <sg-metric-card label="Scan coverage" [value]="scanCoverage()" hint="%" />
   </section>
 
   <section class="grid-2">

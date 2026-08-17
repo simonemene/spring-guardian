@@ -89,8 +89,8 @@ public class MissingSpringCapabilityRule implements SpringRule {
                         || pom.contains("javax.validation")) {
                     return true;
                 }
-            } catch (IOException ignored) {
-                continue;
+            } catch (IOException exception) {
+                throw new IllegalStateException("Unable to inspect Maven POM " + pomFile, exception);
             }
         }
         return false;

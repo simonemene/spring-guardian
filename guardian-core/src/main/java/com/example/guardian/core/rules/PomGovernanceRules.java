@@ -7,7 +7,6 @@ import com.example.guardian.core.model.Severity;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -38,7 +37,7 @@ public class PomGovernanceRules implements SpringRule {
 
     private void inspectPom(ProjectScanContext context, Path pom, List<Finding> findings) {
         try {
-            var document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(pom.toFile());
+            var document = SecureXmlParser.parse(pom);
             document.getDocumentElement().normalize();
             String relative = context.root().relativize(pom).toString();
             String text = document.getDocumentElement().getTextContent().toLowerCase(Locale.ROOT);
@@ -295,7 +294,8 @@ public class PomGovernanceRules implements SpringRule {
                         "Multi-module projects need centralized dependency and plugin versions to avoid drift.",
                         "Add dependencyManagement and pluginManagement to the parent POM.");
             }
-        } catch (Exception ignored) {
+        } catch (Exception exception) {
+            throw new IllegalStateException("Unable to inspect Maven POM " + pom, exception);
         }
     }
 

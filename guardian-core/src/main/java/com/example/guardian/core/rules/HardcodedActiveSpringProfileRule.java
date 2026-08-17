@@ -6,6 +6,7 @@ import com.example.guardian.core.model.Severity;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,13 +55,14 @@ public class HardcodedActiveSpringProfileRule implements SpringRule {
                     ));
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception exception) {
+            throw new IllegalStateException("Unable to inspect configuration file " + file, exception);
         }
     }
 
     private List<Path> applicationConfigFiles(Path root) {
         try (var stream = Files.walk(root)) {
-            return stream.filter(Files::isRegularFile)
+            return stream.filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
                     .filter(path -> {
                         String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
                         String normalized = path.toString().replace("\\", "/");
@@ -70,8 +72,8 @@ public class HardcodedActiveSpringProfileRule implements SpringRule {
                                 && (name.endsWith(".properties") || name.endsWith(".yml") || name.endsWith(".yaml"));
                     })
                     .toList();
-        } catch (Exception e) {
-            return List.of();
+        } catch (Exception exception) {
+            throw new IllegalStateException("Unable to walk Spring configuration files under " + root, exception);
         }
     }
 }

@@ -2,7 +2,6 @@ package com.example.guardian.core.rules;
 
 import com.example.guardian.core.model.*;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,7 +25,7 @@ public class DuplicatedMavenDependencyRule implements SpringRule {
 
         for (Path pom : context.pomFiles()) {
             try {
-                var doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(pom.toFile());
+                var doc = SecureXmlParser.parse(pom);
                 var deps = doc.getElementsByTagName("dependency");
                 Map<String, Integer> count = new HashMap<>();
 
@@ -53,7 +52,8 @@ public class DuplicatedMavenDependencyRule implements SpringRule {
                                 "Duplicated dependencies make dependency management noisy and can hide version conflicts.",
                                 "Keep a single declaration and centralize versions in dependencyManagement/properties where needed."
                         )));
-            } catch (Exception ignored) {
+            } catch (Exception exception) {
+                throw new IllegalStateException("Unable to inspect Maven POM " + pom, exception);
             }
         }
 

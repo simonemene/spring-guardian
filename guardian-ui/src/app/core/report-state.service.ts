@@ -509,13 +509,20 @@ export class ReportStateService {
 
   private storageKey(report: ArchitectureReviewReport): string {
     const fingerprint = report.architectMode?.fingerprint;
+    const moduleNames = report.architectMode?.architectureMap?.modules
+      ?.map((module) => module.name)
+      .slice()
+      .sort()
+      .join(',') ?? '';
+    const starters = fingerprint?.detectedStarters?.slice().sort().join(',') ?? '';
     const source = [
       report.projectName || 'unknown',
-      report.projectRootPath || '',
       fingerprint?.summary || '',
       fingerprint?.buildTool || '',
       fingerprint?.javaVersion || '',
       fingerprint?.springBootVersion || '',
+      starters,
+      moduleNames,
     ].join('|');
     return `spring-guardian.checklist.${this.hash(source)}`;
   }
@@ -542,7 +549,7 @@ export class ReportStateService {
 
   private describeError(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
-      const message = typeof error.error === 'string' ? error.error : error.error?.message;
+      const message = typeof error.error === 'string' ? error.error : error.error?.detail ?? error.error?.message;
       return message || this.text(`Errore HTTP ${error.status}: ${error.statusText}`, `HTTP error ${error.status}: ${error.statusText}`);
     }
     return this.text('Errore durante la scansione.', 'Error during scan.');

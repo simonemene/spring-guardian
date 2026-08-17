@@ -4,6 +4,7 @@ import com.example.guardian.core.model.*;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -30,7 +31,7 @@ public class UnsafeDdlAutoRule implements SpringRule {
         List<Finding> findings = new ArrayList<>();
 
         try (var stream = Files.walk(context.root())) {
-            stream.filter(Files::isRegularFile)
+            stream.filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
                     .filter(path -> path.getFileName().toString().startsWith("application"))
                     .forEach(path -> {
                         try {
@@ -54,10 +55,14 @@ public class UnsafeDdlAutoRule implements SpringRule {
                                     ));
                                 }
                             }
-                        } catch (Exception ignored) {
+                        } catch (Exception exception) {
+                            throw new IllegalStateException("Unable to inspect configuration file " + path, exception);
                         }
                     });
-        } catch (Exception ignored) {
+        } catch (RuntimeException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new IllegalStateException("Unable to walk Spring configuration files", exception);
         }
 
         return findings;

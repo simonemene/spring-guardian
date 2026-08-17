@@ -2,7 +2,6 @@ package com.example.guardian.core.rules;
 
 import com.example.guardian.core.model.*;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.ArrayList;
@@ -25,7 +24,7 @@ public class SpringDependencyVersionOverrideRule implements SpringRule {
 
         for (Path pom : context.pomFiles()) {
             try {
-                var doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(pom.toFile());
+                var doc = SecureXmlParser.parse(pom);
                 var deps = doc.getElementsByTagName("dependency");
                 String relative = context.root().relativize(pom).toString();
 
@@ -49,7 +48,8 @@ public class SpringDependencyVersionOverrideRule implements SpringRule {
                         ));
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Exception exception) {
+                throw new IllegalStateException("Unable to inspect Maven POM " + pom, exception);
             }
         }
 
