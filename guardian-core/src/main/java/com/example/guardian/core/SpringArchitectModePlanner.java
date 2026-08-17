@@ -595,7 +595,7 @@ public class SpringArchitectModePlanner {
                     List.of("org.openrewrite.java.spring.boot3.UpgradeSpringBoot_3_0")
             ));
         }
-        if (hasText(context, "javax.persistence", "javax.validation", "javax.servlet")) {
+        if (fingerprintAnalyzer.hasText(context, "javax.persistence", "javax.validation", "javax.servlet")) {
             steps.add(upgradeStep(
                     steps.size() + 1,
                     "Migrate javax.* imports to jakarta.*",

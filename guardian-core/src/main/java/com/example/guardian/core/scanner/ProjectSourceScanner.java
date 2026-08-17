@@ -101,16 +101,7 @@ public class ProjectSourceScanner {
         }
     }
 
-    private String safeDiagnosticMessage(String prefix, RuntimeException exception) {
-        String detail = exception.getMessage();
-        if (detail == null || detail.isBlank()) {
-            detail = exception.getClass().getSimpleName();
-        }
-        String message = SensitiveDataRedactor.redact(prefix + ": " + detail);
-        return message.length() <= 500 ? message : message.substring(0, 497) + "...";
-    }
-
-    private String safeDiagnosticMessage(String prefix, IOException exception) {
+    private String safeDiagnosticMessage(String prefix, Exception exception) {
         String detail = exception.getMessage();
         if (detail == null || detail.isBlank()) {
             detail = exception.getClass().getSimpleName();

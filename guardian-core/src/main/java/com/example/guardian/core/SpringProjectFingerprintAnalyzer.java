@@ -122,7 +122,7 @@ final class SpringProjectFingerprintAnalyzer {
         return "";
     }
 
-    private boolean hasText(ProjectScanContext context, String... values) {
+    boolean hasText(ProjectScanContext context, String... values) {
         String joined = (pomText(context) + "\n" + context.javaFiles().stream().map(JavaSourceFile::content).collect(Collectors.joining("\n"))).toLowerCase(Locale.ROOT);
         for (String value : values) {
             if (joined.contains(value.toLowerCase(Locale.ROOT))) return true;
