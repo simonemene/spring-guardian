@@ -114,11 +114,11 @@ export class FindingsPageComponent {
   confidenceExplanation(finding: FindingGroup): string {
     switch (finding.confidence) {
       case 'VERY_HIGH':
-        return this.state.text('L'evidenza è strutturale e il rischio di falso positivo è molto basso.', 'The evidence is structural and the false-positive risk is very low.');
+        return this.state.text("L'evidenza è strutturale e il rischio di falso positivo è molto basso.", 'The evidence is structural and the false-positive risk is very low.');
       case 'HIGH':
         return this.state.text('Il pattern è forte, ma va comunque letto nel contesto del progetto.', 'The pattern is strong, but should still be read in project context.');
       default:
-        return this.state.text('È un advisor contestuale: valuta l'alternativa prima di modificare il codice.', 'This is a contextual advisor: evaluate the alternative before changing code.');
+        return this.state.text("È un advisor contestuale: valuta l'alternativa prima di modificare il codice.", 'This is a contextual advisor: evaluate the alternative before changing code.');
     }
   }
 
